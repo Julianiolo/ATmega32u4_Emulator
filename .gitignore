@@ -2,3 +2,5 @@
 /build/*
 
 /projects/VS2019/ATmega32u4_Emulator/.vs/*
+
+*.vcxproj.user
