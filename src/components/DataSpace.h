@@ -108,6 +108,8 @@ namespace A32u4 {
 
 		uint16_t getWordReg(uint8_t id);
 		void setWordReg(uint8_t id, uint16_t val);
+		uint16_t getWordRegRam(uint16_t id);
+		void setWordRegRam(uint16_t id, uint16_t val);
 		uint16_t getX();
 		uint16_t getY();
 		uint16_t getZ();

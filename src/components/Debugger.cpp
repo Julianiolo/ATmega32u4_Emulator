@@ -38,22 +38,12 @@ void A32u4::Debugger::reset() {
 }
 
 void A32u4::Debugger::pushAddrOnAddressStack(uint16_t addr, uint16_t fromAddr) {
-#if RANGE_CHECK
-	if (addressStackPointer >= addressStackSize) {
-		mcu->log("Address Stack in Debugger overflow!");
-		return;
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(addressStackPointer, 1, addressStackSize, A32U4_ADDR_ERR_STR("Debug Address Stack overflow: ",addressStackPointer,4), "Debugger");
 	addressStack[addressStackPointer] = addr;
 	fromAddressStack[addressStackPointer++] = fromAddr;
 }
 void A32u4::Debugger::popAddrFromAddressStack() {
-#if RANGE_CHECK
-	if (addressStackPointer < 1) {
-		mcu->log("Address Stack in Debugger underflow!");
-		return;
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(addressStackPointer, 1, addressStackSize, A32U4_ADDR_ERR_STR("Debug Address Stack underflow: ",addressStackPointer,4), "Debugger");
 
 	addressStackPointer--;
 	addressStack[addressStackPointer] = 0;
@@ -97,7 +87,7 @@ void A32u4::Debugger::haltedActions() {
 
 	if (!halted) {
 		static int cnt = 0;
-		mcu->log("Halted at : " + Disassembler::disassemble(word, word2, mcu->cpu.PC)); // + stringExtras::intToHex(PC * 2,4)
+		mcu->log("Halted at : " + Disassembler::disassemble(word, word2, mcu->cpu.PC), ATmega32u4::LogLevel_Output); // + stringExtras::intToHex(PC * 2,4)
 	}
 	halted = true;
 	printDisassembly = true;
@@ -115,18 +105,18 @@ void A32u4::Debugger::haltedActions() {
 			break;
 		}
 		else if (input == "sk" || input == "stack") {
-			mcu->log(debugStackToString());
+			mcu->log(debugStackToString(), ATmega32u4::LogLevel_Output);
 		}
 		else if (input == "R" || input == "RAll") {
-			mcu->log(AllRegsToStr());
+			mcu->log(AllRegsToStr(), ATmega32u4::LogLevel_Output);
 		}
 		else if (input.substr(0, 1) == "R") {
 			int ind = std::stoi(input.substr(1, input.length()));;
 			if (ind < 32) {
-				mcu->log(regToStr(ind));
+				mcu->log(regToStr(ind), ATmega32u4::LogLevel_Output);
 			}
 			else {
-				mcu->log(input + " is out of Range of the Register (R0-R31)");
+				mcu->log(input + " is out of Range of the Register (R0-R31)", ATmega32u4::LogLevel_Output);
 			}
 		}
 		else if (input.substr(0, 2) == "io") {
@@ -140,10 +130,10 @@ void A32u4::Debugger::haltedActions() {
 
 			if (addr < DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) {
 				uint8_t ioVal = mcu->dataspace.getIOAt(addr);
-				mcu->log((input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str());
+				mcu->log((input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str(), ATmega32u4::LogLevel_Output);
 			}
 			else {
-				mcu->log(input + " is out of Range of the IO space (0-" + std::to_string(DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) + ")");
+				mcu->log(input + " is out of Range of the IO space (0-" + std::to_string(DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) + ")", ATmega32u4::LogLevel_Output);
 			}
 		}
 		else if (input == "e" || input == "exit") {
@@ -151,10 +141,10 @@ void A32u4::Debugger::haltedActions() {
 			// maybe this should also be removed
 		}
 		else if (input == "h" || input == "help") {
-			mcu->log(getHelp());
+			mcu->log(getHelp(), ATmega32u4::LogLevel_Output);
 		}
 		else {
-			mcu->log("Invalid command, try help");
+			mcu->log("Invalid command, try help", ATmega32u4::LogLevel_Output);
 		}
 	}
 }

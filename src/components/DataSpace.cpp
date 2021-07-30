@@ -162,48 +162,24 @@ void A32u4::DataSpace::Timers::checkForIntr() {
 }
 
 uint8_t& A32u4::DataSpace::getByteRefAtAddr(uint16_t addr) {
-#if RANGE_CHECK
-	if (addr < DataSpace::Consts::data_size) {
-		return data[addr];
-	}
-	mcu->log("unhandled DataSpace address: "+std::to_string(addr));
-	return errorIndicator;
-#else
+	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, "getByteRef addr out of bounds: " + std::to_string(addr), "DataSpace");
 	return data[addr];
-#endif
 }
 uint8_t& A32u4::DataSpace::getGPRegRef(uint8_t ind) {
-#if RANGE_CHECK
-	if (ind < DataSpace::Consts::GPRs_size) {
-
-		return data[ind];
-	}
-	mcu->log("General Purpouse Register Index out of bounds: " + std::to_string((int)ind));
-	return errorIndicator;
-#else
+	A32U4_ASSERT_INRANGE_M(ind, 0, Consts::GPRs_size, "General Purpouse Register Index out of bounds: " + std::to_string((int)ind), "DataSpace");
 	return data[ind];
-#endif
 }
 
 uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
-#if RANGE_CHECK
-	if (addr >= DataSpace::Consts::data_size) {
-		mcu->log("Data get Index out of bounds" + std::to_string(addr) + " => 0x" + stringExtras::intToHex(addr,4));
-		return 0;
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds",addr,4), "DataSpace");
 
 	funcs.update_Get(addr, true);
 
 	return data[addr];
 }
 uint8_t A32u4::DataSpace::setByteAt(uint16_t addr, uint8_t val) {
-#if RANGE_CHECK
-	if (addr >= DataSpace::Consts::data_size) {
-		mcu->log("Data set Index out of bounds" + std::to_string(addr) + " => 0x" + stringExtras::intToHex(addr, 4));
-		return 0;
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data set Index out of bounds",addr,4), "DataSpace");
+
 	uint8_t oldVal = data[addr];
 	data[addr] = val;
 	return funcs.update_Set(addr, val, oldVal);
@@ -216,19 +192,13 @@ uint8_t A32u4::DataSpace::setIOAt(uint8_t ind, uint8_t val) {
 }
 
 uint8_t A32u4::DataSpace::getRegBit(uint16_t id, uint8_t bit) {
-#if RANGE_CHECK
-	if (id < 0 || id >= Consts::data_size) {
-		abort();
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size, A32U4_ADDR_ERR_STR("getRegBit Index out of bounds",id,4), "DataSpace");
+
 	return (getByteRefAtAddr(id) & (1 << bit)) != 0;
 }
 void A32u4::DataSpace::setRegBit(uint16_t id, uint8_t bit, bool val) {
-#if RANGE_CHECK
-	if (id < 0 || id >= Consts::data_size) {
-		abort();
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size, A32U4_ADDR_ERR_STR("setRegBit Index out of bounds",id,4), "DataSpace");
+
 	uint8_t& byte = getByteRefAtAddr(id);;
 	if (val) {
 		byte |= 1 << bit;
@@ -239,19 +209,20 @@ void A32u4::DataSpace::setRegBit(uint16_t id, uint8_t bit, bool val) {
 }
 
 uint16_t A32u4::DataSpace::getWordReg(uint8_t id) {
-#if RANGE_CHECK
-	if (id < 0 || (id + 1) >= Consts::data_size) {
-		abort();
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(id, 0, Consts::GPRs_size-1, A32U4_ADDR_ERR_STR("getWordReg Index out of bounds",id,2), "DataSpace");
 	return ((uint16_t)data[id + 1] << 8) | data[id];
 }
 void A32u4::DataSpace::setWordReg(uint8_t id, uint16_t val) {
-#if RANGE_CHECK
-	if (id < 0 || (id + 1) >= Consts::data_size) {
-		abort();
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(id, 0, Consts::GPRs_size-1, A32U4_ADDR_ERR_STR("setWordReg Index out of bounds",id,2), "DataSpace");
+	data[id + 1] = val >> 8;
+	data[id] = (uint8_t)val;
+}
+uint16_t A32u4::DataSpace::getWordRegRam(uint16_t id) {
+	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size-1, A32U4_ADDR_ERR_STR("getWordRegRam Index out of bounds",id,2), "DataSpace");
+	return ((uint16_t)data[id + 1] << 8) | data[id];
+}
+void A32u4::DataSpace::setWordRegRam(uint16_t id, uint16_t val) {
+	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size-1, A32U4_ADDR_ERR_STR("setWordRegRam Index out of bounds",id,2), "DataSpace");
 	data[id + 1] = val >> 8;
 	data[id] = (uint8_t)val;
 }
@@ -283,11 +254,11 @@ void A32u4::DataSpace::resetIO() {
 	for (uint8_t i = 0; i < Consts::io_size; i++) {
 		data[Consts::io_start + i] = 0;
 	}
-	setWordReg(Consts::SPL, Consts::ISRAM_start + Consts::ISRAM_size - 1);
+	setWordRegRam(Consts::SPL, Consts::ISRAM_start + Consts::ISRAM_size - 1);
 }
 
 void A32u4::DataSpace::setSP(uint16_t val) {
-	setWordReg(Consts::SPL, val);
+	setWordRegRam(Consts::SPL, val);
 }
 
 void A32u4::DataSpace::Updates::update_Get(uint16_t Addr, bool onlyOne) {
@@ -338,7 +309,7 @@ uint8_t A32u4::DataSpace::Updates::update_Set(uint16_t Addr, uint8_t val, uint8_
 
 uint8_t A32u4::DataSpace::Updates::setEECR(uint8_t val, uint8_t oldVal){
 	if (val & (1 << Consts::EECR_EERE)) {
-		mcu->dataspace.data[Consts::EEDR] = mcu->dataspace.eeprom[mcu->dataspace.getWordReg(Consts::EEARL)];
+		mcu->dataspace.data[Consts::EEDR] = mcu->dataspace.eeprom[mcu->dataspace.getWordRegRam(Consts::EEARL)];
 		val = val & ~(1 << Consts::EECR_EERE); //idk if this should be done bc its not stated anywhere but its the only logical thing
 		return 4;
 	}
@@ -351,12 +322,10 @@ uint8_t A32u4::DataSpace::Updates::setEECR(uint8_t val, uint8_t oldVal){
 	if (val & (1 << Consts::EECR_EEPE)) {
 		if (REF_EECR & (1 << Consts::EECR_EEMPE)) {
 			uint8_t mode = mcu->dataspace.data[Consts::EECR] >> 4;
-			uint16_t Addr = mcu->dataspace.getWordReg(Consts::EEARL);
-#if RANGE_CHECK
-			if (Addr < 0 || Addr >= Consts::eeprom_size) {
-				abort();
-			}
-#endif
+			uint16_t Addr = mcu->dataspace.getWordRegRam(Consts::EEARL);
+
+			A32U4_ASSERT_INRANGE_M(Addr, 0, Consts::eeprom_size, A32U4_ADDR_ERR_STR("Eeprom addr out of bounds",Addr,4), "DataSpace");
+
 			switch (mode) {
 			case 0b00:
 				mcu->dataspace.eeprom[Addr] = mcu->dataspace.data[Consts::EEDR];
@@ -427,22 +396,14 @@ void A32u4::DataSpace::Updates::setTCCR0B(uint8_t val) {
 }
 
 void A32u4::DataSpace::pushByteToStack(uint8_t val) {
-	uint16_t SP = getWordReg(Consts::SPL);
-#if RANGE_CHECK
-	if (SP < Consts::ISRAM_start || SP > Consts::data_size) {
-		abort();
-	}
-#endif
+	uint16_t SP = getWordRegRam(Consts::SPL);
+	A32U4_ASSERT_INRANGE_M(SP, Consts::ISRAM_start, Consts::data_size, A32U4_ADDR_ERR_STR("Stack pointer while push Byte out of bounds: ",SP,4), "DataSpace");
 	data[SP] = val;
 	setSP(SP - 1);
 }
 uint8_t A32u4::DataSpace::popByteFromStack() {
-	uint16_t SP = getWordReg(Consts::SPL);
-#if RANGE_CHECK
-	if ((SP+1) < Consts::ISRAM_start || (SP+1) > Consts::data_size) {
-		abort();
-	}
-#endif
+	uint16_t SP = getWordRegRam(Consts::SPL);
+	A32U4_ASSERT_INRANGE_M(SP+1, Consts::ISRAM_start, Consts::data_size, A32U4_ADDR_ERR_STR("Stack pointer while pop Byte out of bounds: ",SP,4), "DataSpace");
 	uint8_t Byte = data[SP + 1];
 
 	mcu->debugger.clearAddressByte(SP + 1);
@@ -452,15 +413,8 @@ uint8_t A32u4::DataSpace::popByteFromStack() {
 }
 
 void A32u4::DataSpace::pushAddrToStack(uint16_t Addr) {
-	uint16_t SP = getWordReg(Consts::SPL);
-#if RANGE_CHECK
-	if (SP < Consts::ISRAM_start || SP > Consts::data_size) {
-		abort();
-	}
-	if ((SP-1) < Consts::ISRAM_start || (SP-1) > Consts::data_size) {
-		abort();
-	}
-#endif
+	uint16_t SP = getWordRegRam(Consts::SPL);
+	A32U4_ASSERT_INRANGE_M(SP, Consts::ISRAM_start, Consts::data_size-1, A32U4_ADDR_ERR_STR("Stack pointer while push Addr out of bounds: ",SP,4), "DataSpace");
 	data[SP] = (uint8_t)Addr; //maybe this should be SP-1 and SP-2
 	data[SP - 1] = (uint8_t)(Addr >> 8);
 
@@ -469,15 +423,8 @@ void A32u4::DataSpace::pushAddrToStack(uint16_t Addr) {
 	setSP(SP - 2);
 }
 uint16_t A32u4::DataSpace::popAddrFromStack() {
-	uint16_t SP = getWordReg(Consts::SPL);
-#if RANGE_CHECK
-	if ((SP+2) < Consts::ISRAM_start || (SP+2) > Consts::data_size) {
-		abort();
-	}
-	if ((SP+1) < Consts::ISRAM_start || (SP+1) > Consts::data_size) {
-		abort();
-	}
-#endif
+	uint16_t SP = getWordRegRam(Consts::SPL);
+	A32U4_ASSERT_INRANGE_M(SP+1, Consts::ISRAM_start, Consts::data_size-1, A32U4_ADDR_ERR_STR("Stack pointer while pop Addr out of bounds: ",SP,4), "DataSpace");
 	uint16_t Addr = data[SP + 2];//maybe this should be SP-1 and SP-2 
 	Addr |= ((uint16_t)data[SP + 1]) << 8;
 

@@ -23,22 +23,14 @@ A32u4::Flash::~Flash() {
 }
 
 uint8_t A32u4::Flash::getByte(uint16_t addr) {
-#if RANGE_CHECK
-	if (addr > size - 1) {
-		mcu->log("Flash Byte Address to Big:" + std::to_string(addr));
-		return 0;
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(addr, 0, size, A32U4_ADDR_ERR_STR("Flash getByte Address to Big: ",addr,4), "Flash");
+
 	return data[addr];
 }
 
 uint16_t A32u4::Flash::getWord(uint16_t addr) {
-#if RANGE_CHECK
-	if (addr > size - 1) {
-		mcu->log("Flash Word Address to Big:" + std::to_string(addr));
-		return 0;
-	}
-#endif
+	A32U4_ASSERT_INRANGE_M(addr, 0, size, A32U4_ADDR_ERR_STR("Flash getWord Address to Big: ",addr,4), "Flash");
+
 	return ((uint16_t)data[addr + 1] << 8) | data[addr];
 }
 
