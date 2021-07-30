@@ -7,6 +7,11 @@ void A32u4::CPU::addCycles(T amt) {
 
 template<bool debug, bool analyse>
 void A32u4::CPU::execute(uint64_t amt) {
+	if (debug) {
+		if (mcu->debugger.execShouldReturn()) {
+			return;
+		}
+	}
 	execute4T<debug, analyse>(amt);
 }
 
@@ -16,7 +21,6 @@ void A32u4::CPU::execute3T(uint64_t amt) {
 	while (totalCycls < targetCycs) {
 		breakOutOfOptim = false;
 		if (!CPU_sleep) {
-
 			uint16_t prescCycs;
 			switch (mcu->dataspace.timers.timer0_presc_cache) {
 			case 0: {
@@ -94,6 +98,10 @@ void A32u4::CPU::execute3T(uint64_t amt) {
 	#endif
 		}
 		//executeInterrupts();
+		if (mcu->debugger.isHalted()) {
+			targetCycs = std::max(targetCycs - amt, totalCycls);
+			return;
+		}
 	}
 }
 
@@ -195,5 +203,10 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 #endif
 		}
 		//executeInterrupts();
+
+		if (mcu->debugger.isHalted()) {
+			targetCycs = std::max(targetCycs - amt, totalCycls);
+			return;
+		}
 	}
 }

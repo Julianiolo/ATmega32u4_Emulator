@@ -26,6 +26,7 @@ void A32u4::ATmega32u4::powerOn() {
 }
 
 void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
+	currentExecFlags = flags;
 	switch (flags) {
 		case ExecFlags_None:
 			cpu.execute<false,false>(cyclAmt);
@@ -72,7 +73,12 @@ void A32u4::ATmega32u4::log(const char* msg, LogLevel logLevel, const char* file
 	}
 
 	if (logLevel == LogLevel_Error) {
-		abort();
+		if (currentExecFlags & ExecFlags_Debug) {
+			debugger.halt();
+		}
+		else {
+			abort();
+		}
 	}
 }
 void A32u4::ATmega32u4::log(const std::string& msg, LogLevel logLevel, const char* fileName, size_t lineNum, const char* Module) {
