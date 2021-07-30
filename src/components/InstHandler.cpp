@@ -494,7 +494,7 @@ void A32u4::InstHandler::executeInstSwitch(uint16_t word) {
 			INST_SBRS(word); goto break_all;
 		}
 	}
-	mcu->log("unhandled Inst p1: 0x" + stringExtras::intToHex(word,4));
+	mcu->log("unhandled Inst p1: 0x" + stringExtras::intToHex(word,4), ATmega32u4::LogLevel_Error);
 break_all:
 	return;
 }

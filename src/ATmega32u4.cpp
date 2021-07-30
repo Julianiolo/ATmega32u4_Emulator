@@ -40,21 +40,43 @@ void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
 			cpu.execute<true, true>(cyclAmt);
 			break;
 		default:
-			log("Unhandeled Flags: " + stringExtras::intToBin(flags,8));
+			log("Unhandeled Flags: " + stringExtras::intToBin(flags,8), LogLevel_Error);
 			break;
 	}
 }
 
-void A32u4::ATmega32u4::log(const char* msg) {
+int A32u4::ATmega32u4::logFlags = 0;
+
+void A32u4::ATmega32u4::log(const char* msg, LogLevel logLevel, const char* fileName, size_t lineNum, const char* Module) {
+	std::string outMsg = "";
+	if (logFlags != LogFlags_None) {
+		std::string info = "";
+		if (Module && (logFlags & LogFlags_ShowModule)) {
+			info += Module;
+		}
+		if (fileName && lineNum != -1 && (logFlags & LogFlags_ShowModule)) {
+			if (info.size() > 0) info += ", ";
+			info += "in File: " + std::string(fileName) + " at line: " + std::to_string(lineNum);
+		}
+		if (info.size() > 0) {
+			outMsg += "[" + info + "] ";
+		}
+	}
+	outMsg += msg;
+
 	if (logCallB != nullptr) {
-		logCallB(msg);
+		logCallB(outMsg.c_str());
 	}
 	else {
-		std::cout << msg << std::endl;
+		std::cout << outMsg << std::endl;
+	}
+
+	if (logLevel == LogLevel_Error) {
+		abort();
 	}
 }
-void A32u4::ATmega32u4::log(const std::string& msg) {
-	log(msg.c_str());
+void A32u4::ATmega32u4::log(const std::string& msg, LogLevel logLevel, const char* fileName, size_t lineNum, const char* Module) {
+	log(msg.c_str(), logLevel, fileName, lineNum, Module);
 }
 
 void A32u4::ATmega32u4::setLogCallB(void (*newCallB)(const char *str)){
