@@ -171,14 +171,14 @@ uint8_t& A32u4::DataSpace::getGPRegRef(uint8_t ind) {
 }
 
 uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
-	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds",addr,4), "DataSpace");
+	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds: ",addr,4), "DataSpace");
 
 	funcs.update_Get(addr, true);
 
 	return data[addr];
 }
 uint8_t A32u4::DataSpace::setByteAt(uint16_t addr, uint8_t val) {
-	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data set Index out of bounds",addr,4), "DataSpace");
+	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data set Index out of bounds: ",addr,4), "DataSpace");
 
 	uint8_t oldVal = data[addr];
 	data[addr] = val;
@@ -192,12 +192,12 @@ uint8_t A32u4::DataSpace::setIOAt(uint8_t ind, uint8_t val) {
 }
 
 uint8_t A32u4::DataSpace::getRegBit(uint16_t id, uint8_t bit) {
-	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size, A32U4_ADDR_ERR_STR("getRegBit Index out of bounds",id,4), "DataSpace");
+	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size, A32U4_ADDR_ERR_STR("getRegBit Index out of bounds: ",id,4), "DataSpace");
 
 	return (getByteRefAtAddr(id) & (1 << bit)) != 0;
 }
 void A32u4::DataSpace::setRegBit(uint16_t id, uint8_t bit, bool val) {
-	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size, A32U4_ADDR_ERR_STR("setRegBit Index out of bounds",id,4), "DataSpace");
+	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size, A32U4_ADDR_ERR_STR("setRegBit Index out of bounds: ",id,4), "DataSpace");
 
 	uint8_t& byte = getByteRefAtAddr(id);;
 	if (val) {
@@ -414,7 +414,7 @@ uint8_t A32u4::DataSpace::popByteFromStack() {
 
 void A32u4::DataSpace::pushAddrToStack(uint16_t Addr) {
 	uint16_t SP = getWordRegRam(Consts::SPL);
-	A32U4_ASSERT_INRANGE_M(SP, Consts::ISRAM_start, Consts::data_size-1, A32U4_ADDR_ERR_STR("Stack pointer while push Addr out of bounds: ",SP,4), "DataSpace");
+	A32U4_ASSERT_INRANGE_M(SP, Consts::ISRAM_start+1, Consts::data_size, A32U4_ADDR_ERR_STR("Stack pointer while push Addr out of bounds: ",SP,4), "DataSpace");
 	data[SP] = (uint8_t)Addr; //maybe this should be SP-1 and SP-2
 	data[SP - 1] = (uint8_t)(Addr >> 8);
 
@@ -464,7 +464,6 @@ void A32u4::DataSpace::setBitTo(uint16_t Addr, uint8_t bit, bool val) {
 		byte &= ~(1 << bit);
 	setDataByte(Addr, byte);
 }
-
 void A32u4::DataSpace::setBitsTo(uint16_t Addr, uint8_t mask, uint8_t bits) {
 	uint8_t byte = getData()[Addr];
 	byte = (byte & ~mask) | bits;

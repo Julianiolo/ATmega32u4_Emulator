@@ -15,6 +15,12 @@ REF_SREG(mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG)) {
 
 void A32u4::CPU::reset() {
 	PC = 0; //add: check for reset Vector beeing moved
+
+	insideInterrupt = false;
+	interruptFlags = 0;
+
+	CPU_sleep = false;
+	sleepCycsLeft = 0;
 #if USE_INSTCACHE
 	populateInstCache();
 #endif

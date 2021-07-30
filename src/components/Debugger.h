@@ -26,6 +26,7 @@ namespace A32u4 {
 		uint16_t addressStackPointer = 0;
 
 		bool halted = false;
+		bool doStep = false;
 #if !USE_HEAP
 		uint8_t breakpoints[breakPointArrSize];
 		uint16_t addressStack[addressStackSize];
@@ -50,9 +51,15 @@ namespace A32u4 {
 		void clearAddressByteRaw(uint16_t addr);
 
 		void checkBreakpoints();
-		void haltedActions();
+		void doHaltActions();
+
+		bool execShouldReturn();
 	public:
-		
+		enum {
+			OutputMode_Log = 0,
+			OutputMode_Passthrough
+		};
+		static uint8_t debugOutputMode;
 
 		bool printDisassembly = false;
 
@@ -62,7 +69,10 @@ namespace A32u4 {
 
 		std::string getHelp() const;
 
+		bool isHalted();
 		void halt();
+		void step();
+		void continue_();
 		void setBreakpoint(uint16_t addr);
 		void clearBreakpoint(uint16_t addr);
 

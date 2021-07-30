@@ -23,9 +23,8 @@ namespace A32u4 {
 	class ATmega32u4 {
 	private:
 		void(*logCallB)(const char* str) = nullptr;
-
+		uint8_t currentExecFlags = 0;
 	public:
-
 		ATmega32u4();
 
 		A32u4::CPU cpu;
@@ -34,8 +33,6 @@ namespace A32u4 {
 
 		A32u4::Debugger debugger;
 		A32u4::Analytics analytics;
-
-		
 
 		enum {
 			ExecFlags_None =       0,
