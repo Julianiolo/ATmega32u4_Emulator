@@ -1,4 +1,3 @@
-#pragma once
 #define IND_STS 0
 #define IND_LDS 1
 #define IND_POP 2

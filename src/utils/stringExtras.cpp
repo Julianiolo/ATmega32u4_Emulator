@@ -1,4 +1,5 @@
 #include "stringExtras.h"
+#include <cstring>
 
 std::string stringExtras::intToBin(uint16_t val, uint8_t digits) {
 	std::string out = "";

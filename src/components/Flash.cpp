@@ -1,5 +1,6 @@
 #include "Flash.h"
 
+#include <cstring>
 #include <string>
 #include <fstream>
 
