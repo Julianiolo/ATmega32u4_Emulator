@@ -27,6 +27,8 @@ void A32u4::ATmega32u4::powerOn() {
 
 void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
 	currentExecFlags = flags;
+	if(!flash.hasProgram)
+		return;
 	switch (flags) {
 		case ExecFlags_None:
 			cpu.execute<false,false>(cyclAmt);

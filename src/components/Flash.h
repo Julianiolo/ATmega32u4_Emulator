@@ -27,6 +27,8 @@ namespace A32u4 {
 		uint8_t* instCache;
 #endif
 
+		bool hasProgram = false;
+
 		Flash(ATmega32u4* mcu);
 		~Flash();
 

@@ -1,14 +1,15 @@
 # settings here:
 
-BUILDMODE?=DEBUG
+BUILD_MODE?=DEBUG
 
 CC    :=g++
 CFLAGS?=-Wall -Wno-narrowing
 CSTD  ?=-std=c++17
+RELEASE_OPTIM?= -O2
 
 SRC_DIR         ?=src/
 BUILD_DIR       ?=build/make/
-OBJ_DIR         ?=$(BUILD_DIR)objs/
+OBJ_DIR         ?=$(BUILD_DIR)objs/ATmega32u4_Emulator/
 
 OUT_NAME?=ATmega32u4_Emulator.a
 OUT_DIR ?=$(BUILD_DIR)
@@ -25,14 +26,18 @@ endif
 # get current dir
 current_dir :=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-ifeq ($(BUILDMODE),DEBUG)
-	CFLAGS += -g
+BUILD_MODE_CFLAGS:=
+ifeq ($(BUILD_MODE),DEBUG)
+	BUILD_MODE_CFLAGS += -g
+else
+	BUILD_MODE_CFLAGS +=$(RELEASE_OPTIM)
 endif
-CDEPFLAGS=-MMD -MF ${@:.o=.d}
 
 ifeq ($(detected_OS),Windows)
 	BASH_PREFX:=bash -c 
 endif
+
+CDEPFLAGS=-MMD -MF ${@:.o=.d}
 
 OUT_PATH:=$(OUT_DIR)$(OUT_NAME)
 
@@ -53,7 +58,7 @@ $(OUT_PATH): $(OBJ_FILES)
 
 $(OBJ_DIR)%.o:%.cpp
 	$(BASH_PREFX)"mkdir -p $(dir $@)"
-	$(CC) $(CFLAGS) $(CSTD) $(DEP_INCLUDE_FLAGS) -c $< -o $@ $(CDEPFLAGS)
+	$(CC) $(CFLAGS) $(CSTD) $(BUILD_MODE_CFLAGS) $(DEP_INCLUDE_FLAGS) -c $< -o $@ $(CDEPFLAGS)
 
 -include $(DEP_FILES)
 
