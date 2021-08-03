@@ -50,6 +50,7 @@ void A32u4::Flash::clear() {
 	for (uint16_t i = 0; i < size; i++) {
 		data[i] = 0;
 	}
+	hasProgram = false;
 }
 
 uint8_t A32u4::Flash::readhexStrByte(const char* str) {
@@ -88,6 +89,8 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 			str_ind++;
 		}
 	}
+
+	hasProgram = true;
 }
 
 bool A32u4::Flash::loadFromHexFile(const char* str) {
