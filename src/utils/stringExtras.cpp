@@ -18,12 +18,17 @@ std::string stringExtras::intToHex(uint16_t val, uint8_t digits) {
 	return out;
 }
 
-uint8_t stringExtras::HexDigitToInt(const char str) {
+uint8_t stringExtras::HexDigitToInt(char digit) {
+	if(digit >= 'a' && digit <= 'z') {
+		digit -= ('a'-'A');
+	}
 	for (uint8_t ind = 0; ind < 16; ind++) {
-		if (str == hexDigits[ind]) {
+		if (digit == hexDigits[ind]) {
 			return ind;
 		}
 	}
+	if(digit == ' ')
+		return 0;
 	return 255;
 }
 
@@ -31,7 +36,7 @@ uint32_t stringExtras::HexStrToInt(const char * str) {
 	size_t len = std::strlen(str);
 	uint32_t out = 0;
 	for (size_t i = 0; i < len; i++) {
-		out <<= 8;
+		out <<= 4;
 		out |= HexDigitToInt(*(str + i));
 	}
 	return out;

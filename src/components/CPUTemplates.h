@@ -12,7 +12,7 @@ void A32u4::CPU::execute(uint64_t amt) {
 			return;
 		}
 	}
-	execute4T<debug, analyse>(amt);
+	execute3T<debug, analyse>(amt);
 }
 
 template<bool debug, bool analyse>

@@ -21,19 +21,7 @@
 
 namespace A32u4 {
 	class ATmega32u4 {
-	private:
-		void(*logCallB)(const char* str) = nullptr;
-		uint8_t currentExecFlags = 0;
 	public:
-		ATmega32u4();
-
-		A32u4::CPU cpu;
-		A32u4::DataSpace dataspace;
-		A32u4::Flash flash;
-
-		A32u4::Debugger debugger;
-		A32u4::Analytics analytics;
-
 		enum {
 			ExecFlags_None =       0,
 			ExecFlags_Debug =   1<<0,
@@ -44,7 +32,8 @@ namespace A32u4 {
 			LogLevel_DebugOutput,
 			LogLevel_Output,
 			LogLevel_Warning,
-			LogLevel_Error
+			LogLevel_Error,
+			LogLevel_COUNT
 		};
 		typedef int LogLevel;
 		enum {
@@ -53,6 +42,22 @@ namespace A32u4 {
 			LogFlags_ShowModule             = (1 << 1),
 			LogFlags_ShowAll = LogFlags_ShowFileNameAndLineNum | LogFlags_ShowModule
 		};
+
+		typedef void (*LogCallB)(const char* msg, LogLevel logLevel, const char* fileName , size_t lineNum, const char* Module);
+		typedef void (*LogCallBSimple)(const char* msg, LogLevel logLevel);
+	private:
+		LogCallB logCallB = nullptr;
+		LogCallBSimple logCallBSimple = nullptr;
+		uint8_t currentExecFlags = -1;
+	public:
+		ATmega32u4();
+
+		A32u4::CPU cpu;
+		A32u4::DataSpace dataspace;
+		A32u4::Flash flash;
+
+		A32u4::Debugger debugger;
+		A32u4::Analytics analytics;
 
 		void reset();
 
@@ -66,7 +71,8 @@ namespace A32u4 {
 		void log(const char* msg, LogLevel logLevel, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
 		void log(const std::string& msg, LogLevel logLevel, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
 
-		void setLogCallB(void (*newCallB)(const char* str));
+		void setLogCallB(LogCallB newLogCallB);
+		void setLogCallBSimple(LogCallBSimple newLogCallBSimple);
 	};
 }
 
