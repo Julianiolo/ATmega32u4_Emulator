@@ -99,6 +99,7 @@ bool A32u4::Flash::loadFromHexFile(const char* str) {
 	t.open(str);
 	if (!t.is_open()) {
 		t.close();
+		mcu->log((std::string("Cannot open file: ") + str).c_str(), ATmega32u4::LogLevel_Error, __FILE__, __LINE__, "Flash");
 		return false;
 	}
 	t.seekg(0, std::ios::end);

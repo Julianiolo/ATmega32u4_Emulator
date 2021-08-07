@@ -12,7 +12,7 @@ public:
 	static std::string intToBin(uint16_t val, uint8_t digits);
 	static std::string intToHex(uint16_t val, uint8_t digits);
 
-	static uint8_t HexDigitToInt(const char str);
+	static uint8_t HexDigitToInt(char digit);
 	static uint32_t HexStrToInt(const char* str);
 
 	static std::string paddLeft(std::string s, int paddedLength, char paddWith);
