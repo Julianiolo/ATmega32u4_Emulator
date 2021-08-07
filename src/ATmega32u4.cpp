@@ -12,6 +12,7 @@ A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this), debugg
 }
 
 void A32u4::ATmega32u4::reset() { //add: reason
+	log("Reset",LogLevel_Output,__FILE__,__LINE__,"ATmega32u4");
 	debugger.reset();
 	analytics.reset();
 	hardwareReset();
@@ -51,6 +52,10 @@ void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
 int A32u4::ATmega32u4::logFlags = 0;
 
 void A32u4::ATmega32u4::log(const char* msg, LogLevel logLevel, const char* fileName, size_t lineNum, const char* Module) {
+	if(logCallB != nullptr){
+		logCallB(msg,logLevel,fileName,lineNum,Module);
+	}
+
 	std::string outMsg = "";
 	if (logFlags != LogFlags_None) {
 		std::string info = "";
@@ -67,15 +72,15 @@ void A32u4::ATmega32u4::log(const char* msg, LogLevel logLevel, const char* file
 	}
 	outMsg += msg;
 
-	if (logCallB != nullptr) {
-		logCallB(outMsg.c_str());
+	if (logCallBSimple != nullptr) {
+		logCallBSimple(outMsg.c_str(),logLevel);
 	}
 	else {
 		std::cout << outMsg << std::endl;
 	}
 
 	if (logLevel == LogLevel_Error) {
-		if (currentExecFlags & ExecFlags_Debug) {
+		if (currentExecFlags == -1 || currentExecFlags & ExecFlags_Debug) {
 			debugger.halt();
 		}
 		else {
@@ -87,6 +92,9 @@ void A32u4::ATmega32u4::log(const std::string& msg, LogLevel logLevel, const cha
 	log(msg.c_str(), logLevel, fileName, lineNum, Module);
 }
 
-void A32u4::ATmega32u4::setLogCallB(void (*newCallB)(const char *str)){
-	logCallB = newCallB;
+void A32u4::ATmega32u4::setLogCallB(LogCallB newLogCallB){
+	logCallB = newLogCallB;
+}
+void A32u4::ATmega32u4::setLogCallBSimple(LogCallBSimple newLogCallBSimple){
+	logCallBSimple = newLogCallBSimple;
 }
