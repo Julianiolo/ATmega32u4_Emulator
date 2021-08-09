@@ -71,6 +71,7 @@ namespace A32u4 {
 		void reset();
 	public:
 		uint16_t& getPC();
+		uint16_t getPCAddr();
 		uint64_t getTotalCycles();
 		bool isSleeping();
 	};
