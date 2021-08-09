@@ -6,6 +6,7 @@ static constexpr uint16_t ext_io_start = 0x60;
 static constexpr uint16_t ISRAM_size = 2560;
 static constexpr uint16_t ISRAM_start = 0x100;
 
+static constexpr uint16_t total_io_size = io_size + ext_io_size;
 static constexpr uint16_t data_size = GPRs_size + io_size + ext_io_size + ISRAM_size;
 
 static constexpr uint16_t eeprom_size = 1024;

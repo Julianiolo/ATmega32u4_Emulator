@@ -40,6 +40,8 @@ namespace A32u4 {
 		uint16_t getWord(uint16_t addr);
 		uint16_t getInst(uint16_t addr);
 
+		uint8_t* getData();
+
 		bool loadFromHexFile(const char* str);
 		void loadFromHexString(const char* str);
 		void clear();

@@ -112,3 +112,7 @@ bool A32u4::Flash::loadFromHexFile(const char* str) {
 	delete[] buffer;
 	return true;
 }
+
+uint8_t* A32u4::Flash::getData() {
+	return data;
+}

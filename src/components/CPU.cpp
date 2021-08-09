@@ -21,6 +21,10 @@ void A32u4::CPU::reset() {
 
 	CPU_sleep = false;
 	sleepCycsLeft = 0;
+
+	totalCycls = 0;
+	targetCycs = 0;
+	breakOutOfOptim = false;
 #if USE_INSTCACHE
 	populateInstCache();
 #endif
@@ -655,6 +659,9 @@ void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
 
 uint16_t& A32u4::CPU::getPC() {
 	return PC;
+}
+uint16_t A32u4::CPU::getPCAddr() {
+	return getPC() * 2;
 }
 uint64_t A32u4::CPU::getTotalCycles() {
 	return totalCycls;
