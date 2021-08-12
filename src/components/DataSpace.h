@@ -135,6 +135,8 @@ namespace A32u4 {
 		void setDataByte(uint16_t Addr, uint8_t byte);
 		void setBitTo(uint16_t Addr, uint8_t bit, bool val);
 		void setBitsTo(uint16_t Addr, uint8_t mask, uint8_t bits);
+
+		uint16_t getSP();
 	};
 }
 

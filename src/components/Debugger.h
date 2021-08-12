@@ -12,8 +12,8 @@ namespace A32u4 {
 
 	class Debugger {
 	public:
-		static constexpr uint16_t addressStackSize = 512;
-		static constexpr uint16_t breakPointArrSize = Flash::size / 2;
+		static constexpr uint16_t addressStackMaxSize = 512;
+		static constexpr uint16_t breakPointArrMaxSize = Flash::size / 2;
 
 	private:
 		friend class ATmega32u4;
@@ -28,9 +28,9 @@ namespace A32u4 {
 		bool halted = false;
 		bool doStep = false;
 #if !USE_HEAP
-		uint8_t breakpoints[breakPointArrSize];
-		uint16_t addressStack[addressStackSize];
-		uint16_t fromAddressStack[addressStackSize];
+		uint8_t breakpoints[breakPointArrMaxSize];
+		uint16_t addressStack[addressStackMaxSize];
+		uint16_t fromAddressStack[addressStackMaxSize];
 		uint8_t addressStackIndicators[DataSpace::Consts::ISRAM_size];
 #else
 		uint8_t* breakpoints;
@@ -78,7 +78,10 @@ namespace A32u4 {
 
 		const uint8_t* getBreakpoints() const;
 		const uint16_t* getAddressStack() const;
+		const uint16_t* getFromAddressStack() const;
 		const uint16_t getAddressStackPointer() const;
+		const uint16_t getAddresAt(uint16_t stackInd) const;
+		const uint16_t getFromAddresAt(uint16_t stackInd) const;
 	};
 }
 #endif
