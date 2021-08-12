@@ -469,3 +469,7 @@ void A32u4::DataSpace::setBitsTo(uint16_t Addr, uint8_t mask, uint8_t bits) {
 	byte = (byte & ~mask) | bits;
 	setDataByte(Addr, byte);
 }
+
+uint16_t A32u4::DataSpace::getSP() {
+	return getWordRegRam(Consts::SPL);
+}

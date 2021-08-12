@@ -9,9 +9,9 @@
 A32u4::Debugger::Debugger(ATmega32u4* mcu):
 	mcu(mcu)
 #if USE_HEAP
-	, breakpoints(new uint8_t[breakPointArrSize]),
-	addressStack(new uint16_t[addressStackSize]),
-	fromAddressStack(new uint16_t[addressStackSize]),
+	, breakpoints(new uint8_t[breakPointArrMaxSize]),
+	addressStack(new uint16_t[addressStackMaxSize]),
+	fromAddressStack(new uint16_t[addressStackMaxSize]),
 	addressStackIndicators(new uint8_t[DataSpace::Consts::ISRAM_size])
 #endif
 {
@@ -33,7 +33,7 @@ void A32u4::Debugger::reset() {
 	halted = false;
 	doStep = false;
 	addressStackPointer = 0;
-	for (int i = 0; i < breakPointArrSize; i++) {
+	for (int i = 0; i < breakPointArrMaxSize; i++) {
 		breakpoints[i] = 0;
 	}
 	for (int i = 0; i < DataSpace::Consts::ISRAM_size; i++) {
@@ -42,12 +42,12 @@ void A32u4::Debugger::reset() {
 }
 
 void A32u4::Debugger::pushAddrOnAddressStack(uint16_t addr, uint16_t fromAddr) {
-	A32U4_ASSERT_INRANGE_M(addressStackPointer, 0, addressStackSize, A32U4_ADDR_ERR_STR("Debug Address Stack overflow: ",addressStackPointer,4), "Debugger");
+	A32U4_ASSERT_INRANGE_M(addressStackPointer, 0, addressStackMaxSize, A32U4_ADDR_ERR_STR("Debug Address Stack overflow: ",addressStackPointer,4), "Debugger");
 	addressStack[addressStackPointer] = addr;
 	fromAddressStack[addressStackPointer++] = fromAddr;
 }
 void A32u4::Debugger::popAddrFromAddressStack() {
-	A32U4_ASSERT_INRANGE_M(addressStackPointer, 1, addressStackSize, A32U4_ADDR_ERR_STR("Debug Address Stack underflow: ",addressStackPointer,4), "Debugger");
+	A32U4_ASSERT_INRANGE_M(addressStackPointer, 1, addressStackMaxSize, A32U4_ADDR_ERR_STR("Debug Address Stack underflow: ",addressStackPointer,4), "Debugger");
 
 	addressStackPointer--;
 	addressStack[addressStackPointer] = 0;
@@ -237,6 +237,15 @@ const uint8_t* A32u4::Debugger::getBreakpoints() const {
 const uint16_t* A32u4::Debugger::getAddressStack() const {
 	return addressStack;
 }
+const uint16_t* A32u4::Debugger::getFromAddressStack() const {
+	return fromAddressStack;
+}
 const uint16_t A32u4::Debugger::getAddressStackPointer() const {
 	return addressStackPointer;
+}
+const uint16_t A32u4::Debugger::getAddresAt(uint16_t stackInd) const {
+	return addressStack[stackInd];
+}
+const uint16_t A32u4::Debugger::getFromAddresAt(uint16_t stackInd) const {
+	return fromAddressStack[stackInd];
 }
