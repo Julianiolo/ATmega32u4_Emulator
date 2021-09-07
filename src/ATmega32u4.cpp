@@ -5,14 +5,14 @@
 #include "components/InstHandlerTemplates.h"
 #include "components/CPUTemplates.h"
 
-#include "utils/stringExtras.h"
+#include "utils/StringUtils.h"
 
 A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this), debugger(this) {
 
 }
 
 void A32u4::ATmega32u4::reset() { //add: reason
-	log("Reset",LogLevel_Output,__FILE__,__LINE__,"ATmega32u4");
+	log(LogLevel_Output, "Reset", __FILE__, __LINE__, "ATmega32u4");
 	debugger.reset();
 	analytics.reset();
 	hardwareReset();
@@ -44,16 +44,16 @@ void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
 			cpu.execute<true, true>(cyclAmt);
 			break;
 		default:
-			log("Unhandeled Flags: " + stringExtras::intToBin(flags,8), LogLevel_Error);
+			this->log(LogLevel_Error, "Unhandeled Flags: " + StringUtils::uIntToBinStr(flags,8));
 			break;
 	}
 }
 
 int A32u4::ATmega32u4::logFlags = 0;
 
-void A32u4::ATmega32u4::log(const char* msg, LogLevel logLevel, const char* fileName, size_t lineNum, const char* Module) {
+void A32u4::ATmega32u4::log(LogLevel logLevel, const char* msg, const char* fileName, size_t lineNum, const char* Module) {
 	if(logCallB != nullptr){
-		logCallB(msg,logLevel,fileName,lineNum,Module);
+		logCallB(logLevel, msg,fileName,lineNum,Module);
 	}
 
 	std::string outMsg = "";
@@ -73,7 +73,7 @@ void A32u4::ATmega32u4::log(const char* msg, LogLevel logLevel, const char* file
 	outMsg += msg;
 
 	if (logCallBSimple != nullptr) {
-		logCallBSimple(outMsg.c_str(),logLevel);
+		logCallBSimple(logLevel, outMsg.c_str());
 	}
 	else {
 		std::cout << outMsg << std::endl;
@@ -88,8 +88,8 @@ void A32u4::ATmega32u4::log(const char* msg, LogLevel logLevel, const char* file
 		}
 	}
 }
-void A32u4::ATmega32u4::log(const std::string& msg, LogLevel logLevel, const char* fileName, size_t lineNum, const char* Module) {
-	log(msg.c_str(), logLevel, fileName, lineNum, Module);
+void A32u4::ATmega32u4::log(LogLevel logLevel, const std::string& msg, const char* fileName, size_t lineNum, const char* Module) {
+	log(logLevel, msg.c_str(), fileName, lineNum, Module);
 }
 
 void A32u4::ATmega32u4::setLogCallB(LogCallB newLogCallB){

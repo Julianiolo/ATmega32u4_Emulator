@@ -70,10 +70,11 @@ namespace A32u4 {
 
 		void reset();
 	public:
-		uint16_t& getPC();
-		uint16_t getPCAddr();
-		uint64_t getTotalCycles();
-		bool isSleeping();
+		uint16_t& getPCRef();
+		uint16_t getPC() const;
+		uint16_t getPCAddr() const;
+		uint64_t getTotalCycles() const;
+		bool isSleeping() const;
 	};
 }
 

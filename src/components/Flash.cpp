@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 
-#include "../utils/stringExtras.h"
+#include "../utils/StringUtils.h"
 #include "../ATmega32u4.h"
 
 A32u4::Flash::Flash(ATmega32u4* mcu):
@@ -53,13 +53,7 @@ void A32u4::Flash::clear() {
 	hasProgram = false;
 }
 
-uint8_t A32u4::Flash::readhexStrByte(const char* str) {
-	uint8_t out = 0;
-	for (uint8_t c = 0; c < 2; c++) {
-		out |= stringExtras::HexDigitToInt(str[c]) << (1 - c) * 4;
-	}
-	return out;
-}
+
 
 void A32u4::Flash::loadFromHexString(const char* str) {
 	clear();
@@ -72,17 +66,20 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 		if (str_ind >= strl) {
 			abort();
 		}
-		uint8_t ByteCount = readhexStrByte(str + str_ind + 1);
-		uint32_t Addr = (readhexStrByte(str + str_ind + 3)<<8) | readhexStrByte(str + str_ind + 5);
-		uint8_t type = readhexStrByte(str + str_ind + 7);
-		str_ind += 7;
+		str_ind += 1;
+		uint8_t ByteCount = StringUtils::hexStrToUIntLen(str + str_ind, 2);
+		str_ind += 2;
+		uint32_t Addr = (StringUtils::hexStrToUIntLen(str + str_ind, 2)<<8) | StringUtils::hexStrToUIntLen(str + str_ind + 2, 2);
+		str_ind += 4;
+		uint8_t type = StringUtils::hexStrToUIntLen(str + str_ind, 2);
+		//str_ind += 7;
 		for (uint8_t i = 0; i < ByteCount; i++) {
 #if RANGE_CHECK
 			if (flashInd >= size) {
 				abort();
 			}
 #endif
-			data[flashInd++] = readhexStrByte(str + (str_ind+=2));
+			data[flashInd++] = StringUtils::hexStrToUIntLen(str + (str_ind+=2), 2);
 		}
 		str_ind += 4; //skip checksum
 		if (str[str_ind] == '\n') {
@@ -99,7 +96,7 @@ bool A32u4::Flash::loadFromHexFile(const char* str) {
 	t.open(str);
 	if (!t.is_open()) {
 		t.close();
-		mcu->log((std::string("Cannot open file: ") + str).c_str(), ATmega32u4::LogLevel_Error, __FILE__, __LINE__, "Flash");
+		mcu->log(ATmega32u4::LogLevel_Error, (std::string("Cannot open file: ") + str).c_str(), __FILE__, __LINE__, "Flash");
 		return false;
 	}
 	t.seekg(0, std::ios::end);
@@ -116,3 +113,15 @@ bool A32u4::Flash::loadFromHexFile(const char* str) {
 uint8_t* A32u4::Flash::getData() {
 	return data;
 }
+
+/*
+
+uint8_t A32u4::Flash::readhexStrByte(const char* str) {
+uint8_t out = 0;
+for (uint8_t c = 0; c < 2; c++) {
+out |= stringExtras::HexDigitToInt(str[c]) << (1 - c) * 4;
+}
+return out;
+}
+
+*/

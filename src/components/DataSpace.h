@@ -96,7 +96,7 @@ namespace A32u4 {
 
 		uint8_t& getByteRefAtAddr(uint16_t addr);
 
-		uint8_t& getGPRegRef(uint8_t ind);
+		
 		uint8_t getByteAt(uint16_t Addr);
 		uint8_t setByteAt(uint16_t Addr, uint8_t val);
 
@@ -106,16 +106,10 @@ namespace A32u4 {
 		uint8_t getRegBit(uint16_t id, uint8_t bit);
 		void setRegBit(uint16_t id, uint8_t bit, bool val);
 
-		uint16_t getWordReg(uint8_t id);
+		uint16_t getWordReg(uint8_t id) const;
 		void setWordReg(uint8_t id, uint16_t val);
-		uint16_t getWordRegRam(uint16_t id);
+		uint16_t getWordRegRam(uint16_t id) const;
 		void setWordRegRam(uint16_t id, uint16_t val);
-		uint16_t getX();
-		uint16_t getY();
-		uint16_t getZ();
-		void setX(uint16_t word);
-		void setY(uint16_t word);
-		void setZ(uint16_t word);
 
 		void resetIO();
 
@@ -129,6 +123,16 @@ namespace A32u4 {
 	public:
 		void setSPIByteCallB(SPIByteCallB func);
 
+		uint8_t& getGPRegRef(uint8_t ind);
+		uint8_t getGPReg(uint8_t ind) const;
+
+		uint16_t getX() const;
+		uint16_t getY() const;
+		uint16_t getZ() const;
+		void setX(uint16_t word);
+		void setY(uint16_t word);
+		void setZ(uint16_t word);
+
 		uint8_t* getEEPROM();
 		const uint8_t* getData();
 		const uint8_t getDataByte(uint16_t Addr);
@@ -136,7 +140,7 @@ namespace A32u4 {
 		void setBitTo(uint16_t Addr, uint8_t bit, bool val);
 		void setBitsTo(uint16_t Addr, uint8_t mask, uint8_t bits);
 
-		uint16_t getSP();
+		uint16_t getSP() const;
 	};
 }
 

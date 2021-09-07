@@ -6,7 +6,7 @@
 #include "InstInds.h"
 #include "Disassembler.h"
 
-#include "../utils/stringExtras.h"
+#include "../utils/StringUtils.h"
 #include "../utils/bitMacros.h"
 
 const A32u4::InstHandler::Inst_ELEM A32u4::InstHandler::instList[] = {
@@ -494,7 +494,7 @@ void A32u4::InstHandler::executeInstSwitch(uint16_t word) {
 			INST_SBRS(word); goto break_all;
 		}
 	}
-	mcu->log("unhandled Inst p1: 0x" + stringExtras::intToHex(word,4), ATmega32u4::LogLevel_Error);
+	mcu->logf(ATmega32u4::LogLevel_Error, "unhandled Inst p1: 0x%04x", word);
 break_all:
 	return;
 }

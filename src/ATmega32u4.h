@@ -9,15 +9,17 @@
 
 #include "components/config.h"
 
+#include "utils/StringUtils.h"
+
 #if RANGE_CHECK
-#define A32U4_ASSERT_INRANGE(A_val,A_from,A_to,A_msg) if((A_val) < (A_from) || (A_val) >= (A_to)) mcu->log((A_msg), ATmega32u4::LogLevel_Error, __FILE__, __LINE__)
-#define A32U4_ASSERT_INRANGE_M(A_val,A_from,A_to,A_msg,A_module) if((A_val) < (A_from) || (A_val) >= (A_to)) mcu->log((A_msg), ATmega32u4::LogLevel_Error, __FILE__, __LINE__,A_module)
+#define A32U4_ASSERT_INRANGE(A_val,A_from,A_to,A_msg) if((A_val) < (A_from) || (A_val) >= (A_to)) mcu->log(ATmega32u4::LogLevel_Error, (A_msg), __FILE__, __LINE__)
+#define A32U4_ASSERT_INRANGE_M(A_val,A_from,A_to,A_msg,A_module) if((A_val) < (A_from) || (A_val) >= (A_to)) mcu->log(ATmega32u4::LogLevel_Error, (A_msg), __FILE__, __LINE__,A_module)
 #else
 #define A32U4_ASSERT_INRANGE(A_val,A_from,A_to,A_msg)
 #define A32U4_ASSERT_INRANGE_M(A_val,A_from,A_to,A_msg,A_module)
 #endif
 
-#define A32U4_ADDR_ERR_STR(A_msg,A_addr,A_HexPlaces) A_msg  + std::to_string(A_addr) + " => 0x" + stringExtras::intToHex(A_addr,A_HexPlaces)
+#define A32U4_ADDR_ERR_STR(A_msg,A_addr,A_HexPlaces) A_msg  + std::to_string(A_addr) + " => 0x" + StringUtils::uIntToBinStr(A_addr,A_HexPlaces)
 
 namespace A32u4 {
 	class ATmega32u4 {
@@ -43,8 +45,8 @@ namespace A32u4 {
 			LogFlags_ShowAll = LogFlags_ShowFileNameAndLineNum | LogFlags_ShowModule
 		};
 
-		typedef void (*LogCallB)(const char* msg, LogLevel logLevel, const char* fileName , size_t lineNum, const char* Module);
-		typedef void (*LogCallBSimple)(const char* msg, LogLevel logLevel);
+		typedef void (*LogCallB)(LogLevel logLevel, const char* msg, const char* fileName , size_t lineNum, const char* Module);
+		typedef void (*LogCallBSimple)(LogLevel logLevel, const char* msg);
 	private:
 		LogCallB logCallB = nullptr;
 		LogCallBSimple logCallBSimple = nullptr;
@@ -68,8 +70,12 @@ namespace A32u4 {
 		void execute(uint64_t cyclAmt, uint8_t flags);
 
 		static int logFlags;
-		void log(const char* msg, LogLevel logLevel, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
-		void log(const std::string& msg, LogLevel logLevel, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
+		void log(LogLevel logLevel, const char* msg, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
+		void log(LogLevel logLevel, const std::string& msg, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
+		template<typename ... Args>
+		void logf(LogLevel logLevel, const char* msg, Args ... args) {
+			log(logLevel, StringUtils::format(msg, args ...).get());
+		}
 
 		void setLogCallB(LogCallB newLogCallB);
 		void setLogCallBSimple(LogCallBSimple newLogCallBSimple);

@@ -1,6 +1,6 @@
 #include "Disassembler.h"
 #include "InstInds.h"
-#include "../utils/stringExtras.h"
+#include "../utils/StringUtils.h"
 #include "InstHandler.h"
 
 #define INST_PAR_TYPE_RAWVAL 0
@@ -16,9 +16,9 @@ std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
 	switch (type)
 	{
 	case INST_PAR_TYPE_RAWVAL:
-		return "0x" + stringExtras::intToHex(val, 2);
+		return "0x" + StringUtils::uIntToHexStr(val, 2);
 	case INST_PAR_TYPE_ADDR:
-		return "0x" + stringExtras::intToHex(val, 4);
+		return "0x" + StringUtils::uIntToHexStr(val, 4);
 
 	case INST_PAR_TYPE_RAWVALDEC:
 		return std::to_string(val);
@@ -41,17 +41,9 @@ std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
 }
 
 std::string A32u4::Disassembler::disassemble(uint16_t word, uint16_t word2, uint16_t PC) {
-	std::string out = disassembleRaw(word, word2);
-	std::string add = "" + stringExtras::intToHex(PC * 2, 4) + ":   ";
-	add += stringExtras::intToHex(word & 0xFF, 2) + " " + stringExtras::intToHex((word & 0xFF00) >> 8, 2);
-	if (!InstHandler::is2WordInst(word)) {
-		add += "       ";
-	}
-	else {
-		add += " " + stringExtras::intToHex(word2 & 0xFF, 2) + " " + stringExtras::intToHex((word2 & 0xFF00) >> 8, 2) + " ";
-	}
-	out = add + out;
-	return out;
+	std::string disasm = disassembleRaw(word, word2);
+	std::string add = InstHandler::is2WordInst(word) ? StringUtils::format("%2x %2x", word2 & 0xFF, (word2 & 0xFF00) >> 8).get()  :  "     ";
+	return StringUtils::format("%4x:   %2x %2x %s %s", PC*2, word&0xFF, (word & 0xFF00) >> 8, add.c_str(), disasm.c_str()).get();
 }
 std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 	uint8_t Inst_ind = InstHandler::getInstInd3(word);
@@ -73,7 +65,7 @@ std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 
 	case IND_JMP:
 	case IND_CALL:
-		out += std::string("0x") + stringExtras::intToHex(word2 * 2, 4);
+		out += std::string("0x") + StringUtils::uIntToHexStr(word2 * 2, 4);
 		break;
 
 	case IND_RJMP:
@@ -98,7 +90,7 @@ std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 	{
 	case IND_LDS:
 	case IND_STS:
-		out += ", 0x" + stringExtras::intToHex(word2, 4);
+		out += ", 0x" + StringUtils::uIntToHexStr(word2, 4);
 		break;
 
 	case IND_LD_X:
@@ -170,3 +162,17 @@ std::string A32u4::Disassembler::getSignInt(uint32_t val) {
 		return std::to_string(val);
 	}
 }
+
+/*
+
+std::string out = disassembleRaw(word, word2);
+std::string add = "" + stringExtras::intToHex(PC * 2, 4) + ":   ";
+add += stringExtras::intToHex(word & 0xFF, 2) + " " + stringExtras::intToHex((word & 0xFF00) >> 8, 2);
+if (!InstHandler::is2WordInst(word)) {
+add += "       ";
+}
+else {
+add += " " + stringExtras::intToHex(word2 & 0xFF, 2) + " " + stringExtras::intToHex((word2 & 0xFF00) >> 8, 2) + " ";
+}
+out = add + out;
+*/

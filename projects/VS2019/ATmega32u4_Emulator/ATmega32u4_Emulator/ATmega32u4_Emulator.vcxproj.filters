@@ -45,7 +45,7 @@
     <ClCompile Include="..\..\..\..\src\components\CPU.cpp">
       <Filter>Source Files\components</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\src\utils\stringExtras.cpp">
+    <ClCompile Include="..\..\..\..\src\utils\StringUtils.cpp">
       <Filter>Source Files\utils</Filter>
     </ClCompile>
   </ItemGroup>
@@ -89,7 +89,7 @@
     <ClInclude Include="..\..\..\..\src\components\CPUTemplates.h">
       <Filter>Source Files\components</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\utils\stringExtras.h">
+    <ClInclude Include="..\..\..\..\src\utils\StringUtils.h">
       <Filter>Source Files\utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\utils\bitMacros.h">
