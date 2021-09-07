@@ -657,16 +657,19 @@ void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
 	reg = (reg & 0b11100000) | val;
 }
 
-uint16_t& A32u4::CPU::getPC() {
+uint16_t& A32u4::CPU::getPCRef() {
 	return PC;
 }
-uint16_t A32u4::CPU::getPCAddr() {
+uint16_t A32u4::CPU::getPC() const {
+	return PC;
+}
+uint16_t A32u4::CPU::getPCAddr() const {
 	return getPC() * 2;
 }
-uint64_t A32u4::CPU::getTotalCycles() {
+uint64_t A32u4::CPU::getTotalCycles() const {
 	return totalCycls;
 }
-bool A32u4::CPU::isSleeping() {
+bool A32u4::CPU::isSleeping() const {
 	return CPU_sleep;
 }
 

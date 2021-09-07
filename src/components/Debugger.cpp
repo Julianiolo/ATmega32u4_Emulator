@@ -1,7 +1,7 @@
 #include "Debugger.h"
 #include "../ATmega32u4.h"
 #include "Disassembler.h"
-#include "../utils/stringExtras.h"
+#include "../utils/StringUtils.h"
 
 #include <iostream>
 #include <stdint.h>
@@ -80,19 +80,20 @@ void A32u4::Debugger::clearAddressByteRaw(uint16_t addr) {
 	addressStackIndicators[addr] = 0;
 }
 
-void A32u4::Debugger::checkBreakpoints() {
+bool A32u4::Debugger::checkBreakpoints() {
 	if (halted || breakpoints[mcu->cpu.PC]) {
-		doHaltActions();
+		return doHaltActions();
 	}
+	return false;
 }
-void A32u4::Debugger::doHaltActions() {
+bool A32u4::Debugger::doHaltActions() {
 	if (debugOutputMode == OutputMode_Log) {
 		uint16_t word = mcu->flash.getInst(mcu->cpu.PC);
 		uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
 
 		if (!halted) {
 			static int cnt = 0;
-			mcu->log("Halted at : " + Disassembler::disassemble(word, word2, mcu->cpu.PC), ATmega32u4::LogLevel_Output); // + stringExtras::intToHex(PC * 2,4)
+			mcu->log(ATmega32u4::LogLevel_Output, "Halted at : " + Disassembler::disassemble(word, word2, mcu->cpu.PC)); // + stringExtras::intToHex(PC * 2,4)
 		}
 		halted = true;
 		printDisassembly = true;
@@ -110,35 +111,29 @@ void A32u4::Debugger::doHaltActions() {
 				break;
 			}
 			else if (input == "sk" || input == "stack") {
-				mcu->log(debugStackToString(), ATmega32u4::LogLevel_Output);
+				mcu->log(ATmega32u4::LogLevel_Output, debugStackToString());
 			}
 			else if (input == "R" || input == "RAll") {
-				mcu->log(AllRegsToStr(), ATmega32u4::LogLevel_Output);
+				mcu->log(ATmega32u4::LogLevel_Output, AllRegsToStr());
 			}
 			else if (input.substr(0, 1) == "R") {
 				int ind = std::stoi(input.substr(1, input.length()));;
 				if (ind < 32) {
-					mcu->log(regToStr(ind), ATmega32u4::LogLevel_Output);
+					mcu->log(ATmega32u4::LogLevel_Output, regToStr(ind));
 				}
 				else {
-					mcu->log(input + " is out of Range of the Register (R0-R31)", ATmega32u4::LogLevel_Output);
+					mcu->log(ATmega32u4::LogLevel_Output, input + " is out of Range of the Register (R0-R31)");
 				}
 			}
 			else if (input.substr(0, 2) == "io") {
-				int addr;
-				if (input.substr(3, 2) == "0x") {
-					addr = stringExtras::HexStrToInt(input.substr(3 + 2, input.length()).c_str());
-				}
-				else {
-					addr = std::stoi(input.substr(3, input.length()));
-				}
+				int addr = StringUtils::numStrToUInt(input.c_str() + 3, input.c_str() + input.size());
 
 				if (addr < DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) {
 					uint8_t ioVal = mcu->dataspace.getIOAt(addr);
-					mcu->log((input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str(), ATmega32u4::LogLevel_Output);
+					mcu->logf(ATmega32u4::LogLevel_Output, "%s: 0x%02h > %d", input.c_str(), ioVal, ioVal); // (input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str());
 				}
 				else {
-					mcu->log(input + " is out of Range of the IO space (0-" + std::to_string(DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) + ")", ATmega32u4::LogLevel_Output);
+					mcu->log(ATmega32u4::LogLevel_Output, input + " is out of Range of the IO space (0-" + std::to_string(DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) + ")");
 				}
 			}
 			else if (input == "e" || input == "exit") {
@@ -146,25 +141,31 @@ void A32u4::Debugger::doHaltActions() {
 				// maybe this should also be removed
 			}
 			else if (input == "h" || input == "help") {
-				mcu->log(getHelp(), ATmega32u4::LogLevel_Output);
+				mcu->log(ATmega32u4::LogLevel_Output, getHelp());
 			}
 			else {
-				mcu->log("Invalid command, try help", ATmega32u4::LogLevel_Output);
+				mcu->log(ATmega32u4::LogLevel_Output, "Invalid command, try help");
 			}
 		}
 	}
 	else {
-		halted = true;
+		bool ret = true;
+		if (mcu->cpu.totalCycls == lastHaltCycs)
+			ret = false;
+
 		doStep = false;
+		halted = true;
 		mcu->cpu.breakOutOfOptim = true;
+		lastHaltCycs = mcu->cpu.totalCycls;
+
+		return ret;
 	}
+	return false;
 }
 
 std::string A32u4::Debugger::regToStr(uint8_t ind) const {
 	uint8_t regVal = mcu->dataspace.data[ind];
-	std::string regNumStr = stringExtras::paddRight(std::to_string(ind), 2, ' ');
-	std::string decValStr = stringExtras::paddLeft(std::to_string(regVal), 3, ' ');
-	return "R" + regNumStr + ": 0x" + stringExtras::intToHex(regVal, 2) + " > " + decValStr;
+	return StringUtils::format("R%2d: 0x%02x > %3d", ind, regVal, regVal).get();
 }
 std::string A32u4::Debugger::AllRegsToStr() const{
 	std::string str = "";
@@ -180,7 +181,7 @@ std::string A32u4::Debugger::AllRegsToStr() const{
 std::string A32u4::Debugger::debugStackToString() const{
 	std::string str = "";
 	for (int i = addressStackPointer - 1; i >= 0; i--) {
-		str += stringExtras::intToHex(addressStack[i] * 2, 4) + " : at " + stringExtras::intToHex(fromAddressStack[i] * 2, 4);
+		str += StringUtils::format("%04x : at %04x", addressStack[i] * 2, fromAddressStack[i] * 2).get();
 		if (i > 0) {
 			str += "\n";
 		}
@@ -208,7 +209,7 @@ bool A32u4::Debugger::execShouldReturn() {
 	return isHalted() && !doStep;
 }
 
-bool A32u4::Debugger::isHalted() {
+bool A32u4::Debugger::isHalted() const {
 	return halted;
 }
 void A32u4::Debugger::halt() {
@@ -231,7 +232,10 @@ void A32u4::Debugger::clearBreakpoint(uint16_t addr) {
 	breakpoints[addr/2] = 0;
 }
 
-const uint8_t* A32u4::Debugger::getBreakpoints() const {
+A32u4::Debugger::Breakpoint* A32u4::Debugger::getBreakpoints() const {
+	return breakpoints;
+}
+const A32u4::Debugger::Breakpoint* A32u4::Debugger::getBreakpointsRead() const {
 	return breakpoints;
 }
 const uint16_t* A32u4::Debugger::getAddressStack() const {
@@ -249,3 +253,9 @@ const uint16_t A32u4::Debugger::getAddresAt(uint16_t stackInd) const {
 const uint16_t A32u4::Debugger::getFromAddresAt(uint16_t stackInd) const {
 	return fromAddressStack[stackInd];
 }
+
+/*
+std::string regNumStr = stringExtras::paddRight(std::to_string(ind), 2, ' ');
+std::string decValStr = stringExtras::paddLeft(std::to_string(regVal), 3, ' ');
+return "R" + regNumStr + ": 0x" + stringExtras::intToHex(regVal, 2) + " > " + decValStr;
+*/
