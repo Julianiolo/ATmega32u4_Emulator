@@ -27,7 +27,7 @@
     <ClCompile Include="..\..\..\..\src\components\Disassember.cpp" />
     <ClCompile Include="..\..\..\..\src\components\Flash.cpp" />
     <ClCompile Include="..\..\..\..\src\components\InstHandler.cpp" />
-    <ClCompile Include="..\..\..\..\src\utils\stringExtras.cpp" />
+    <ClCompile Include="..\..\..\..\src\utils\StringUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\ATmega32u4.h" />
@@ -44,7 +44,7 @@
     <ClInclude Include="..\..\..\..\src\components\InstHandlerTemplates.h" />
     <ClInclude Include="..\..\..\..\src\components\InstInds.h" />
     <ClInclude Include="..\..\..\..\src\utils\bitMacros.h" />
-    <ClInclude Include="..\..\..\..\src\utils\stringExtras.h" />
+    <ClInclude Include="..\..\..\..\src\utils\StringUtils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

@@ -12,6 +12,8 @@ namespace A32u4 {
 
 	class Debugger {
 	public:
+		typedef uint8_t Breakpoint;
+
 		static constexpr uint16_t addressStackMaxSize = 512;
 		static constexpr uint16_t breakPointArrMaxSize = Flash::size / 2;
 
@@ -27,13 +29,15 @@ namespace A32u4 {
 
 		bool halted = false;
 		bool doStep = false;
+
+		uint64_t lastHaltCycs = 0;
 #if !USE_HEAP
-		uint8_t breakpoints[breakPointArrMaxSize];
+		Breakpoint breakpoints[breakPointArrMaxSize];
 		uint16_t addressStack[addressStackMaxSize];
 		uint16_t fromAddressStack[addressStackMaxSize];
 		uint8_t addressStackIndicators[DataSpace::Consts::ISRAM_size];
 #else
-		uint8_t* breakpoints;
+		Breakpoint* breakpoints;
 		uint16_t* addressStack;
 		uint16_t* fromAddressStack;
 		uint8_t* addressStackIndicators;
@@ -50,8 +54,8 @@ namespace A32u4 {
 		void clearAddressByte(uint16_t addr);
 		void clearAddressByteRaw(uint16_t addr);
 
-		void checkBreakpoints();
-		void doHaltActions();
+		bool checkBreakpoints();
+		bool doHaltActions();
 
 		bool execShouldReturn();
 	public:
@@ -69,14 +73,15 @@ namespace A32u4 {
 
 		std::string getHelp() const;
 
-		bool isHalted();
+		bool isHalted() const;
 		void halt();
 		void step();
 		void continue_();
 		void setBreakpoint(uint16_t addr);
 		void clearBreakpoint(uint16_t addr);
 
-		const uint8_t* getBreakpoints() const;
+		Breakpoint* getBreakpoints() const;
+		const Breakpoint* getBreakpointsRead() const;
 		const uint16_t* getAddressStack() const;
 		const uint16_t* getFromAddressStack() const;
 		const uint16_t getAddressStackPointer() const;

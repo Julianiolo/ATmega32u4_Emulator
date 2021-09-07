@@ -4,7 +4,6 @@
 
 #include "../ATmega32u4.h"
 #include "Debugger.h"
-#include "../utils/stringExtras.h"
 
 #include "../utils/bitMacros.h"
 
@@ -169,6 +168,10 @@ uint8_t& A32u4::DataSpace::getGPRegRef(uint8_t ind) {
 	A32U4_ASSERT_INRANGE_M(ind, 0, Consts::GPRs_size, "General Purpouse Register Index out of bounds: " + std::to_string((int)ind), "DataSpace");
 	return data[ind];
 }
+uint8_t A32u4::DataSpace::getGPReg(uint8_t ind) const {
+	A32U4_ASSERT_INRANGE_M(ind, 0, Consts::GPRs_size, "General Purpouse Register Index out of bounds: " + std::to_string((int)ind), "DataSpace");
+	return data[ind];
+}
 
 uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
 	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds: ",addr,4), "DataSpace");
@@ -208,7 +211,7 @@ void A32u4::DataSpace::setRegBit(uint16_t id, uint8_t bit, bool val) {
 	}
 }
 
-uint16_t A32u4::DataSpace::getWordReg(uint8_t id) {
+uint16_t A32u4::DataSpace::getWordReg(uint8_t id) const {
 	A32U4_ASSERT_INRANGE_M(id, 0, Consts::GPRs_size-1, A32U4_ADDR_ERR_STR("getWordReg Index out of bounds",id,2), "DataSpace");
 	return ((uint16_t)data[id + 1] << 8) | data[id];
 }
@@ -217,7 +220,7 @@ void A32u4::DataSpace::setWordReg(uint8_t id, uint16_t val) {
 	data[id + 1] = val >> 8;
 	data[id] = (uint8_t)val;
 }
-uint16_t A32u4::DataSpace::getWordRegRam(uint16_t id) {
+uint16_t A32u4::DataSpace::getWordRegRam(uint16_t id) const {
 	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size-1, A32U4_ADDR_ERR_STR("getWordRegRam Index out of bounds",id,2), "DataSpace");
 	return ((uint16_t)data[id + 1] << 8) | data[id];
 }
@@ -227,13 +230,13 @@ void A32u4::DataSpace::setWordRegRam(uint16_t id, uint16_t val) {
 	data[id] = (uint8_t)val;
 }
 
-uint16_t A32u4::DataSpace::getX() {
+uint16_t A32u4::DataSpace::getX() const {
 	return ((uint16_t)data[0x1b] << 8) | data[0x1a];
 }
-uint16_t A32u4::DataSpace::getY() {
+uint16_t A32u4::DataSpace::getY() const {
 	return ((uint16_t)data[0x1d] << 8) | data[0x1c];
 }
-uint16_t A32u4::DataSpace::getZ() {
+uint16_t A32u4::DataSpace::getZ() const {
 	return ((uint16_t)data[0x1f] << 8) | data[0x1e];
 }
 void A32u4::DataSpace::setX(uint16_t word) {
@@ -470,6 +473,6 @@ void A32u4::DataSpace::setBitsTo(uint16_t Addr, uint8_t mask, uint8_t bits) {
 	setDataByte(Addr, byte);
 }
 
-uint16_t A32u4::DataSpace::getSP() {
+uint16_t A32u4::DataSpace::getSP() const {
 	return getWordRegRam(Consts::SPL);
 }

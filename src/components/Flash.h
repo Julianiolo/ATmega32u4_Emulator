@@ -33,7 +33,6 @@ namespace A32u4 {
 		~Flash();
 
 		uint8_t getInstIndCache(uint16_t addr);
-		uint8_t readhexStrByte(const char* str);
 
 	public:
 		uint8_t getByte(uint16_t addr);
