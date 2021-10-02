@@ -29,8 +29,8 @@ namespace A32u4 {
 
 		bool halted = false;
 		bool doStep = false;
+		bool skipHalting = false;
 
-		uint64_t lastHaltCycs = 0;
 #if !USE_HEAP
 		Breakpoint breakpoints[breakPointArrMaxSize];
 		uint16_t addressStack[addressStackMaxSize];
@@ -46,6 +46,7 @@ namespace A32u4 {
 		~Debugger();
 
 		void reset();
+		void resetBreakpoints();
 
 		void pushAddrOnAddressStack(uint16_t addr, uint16_t fromAddr);
 		void popAddrFromAddressStack();
@@ -56,6 +57,7 @@ namespace A32u4 {
 
 		bool checkBreakpoints();
 		bool doHaltActions();
+		void doHaltActionsLog();
 
 		bool execShouldReturn();
 	public:

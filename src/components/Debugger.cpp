@@ -15,7 +15,7 @@ A32u4::Debugger::Debugger(ATmega32u4* mcu):
 	addressStackIndicators(new uint8_t[DataSpace::Consts::ISRAM_size])
 #endif
 {
-
+	resetBreakpoints();
 }
 
 A32u4::Debugger::~Debugger() {
@@ -33,11 +33,13 @@ void A32u4::Debugger::reset() {
 	halted = false;
 	doStep = false;
 	addressStackPointer = 0;
-	for (int i = 0; i < breakPointArrMaxSize; i++) {
-		breakpoints[i] = 0;
-	}
 	for (int i = 0; i < DataSpace::Consts::ISRAM_size; i++) {
 		addressStackIndicators[i] = false;
+	}
+}
+void A32u4::Debugger::resetBreakpoints(){
+	for (int i = 0; i < breakPointArrMaxSize; i++) {
+		breakpoints[i] = 0;
 	}
 }
 
@@ -81,86 +83,89 @@ void A32u4::Debugger::clearAddressByteRaw(uint16_t addr) {
 }
 
 bool A32u4::Debugger::checkBreakpoints() {
-	if (halted || breakpoints[mcu->cpu.PC]) {
+	if (breakpoints[mcu->cpu.PC] || halted) {
 		return doHaltActions();
 	}
 	return false;
 }
 bool A32u4::Debugger::doHaltActions() {
-	if (debugOutputMode == OutputMode_Log) {
-		uint16_t word = mcu->flash.getInst(mcu->cpu.PC);
-		uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
-
-		if (!halted) {
-			static int cnt = 0;
-			mcu->log(ATmega32u4::LogLevel_Output, "Halted at : " + Disassembler::disassemble(word, word2, mcu->cpu.PC)); // + stringExtras::intToHex(PC * 2,4)
-		}
-		halted = true;
-		printDisassembly = true;
-
-		while (true) {
-			std::string input;
-			std::cout << ">";
-			std::getline(std::cin, input);
-			if (input == "c" || input == "continue") {
-				halted = false;
-				printDisassembly = false;
-				break;
-			}
-			else if (input == "s" || input == "step") {
-				break;
-			}
-			else if (input == "sk" || input == "stack") {
-				mcu->log(ATmega32u4::LogLevel_Output, debugStackToString());
-			}
-			else if (input == "R" || input == "RAll") {
-				mcu->log(ATmega32u4::LogLevel_Output, AllRegsToStr());
-			}
-			else if (input.substr(0, 1) == "R") {
-				int ind = std::stoi(input.substr(1, input.length()));;
-				if (ind < 32) {
-					mcu->log(ATmega32u4::LogLevel_Output, regToStr(ind));
-				}
-				else {
-					mcu->log(ATmega32u4::LogLevel_Output, input + " is out of Range of the Register (R0-R31)");
-				}
-			}
-			else if (input.substr(0, 2) == "io") {
-				int addr = StringUtils::numStrToUInt(input.c_str() + 3, input.c_str() + input.size());
-
-				if (addr < DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) {
-					uint8_t ioVal = mcu->dataspace.getIOAt(addr);
-					mcu->logf(ATmega32u4::LogLevel_Output, "%s: 0x%02h > %d", input.c_str(), ioVal, ioVal); // (input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str());
-				}
-				else {
-					mcu->log(ATmega32u4::LogLevel_Output, input + " is out of Range of the IO space (0-" + std::to_string(DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) + ")");
-				}
-			}
-			else if (input == "e" || input == "exit") {
-				//TODO exit out of program
-				// maybe this should also be removed
-			}
-			else if (input == "h" || input == "help") {
-				mcu->log(ATmega32u4::LogLevel_Output, getHelp());
-			}
-			else {
-				mcu->log(ATmega32u4::LogLevel_Output, "Invalid command, try help");
-			}
-		}
-	}
+	if (debugOutputMode == OutputMode_Log)
+		doHaltActionsLog();
 	else {
 		bool ret = true;
-		if (mcu->cpu.totalCycls == lastHaltCycs)
+		if(doStep)
 			ret = false;
 
 		doStep = false;
-		halted = true;
+		if(!skipHalting)
+			halted = true;
+		skipHalting = false;
 		mcu->cpu.breakOutOfOptim = true;
-		lastHaltCycs = mcu->cpu.totalCycls;
 
 		return ret;
 	}
 	return false;
+}
+void A32u4::Debugger::doHaltActionsLog(){
+	uint16_t word = mcu->flash.getInst(mcu->cpu.PC);
+	uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
+
+	if (!halted) {
+		static int cnt = 0;
+		mcu->log(ATmega32u4::LogLevel_Output, "Halted at : " + Disassembler::disassemble(word, word2, mcu->cpu.PC)); // + stringExtras::intToHex(PC * 2,4)
+	}
+	halted = true;
+	printDisassembly = true;
+
+	while (true) {
+		std::string input;
+		std::cout << ">";
+		std::getline(std::cin, input);
+		if (input == "c" || input == "continue") {
+			halted = false;
+			printDisassembly = false;
+			break;
+		}
+		else if (input == "s" || input == "step") {
+			break;
+		}
+		else if (input == "sk" || input == "stack") {
+			mcu->log(ATmega32u4::LogLevel_Output, debugStackToString());
+		}
+		else if (input == "R" || input == "RAll") {
+			mcu->log(ATmega32u4::LogLevel_Output, AllRegsToStr());
+		}
+		else if (input.substr(0, 1) == "R") {
+			int ind = std::stoi(input.substr(1, input.length()));;
+			if (ind < 32) {
+				mcu->log(ATmega32u4::LogLevel_Output, regToStr(ind));
+			}
+			else {
+				mcu->log(ATmega32u4::LogLevel_Output, input + " is out of Range of the Register (R0-R31)");
+			}
+		}
+		else if (input.substr(0, 2) == "io") {
+			int addr = StringUtils::numStrToUInt(input.c_str() + 3, input.c_str() + input.size());
+
+			if (addr < DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) {
+				uint8_t ioVal = mcu->dataspace.getIOAt(addr);
+				mcu->logf(ATmega32u4::LogLevel_Output, "%s: 0x%02h > %d", input.c_str(), ioVal, ioVal); // (input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str());
+			}
+			else {
+				mcu->log(ATmega32u4::LogLevel_Output, input + " is out of Range of the IO space (0-" + std::to_string(DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) + ")");
+			}
+		}
+		else if (input == "e" || input == "exit") {
+			//TODO exit out of program
+			// maybe this should also be removed
+		}
+		else if (input == "h" || input == "help") {
+			mcu->log(ATmega32u4::LogLevel_Output, getHelp());
+		}
+		else {
+			mcu->log(ATmega32u4::LogLevel_Output, "Invalid command, try help");
+		}
+	}
 }
 
 std::string A32u4::Debugger::regToStr(uint8_t ind) const {
@@ -224,6 +229,8 @@ void A32u4::Debugger::step() {
 }
 void A32u4::Debugger::continue_() {
 	halted = false;
+	doStep = true;
+	skipHalting = true;
 }
 void A32u4::Debugger::setBreakpoint(uint16_t addr) {
 	breakpoints[addr/2] = 1;

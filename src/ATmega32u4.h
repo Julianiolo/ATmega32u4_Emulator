@@ -19,7 +19,7 @@
 #define A32U4_ASSERT_INRANGE_M(A_val,A_from,A_to,A_msg,A_module)
 #endif
 
-#define A32U4_ADDR_ERR_STR(A_msg,A_addr,A_HexPlaces) A_msg  + std::to_string(A_addr) + " => 0x" + StringUtils::uIntToBinStr(A_addr,A_HexPlaces)
+#define A32U4_ADDR_ERR_STR(A_msg,A_addr,A_HexPlaces) A_msg  + std::to_string(A_addr) + " => 0x" + StringUtils::uIntToHexStr(A_addr,A_HexPlaces)
 
 namespace A32u4 {
 	class ATmega32u4 {

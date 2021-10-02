@@ -737,12 +737,12 @@ void A32u4::InstHandler::INST_SBIW(uint16_t word) {
 	const uint16_t R16 = mcu->dataspace.getWordReg(d);
 	//uint16_t R16_copy = R16;
 	//R16 -= K;
-	const uint16_t R16_new = R16 - K;
+	const uint16_t R16_res = R16 - K;
 	//mcu->dataspace.setWordReg(d, R16);
-	mcu->dataspace.setWordReg(d, R16_new);
+	mcu->dataspace.setWordReg(d, R16_res);
 
 	//mcu->cpu.setFlags_SVNZC_SUB_16(R16_copy, K, R16);
-	mcu->cpu.setFlags_SVNZC_SUB_16(R16, K, R16_new);
+	mcu->cpu.setFlags_SVNZC_SUB_16(R16, K, R16_res);
 	cycs = 2; PC_add = 1;
 }
 
