@@ -297,6 +297,42 @@ uint64_t A32u4::CPU::cycsToNextTimerInt() {
 	return (uint64_t)ticksLeftT0 * prescCycsT0 + (prescCycsT0 - (totalCycls%prescCycsT0));
 }
 
+/*
+
+	Status Register: SREG
+        info about most recently  executed arithmetic Instruction
+        updated after every ALU operation
+        not automatically stored and restored when enterring interrupt routine
+        Bits:
+            7   6   5   4   3   2   1   0   Bit
+            I   T   H   S   V   N   Z   C   Name
+            RW  RW  RW  RW  RW  RW  RW  RW  Read/Write
+            0   0   0   0   0   0   0   0   Initial Value
+
+                I: 7 Global Interrupt Enable
+                    must be set for interrupts to be enabled
+                    Individual interrupt enable is done in seperate control registers
+                    if cleared no Interrupts will happen regardless of individual interrupt enable
+                    cleared after hardware Interrupt, set by RETI Instruction (Return from Interrupt)
+                    can also be controlled by the application with SEI, CLI
+                T: 6 Bit Copy Storage
+                    used by bit copy Instructions BLD (Bit LoaD) and BST (Bit STore) as source/destination for operated bit
+                    bit from register file can be copied to T by BST, bit from T can be copied into register file by BLD
+                H: 5 Half Carry Flag
+                    indicates Half Carry in some arithmetic operations, used in BCD arithmetic
+                S: 4 Sign Bit (S = N xor V)
+                    always xor between N flag and V flag
+                V: 3 Two's Complement Overflow Flag
+                    supports twos's arithmetic complements (nrswtm)
+                N: 2 Negative Flag
+                    Indicates negative result in arithmetic or logic operation
+                Z: 1 Zero Flag
+                    Indicates zero result in arithmetic or logic operation
+                C: 0 Carry Flag
+                    Indicates a carry in arithmetic or logic operation
+
+*/
+
 void A32u4::CPU::setFlags_NZ(uint8_t res) {
 #if FAST_FLAGSET
 	bool N = (res & 0b10000000) != 0;
@@ -567,7 +603,10 @@ void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
 	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
 	bool R15 = isBitSet(res, 15);
 
-	bool V = ah7 && R15;
+	int8_t sum8 = (int8_t)a + (int8_t)b;
+	int16_t sum16 = (int8_t)a + (int8_t)b;
+	bool V = sum8 != sum16;
+	//bool V = ah7 && R15;
 	bool N = R15;
 	bool Z = res == 0;
 	bool S = V ^ N;
@@ -606,7 +645,7 @@ void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
 #endif
 }
 void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
-#if FAST_FLAGSET
+#if FAST_FLAGSET && 0
 	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
 	bool R15 = isBitSet(res, 15);
 
@@ -619,10 +658,14 @@ void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
 	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
 	bool R15 = isBitSet(res, 15);
 
-	bool V = R15 && !ah7;// had ah7 && R15; but seems to be wrong
+	int8_t sub8 = (int8_t)a - (int8_t)b;
+	int16_t sub16 = (int8_t)a - (int8_t)b;
+	bool V = sub8 != sub16;
+	//bool V = R15 && !ah7;// had ah7 && R15; but seems to be wrong
 	bool N = R15;
 	bool Z = res == 0;
 	bool S = V ^ N;
+	//bool S = (int16_t)a < (int16_t)b;
 	bool C = V;//had R15 && !ah7 before but seems to be wrong
 #endif
 
