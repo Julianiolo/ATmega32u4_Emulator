@@ -74,11 +74,11 @@ uint64_t StringUtils::numStrToUInt(const char* str, const char* strEnd) {
 	if (str + 2 < strEnd && str[0] == '0') {
 		switch (str[1]) {
 			case 'b':
-				return binStrToUInt(str, strEnd);
+				return binStrToUInt(str+2, strEnd);
 			case 'x':
-				return hexStrToUInt(str, strEnd);
+				return hexStrToUInt(str+2, strEnd);
 			default:
-				return numBaseStrToUIntT<8>(str, strEnd);
+				return numBaseStrToUIntT<8>(str+2, strEnd);
 		}
 	}
 

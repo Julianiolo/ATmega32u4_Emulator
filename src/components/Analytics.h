@@ -18,6 +18,8 @@ namespace A32u4 {
 		uint64_t* instCounter;
 #endif
 
+		
+
 		Analytics();
 		~Analytics();
 
@@ -25,6 +27,8 @@ namespace A32u4 {
 		void addData(uint8_t instInd,uint16_t PC);
 
 	public:
+		uint16_t maxSP = 0xFFFF;
+
 		uint64_t getPCCnt(uint16_t addr);
 		uint16_t findMostUsedPCCnt();
 	};

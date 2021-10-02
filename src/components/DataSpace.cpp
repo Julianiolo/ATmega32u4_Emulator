@@ -257,11 +257,16 @@ void A32u4::DataSpace::resetIO() {
 	for (uint8_t i = 0; i < Consts::io_size; i++) {
 		data[Consts::io_start + i] = 0;
 	}
-	setWordRegRam(Consts::SPL, Consts::ISRAM_start + Consts::ISRAM_size - 1);
+	for (uint16_t i = 0; i < Consts::eeprom_size; i++) {
+		eeprom[i] = 0;
+	}
+	setSP(Consts::ISRAM_start + Consts::ISRAM_size - 1);
 }
 
 void A32u4::DataSpace::setSP(uint16_t val) {
 	setWordRegRam(Consts::SPL, val);
+	if(mcu->analytics.maxSP > val)
+		mcu->analytics.maxSP = val;
 }
 
 void A32u4::DataSpace::Updates::update_Get(uint16_t Addr, bool onlyOne) {
@@ -444,6 +449,7 @@ void A32u4::DataSpace::setSPIByteCallB(SPIByteCallB func) {
 uint8_t* A32u4::DataSpace::getEEPROM() {
 	return eeprom;
 }
+// get a pointer to the updated Dataspce Data arr (only gets updated on first call if cpu.totalcycles doesnt change)
 const uint8_t* A32u4::DataSpace::getData() {
 	static uint64_t lastCycs = 0;
 	if (lastCycs != mcu->cpu.totalCycls) {
