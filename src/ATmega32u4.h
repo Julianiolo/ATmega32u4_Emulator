@@ -12,11 +12,13 @@
 #include "utils/StringUtils.h"
 
 #if RANGE_CHECK
-#define A32U4_ASSERT_INRANGE(A_val,A_from,A_to,A_msg) if((A_val) < (A_from) || (A_val) >= (A_to)) mcu->log(ATmega32u4::LogLevel_Error, (A_msg), __FILE__, __LINE__)
-#define A32U4_ASSERT_INRANGE_M(A_val,A_from,A_to,A_msg,A_module) if((A_val) < (A_from) || (A_val) >= (A_to)) mcu->log(ATmega32u4::LogLevel_Error, (A_msg), __FILE__, __LINE__,A_module)
+#define A32U4_ASSERT_INRANGE(val,from,to,msg,action) if((val) < (from) || (val) >= (to)) { mcu->log(ATmega32u4::LogLevel_Error, (msg), __FILE__, __LINE__); action;}
+#define A32U4_ASSERT_INRANGE_M(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ mcu->log(ATmega32u4::LogLevel_Error, (msg), __FILE__, __LINE__,module_); action;}
+#define A32U4_ASSERT_INRANGE_M_W(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ mcu->log(ATmega32u4::LogLevel_Warning, (msg), __FILE__, __LINE__,module_); action;}
 #else
-#define A32U4_ASSERT_INRANGE(A_val,A_from,A_to,A_msg)
-#define A32U4_ASSERT_INRANGE_M(A_val,A_from,A_to,A_msg,A_module)
+#define A32U4_ASSERT_INRANGE(val,from,to,msg,action)
+#define A32U4_ASSERT_INRANGE_M(val,from,to,msg,module_,action)
+#define A32U4_ASSERT_INRANGE_M_W(val,from,to,msg,module_, action)
 #endif
 
 #define A32U4_ADDR_ERR_STR(A_msg,A_addr,A_HexPlaces) A_msg  + std::to_string(A_addr) + " => 0x" + StringUtils::uIntToHexStr(A_addr,A_HexPlaces)
