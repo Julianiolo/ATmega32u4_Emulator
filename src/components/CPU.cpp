@@ -30,7 +30,7 @@ void A32u4::CPU::reset() {
 #endif
 }
 void A32u4::CPU::populateInstCache() {
-	for (int i = 0; i < mcu->flash.size / 2; i++) {
+	for (int i = 0; i < Flash::sizeMax / 2; i++) {
 		uint16_t inst = mcu->flash.getInst(i);
 		mcu->flash.instCache[i] = instHandler.getInstInd(inst);
 	}

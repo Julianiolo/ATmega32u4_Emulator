@@ -114,6 +114,22 @@ std::string StringUtils::loadFileIntoString(const char* path, const char* errorM
 	return fileStr;
 }
 
+bool StringUtils::writeStringToFile(const std::string& str, const char* path) {
+	std::ofstream out(path);
+	out << str;
+	out.close();
+	return true;
+}
+
+size_t StringUtils::findCharInStr(char c, const char* str, const char* strEnd) {
+	if (strEnd == nullptr)
+		strEnd = str + std::strlen(str);
+	for (const char* ptr = str; ptr < strEnd; ptr++) {
+		if (*ptr == c)
+			return ptr - str;
+	}
+	return -1;
+}
 
 /*
 

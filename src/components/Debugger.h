@@ -15,7 +15,7 @@ namespace A32u4 {
 		typedef uint8_t Breakpoint;
 
 		static constexpr uint16_t addressStackMaxSize = 512;
-		static constexpr uint16_t breakPointArrMaxSize = Flash::size / 2;
+		static constexpr uint16_t breakPointArrMaxSize = Flash::sizeMax / 2;
 
 	private:
 		friend class ATmega32u4;

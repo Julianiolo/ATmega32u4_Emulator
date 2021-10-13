@@ -109,3 +109,4 @@
 #define IND_ANDI 108
 #define IND_SBCI 109
 #define IND_ORI 110
+#define IND_COUNT_ 111

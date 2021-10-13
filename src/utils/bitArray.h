@@ -12,10 +12,15 @@ private:
     size_t byteSize;
     uint8_t* data = nullptr;
 public:
+    BitArray();
+    BitArray(const BitArray& a);
     BitArray(bsize_t size);
     ~BitArray();
     bool get(bsize_t i);
     void set(bsize_t i, bool val);
+    void initSizeTo(size_t len);
+    
+    BitArray& operator=(const BitArray& a);
 };
 
 #endif
