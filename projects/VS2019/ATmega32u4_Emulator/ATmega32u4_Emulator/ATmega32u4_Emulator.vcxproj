@@ -27,6 +27,7 @@
     <ClCompile Include="..\..\..\..\src\components\Disassember.cpp" />
     <ClCompile Include="..\..\..\..\src\components\Flash.cpp" />
     <ClCompile Include="..\..\..\..\src\components\InstHandler.cpp" />
+    <ClCompile Include="..\..\..\..\src\utils\bitArray.cpp" />
     <ClCompile Include="..\..\..\..\src\utils\StringUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -43,6 +44,7 @@
     <ClInclude Include="..\..\..\..\src\components\InstHandler.h" />
     <ClInclude Include="..\..\..\..\src\components\InstHandlerTemplates.h" />
     <ClInclude Include="..\..\..\..\src\components\InstInds.h" />
+    <ClInclude Include="..\..\..\..\src\utils\bitArray.h" />
     <ClInclude Include="..\..\..\..\src\utils\bitMacros.h" />
     <ClInclude Include="..\..\..\..\src\utils\StringUtils.h" />
   </ItemGroup>

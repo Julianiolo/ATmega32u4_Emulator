@@ -15,13 +15,14 @@ namespace A32u4 {
 			std::string content;
 			BitArray disasmed;
 			
+			DisasmFile();
 			DisasmFile(size_t size);
 		};
 
 		static std::string disassembleRaw(uint16_t word, uint16_t word2);
 		static std::string disassemble(uint16_t word, uint16_t word2, uint16_t PC);
 
-		static DisasmFile disassembleBin(const Flash* data, size_t len);
+		static DisasmFile disassembleBin(const Flash* data);
 
 	private:
 		static std::string getParamStr(uint16_t val, uint8_t type);

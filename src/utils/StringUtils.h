@@ -84,6 +84,9 @@ namespace StringUtils {
 	}
 
 	std::string loadFileIntoString(const char* path, const char* errorMsg = nullptr);
+	bool writeStringToFile(const std::string& str, const char* path);
+
+	size_t findCharInStr(char c, const char* str, const char* strEnd = nullptr);
 };
 #endif
 

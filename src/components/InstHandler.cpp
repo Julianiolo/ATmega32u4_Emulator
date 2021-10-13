@@ -605,11 +605,11 @@ bool A32u4::InstHandler::is2WordInstOld(uint16_t word) {
 	return false;
 }
 bool A32u4::InstHandler::is2WordInstNew(uint16_t word) {
-	const uint16_t all = instList[IND_LDS].mask & instList[IND_STS].mask & instList[IND_JMP].mask & instList[IND_CALL].mask;
+	//const uint16_t all = instList[IND_LDS].mask & instList[IND_STS].mask & instList[IND_JMP].mask & instList[IND_CALL].mask;
 
-	if ((word & all) != all) {
-		return false;
-	}
+	//if ((word & all) != all) {
+	//	return false;
+	//}
 
 	if ((word & instList[IND_LDS].mask) == instList[IND_LDS].res) {
 		return true;
