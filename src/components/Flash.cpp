@@ -23,19 +23,19 @@ A32u4::Flash::~Flash() {
 #endif
 }
 
-uint8_t A32u4::Flash::getByte(uint16_t addr) {
+uint8_t A32u4::Flash::getByte(uint16_t addr) const {
 	A32U4_ASSERT_INRANGE_M(addr, 0, size, A32U4_ADDR_ERR_STR("Flash getByte Address to Big: ",addr,4), "Flash", return 0);
 
 	return data[addr];
 }
 
-uint16_t A32u4::Flash::getWord(uint16_t addr) {
+uint16_t A32u4::Flash::getWord(uint16_t addr) const {
 	A32U4_ASSERT_INRANGE_M(addr, 0, size, A32U4_ADDR_ERR_STR("Flash getWord Address to Big: ",addr,4), "Flash", return 0);
 
 	return ((uint16_t)data[addr + 1] << 8) | data[addr];
 }
 
-uint16_t A32u4::Flash::getInst(uint16_t addr) {
+uint16_t A32u4::Flash::getInst(uint16_t addr) const {
 	return getWord(addr * 2);
 }
 
