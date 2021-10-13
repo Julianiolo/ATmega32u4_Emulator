@@ -10,7 +10,7 @@ namespace A32u4 {
 
 	class Flash {
 	public:
-		static constexpr uint16_t size = 32768;
+		static constexpr uint16_t sizeMax = 32768;
 	private:
 		friend class Disassembler;
 		friend class InstHandler;
@@ -27,6 +27,7 @@ namespace A32u4 {
 		uint8_t* instCache;
 #endif
 
+		size_t size_ = sizeMax;
 		bool hasProgram = false;
 
 		Flash(ATmega32u4* mcu);
@@ -44,6 +45,8 @@ namespace A32u4 {
 		bool loadFromHexFile(const char* str);
 		void loadFromHexString(const char* str);
 		void clear();
+
+		size_t size() const;
 	};
 }
 #endif

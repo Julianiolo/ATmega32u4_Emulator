@@ -10,7 +10,7 @@
 A32u4::Flash::Flash(ATmega32u4* mcu):
 	mcu(mcu)
 #if USE_HEAP
-	,data(new uint8_t[size]), instCache(new uint8_t[size / 2])
+	,data(new uint8_t[sizeMax]), instCache(new uint8_t[sizeMax / 2])
 #endif
 {
 	
@@ -24,13 +24,13 @@ A32u4::Flash::~Flash() {
 }
 
 uint8_t A32u4::Flash::getByte(uint16_t addr) const {
-	A32U4_ASSERT_INRANGE_M(addr, 0, size, A32U4_ADDR_ERR_STR("Flash getByte Address to Big: ",addr,4), "Flash", return 0);
+	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getByte Address to Big: ",addr,4), "Flash", return 0);
 
 	return data[addr];
 }
 
 uint16_t A32u4::Flash::getWord(uint16_t addr) const {
-	A32U4_ASSERT_INRANGE_M(addr, 0, size, A32U4_ADDR_ERR_STR("Flash getWord Address to Big: ",addr,4), "Flash", return 0);
+	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getWord Address to Big: ",addr,4), "Flash", return 0);
 
 	return ((uint16_t)data[addr + 1] << 8) | data[addr];
 }
@@ -40,14 +40,14 @@ uint16_t A32u4::Flash::getInst(uint16_t addr) const {
 }
 
 uint8_t A32u4::Flash::getInstIndCache(uint16_t addr) {
-	if (addr >= size / 2) {
+	if (addr >= sizeMax / 2) {
 		return 0xFF;
 	}
 	return instCache[addr];
 }
 
 void A32u4::Flash::clear() {
-	for (uint16_t i = 0; i < size; i++) {
+	for (uint16_t i = 0; i < sizeMax; i++) {
 		data[i] = 0;
 	}
 	hasProgram = false;
@@ -75,7 +75,7 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 		//str_ind += 7;
 		for (uint8_t i = 0; i < ByteCount; i++) {
 #if RANGE_CHECK
-			if (flashInd >= size) {
+			if (flashInd >= sizeMax) {
 				abort();
 			}
 #endif
@@ -88,6 +88,7 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 	}
 
 	hasProgram = true;
+	size_ = flashInd;
 }
 
 bool A32u4::Flash::loadFromHexFile(const char* str) {
@@ -112,6 +113,10 @@ bool A32u4::Flash::loadFromHexFile(const char* str) {
 
 uint8_t* A32u4::Flash::getData() {
 	return data;
+}
+
+size_t A32u4::Flash::size() const {
+	return size_;
 }
 
 /*

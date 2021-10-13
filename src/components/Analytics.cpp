@@ -2,7 +2,7 @@
 
 A32u4::Analytics::Analytics()
 #if USE_HEAP
-	: pcCounter(new uint64_t[A32u4::Flash::size / 2]),
+	: pcCounter(new uint64_t[A32u4::Flash::sizeMax / 2]),
 	instCounter(new uint64_t[InstHandler::instListLen])
 #endif
 {
@@ -20,7 +20,7 @@ void A32u4::Analytics::reset() {
 	for (int i = 0; i < InstHandler::instListLen; i++) {
 		instCounter[i] = 0;
 	}
-	for (int i = 0; i < Flash::size / 2; i++) {
+	for (int i = 0; i < Flash::sizeMax / 2; i++) {
 		pcCounter[i] = 0;
 	}
 }
@@ -37,7 +37,7 @@ uint64_t A32u4::Analytics::getPCCnt(uint16_t addr) {
 uint16_t A32u4::Analytics::findMostUsedPCCnt() {
 	uint64_t max = 0;
 	uint16_t maxInd = 0;
-	for (int i = 0; i < A32u4::Flash::size / 2; i++) {
+	for (int i = 0; i < A32u4::Flash::sizeMax / 2; i++) {
 		if (pcCounter[i] > max) {
 			max = pcCounter[i];
 			maxInd = i;

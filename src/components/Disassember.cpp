@@ -2,6 +2,8 @@
 #include "InstInds.h"
 #include "../utils/StringUtils.h"
 #include "InstHandler.h"
+#include <algorithm>
+#include <iostream>
 
 #define INST_PAR_TYPE_RAWVAL 0
 #define INST_PAR_TYPE_RAWVALDEC 1
@@ -12,6 +14,9 @@
 #define INST_PAR_TYPE_REG_OFFSET 6
 
 A32u4::Disassembler::DisasmFile::DisasmFile(size_t size) : disasmed(size){
+
+}
+A32u4::Disassembler::DisasmFile::DisasmFile() : disasmed(0){
 
 }
 
@@ -45,15 +50,21 @@ std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
 
 std::string A32u4::Disassembler::disassemble(uint16_t word, uint16_t word2, uint16_t PC) {
 	std::string disasm = disassembleRaw(word, word2);
-	std::string add = InstHandler::is2WordInst(word) ? StringUtils::format("%2x %2x", word2 & 0xFF, (word2 & 0xFF00) >> 8).get()  :  "     ";
-	return StringUtils::format("%4x:   %2x %2x %s %s", PC*2, word&0xFF, (word & 0xFF00) >> 8, add.c_str(), disasm.c_str()).get();
+	std::string instBytes = StringUtils::format("%02x %02x ", word&0xFF, (word & 0xFF00) >> 8).get();
+	if (InstHandler::is2WordInst(word))
+		instBytes += StringUtils::format("%02x %02x ", word2 & 0xFF, (word2 & 0xFF00) >> 8).get();
+	else
+		instBytes += "      ";
+	return StringUtils::format("    %4x:\t%s\t%s", PC*2, instBytes.c_str(), disasm.c_str()).get();
 }
 std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 	uint8_t Inst_ind = InstHandler::getInstInd3(word);
+	if (Inst_ind >= IND_COUNT_)
+		return "";
 	InstHandler::Inst_ELEM inst = InstHandler::instList[Inst_ind];
 
 	std::string out = inst.name;
-	out += " ";
+	out += "\t";
 
 	switch (Inst_ind)
 	{
@@ -166,41 +177,54 @@ std::string A32u4::Disassembler::getSignInt(uint32_t val) {
 	}
 }
 
-A32u4::Disassembler::DisasmFile A32u4::Disassembler::disassembleBin(const Flash* data, size_t len){
-	DisasmFile out(len);
+static bool compareLine(const std::pair<uint16_t,std::string>& a, const std::pair<uint16_t,std::string>& b) {
+	return a.first < b.first;
+}
+
+A32u4::Disassembler::DisasmFile A32u4::Disassembler::disassembleBin(const Flash* data){
+	DisasmFile out(data->size());
 	std::vector<std::pair<uint16_t,std::string>> lines;
-	for(size_t i = 0; i< 32;i+=2)
-		disasmRecurse(i,data,&out.disasmed, &lines);
+	for(size_t i = 0; i <= 0xa8;i+=4)
+		disasmRecurse(i/2,data, &out.disasmed, &lines);
+
+	std::sort(lines.begin(),lines.end(),compareLine);
+
+	for (size_t i = 0; i < lines.size(); i++)
+		out.content += lines[i].second + "\n";
 	return out;
 }
 
 void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitArray* disasmed, std::vector<std::pair<uint16_t,std::string>>* lines){
-	uint16_t ind = start;
+	uint16_t PC = start;
 	while(true){
-		if(disasmed->get(ind))
+		if (disasmed->get(PC)) {
+			//printf("finished at %x from %x\n", PC*2, start*2);
 			return;
+		}
 
-		uint16_t word = data->getInst(ind);
+		uint16_t word = data->getInst(PC);
 		uint16_t word2 = 0;
 		uint8_t Inst_ind = InstHandler::getInstInd3(word);
 		bool is2word = InstHandler::is2WordInst(word);
 		if(is2word)
-			word2 = data->getInst(ind+1);
+			word2 = data->getInst(PC+1);
 
-		lines->push_back({ind, disassemble(word,word2,ind)});
-		disasmed->set(ind,true);
+		std::string disasm = disassemble(word, word2, PC);
+		//std::cout << disasm << std::endl;
+		lines->push_back({ PC, disasm });
+		disasmed->set(PC,true);
 
 		switch(Inst_ind){
 			case IND_JMP:
 			{
 				uint32_t k = InstHandler::getLongAddr(word,word2);
-				ind = k;
+				PC = k;
 				continue;
 			}
 			case IND_RJMP:
 			{
 				int16_t k = InstHandler::getk12_c_sin(word);
-				ind = k+1;
+				PC += k+1;
 				continue;
 			}
 
@@ -209,7 +233,7 @@ void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitAr
 			case IND_SBIC:
 			case IND_SBIS:
 			{
-				disasmRecurse(ind+2, data, disasmed, lines);
+				disasmRecurse(PC+2, data, disasmed, lines);
 				break;
 			}
 
@@ -218,7 +242,7 @@ void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitAr
 			case IND_BRBS:
 			{
 				int8_t k = (int8_t)InstHandler::getk7_c_sin(word);
-				disasmRecurse(ind+k+1, data, disasmed, lines);
+				disasmRecurse(PC+k+1, data, disasmed, lines);
 				break;
 			}
 
@@ -232,7 +256,7 @@ void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitAr
 			case IND_RCALL:
 			{
 				int16_t k = InstHandler::getk12_c_sin(word);
-				disasmRecurse(ind+k+1, data, disasmed, lines);
+				disasmRecurse(PC+k+1, data, disasmed, lines);
 				break;
 			}
 
@@ -241,9 +265,9 @@ void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitAr
 				return;
 		}
 
-		ind++;
+		PC++;
 		if(is2word)
-			ind++;
+			PC++;
 	}
 }
 
