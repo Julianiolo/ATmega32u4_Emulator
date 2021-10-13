@@ -35,9 +35,9 @@ namespace A32u4 {
 		uint8_t getInstIndCache(uint16_t addr);
 
 	public:
-		uint8_t getByte(uint16_t addr);
-		uint16_t getWord(uint16_t addr);
-		uint16_t getInst(uint16_t addr);
+		uint8_t getByte(uint16_t addr) const;
+		uint16_t getWord(uint16_t addr) const;
+		uint16_t getInst(uint16_t addr) const;
 
 		uint8_t* getData();
 

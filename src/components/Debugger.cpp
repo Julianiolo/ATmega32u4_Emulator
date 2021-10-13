@@ -32,6 +32,8 @@ uint8_t A32u4::Debugger::debugOutputMode = OutputMode_Log;
 void A32u4::Debugger::reset() {
 	halted = false;
 	doStep = false;
+	skipHalting = false;
+
 	addressStackPointer = 0;
 	for (int i = 0; i < DataSpace::Consts::ISRAM_size; i++) {
 		addressStackIndicators[i] = false;
@@ -44,13 +46,13 @@ void A32u4::Debugger::resetBreakpoints(){
 }
 
 void A32u4::Debugger::pushAddrOnAddressStack(uint16_t addr, uint16_t fromAddr) {
-	return;
+	//return;
 	A32U4_ASSERT_INRANGE_M(addressStackPointer, 0, addressStackMaxSize, A32U4_ADDR_ERR_STR("Debug Address Stack overflow: ",addressStackPointer,4), "Debugger", return);
 	addressStack[addressStackPointer] = addr;
 	fromAddressStack[addressStackPointer++] = fromAddr;
 }
 void A32u4::Debugger::popAddrFromAddressStack() {
-	return;
+	//return;
 	A32U4_ASSERT_INRANGE_M(addressStackPointer, 1, addressStackMaxSize, A32U4_ADDR_ERR_STR("Debug Address Stack underflow: ",addressStackPointer,4), "Debugger", return);
 
 	addressStackPointer--;
