@@ -11,6 +11,9 @@
 #define INST_PAR_TYPE_OFFSET16 5
 #define INST_PAR_TYPE_REG_OFFSET 6
 
+A32u4::Disassembler::DisasmFile::DisasmFile(size_t size) : disasmed(size){
+
+}
 
 std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
 	switch (type)
@@ -160,6 +163,87 @@ std::string A32u4::Disassembler::getSignInt(uint32_t val) {
 	}
 	else {
 		return std::to_string(val);
+	}
+}
+
+A32u4::Disassembler::DisasmFile A32u4::Disassembler::disassembleBin(const Flash* data, size_t len){
+	DisasmFile out(len);
+	std::vector<std::pair<uint16_t,std::string>> lines;
+	for(size_t i = 0; i< 32;i+=2)
+		disasmRecurse(i,data,&out.disasmed, &lines);
+	return out;
+}
+
+void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitArray* disasmed, std::vector<std::pair<uint16_t,std::string>>* lines){
+	uint16_t ind = start;
+	while(true){
+		if(disasmed->get(ind))
+			return;
+
+		uint16_t word = data->getInst(ind);
+		uint16_t word2 = 0;
+		uint8_t Inst_ind = InstHandler::getInstInd3(word);
+		bool is2word = InstHandler::is2WordInst(word);
+		if(is2word)
+			word2 = data->getInst(ind+1);
+
+		lines->push_back({ind, disassemble(word,word2,ind)});
+		disasmed->set(ind,true);
+
+		switch(Inst_ind){
+			case IND_JMP:
+			{
+				uint32_t k = InstHandler::getLongAddr(word,word2);
+				ind = k;
+				continue;
+			}
+			case IND_RJMP:
+			{
+				int16_t k = InstHandler::getk12_c_sin(word);
+				ind = k+1;
+				continue;
+			}
+
+			case IND_SBRC:
+			case IND_SBRS:
+			case IND_SBIC:
+			case IND_SBIS:
+			{
+				disasmRecurse(ind+2, data, disasmed, lines);
+				break;
+			}
+
+
+			case IND_BRBC:
+			case IND_BRBS:
+			{
+				int8_t k = (int8_t)InstHandler::getk7_c_sin(word);
+				disasmRecurse(ind+k+1, data, disasmed, lines);
+				break;
+			}
+
+
+			case IND_CALL:
+			{
+				uint32_t k = InstHandler::getLongAddr(word, word2);
+				disasmRecurse(k, data, disasmed, lines);
+				break;
+			}
+			case IND_RCALL:
+			{
+				int16_t k = InstHandler::getk12_c_sin(word);
+				disasmRecurse(ind+k+1, data, disasmed, lines);
+				break;
+			}
+
+			case IND_RET:
+			case IND_RETI:
+				return;
+		}
+
+		ind++;
+		if(is2word)
+			ind++;
 	}
 }
 
