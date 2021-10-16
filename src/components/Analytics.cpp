@@ -45,3 +45,10 @@ uint16_t A32u4::Analytics::findMostUsedPCCnt() {
 	}
 	return maxInd;
 }
+
+const uint64_t* A32u4::Analytics::getPCHeat() const{
+	return pcCounter;
+}
+const uint64_t* A32u4::Analytics::getInstHeat() const{
+	return instCounter;
+}
