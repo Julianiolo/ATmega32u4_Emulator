@@ -7,12 +7,15 @@
 
 namespace A32u4 {
 	class Analytics {
+	public:
+		static constexpr size_t PCHeatArrSize = A32u4::Flash::sizeMax / 2;
+		static constexpr size_t InstHeatArrSize = InstHandler::instListLen;
 	private:
 		friend class ATmega32u4;
 		friend class InstHandler;
 #if !USE_HEAP
-		uint64_t pcCounter[A32u4::Flash::size / 2];
-		uint64_t instCounter[InstHandler::instListLen];
+		uint64_t pcCounter[PCHeatArrSize];
+		uint64_t instCounter[InstHeatArrSize];
 #else
 		uint64_t* pcCounter;
 		uint64_t* instCounter;
@@ -28,9 +31,13 @@ namespace A32u4 {
 
 	public:
 		uint16_t maxSP = 0xFFFF;
+		uint64_t sleepSum = 0;
 
 		uint64_t getPCCnt(uint16_t addr);
 		uint16_t findMostUsedPCCnt();
+
+		const uint64_t* getPCHeat() const;
+		const uint64_t* getInstHeat() const;
 	};
 }
 

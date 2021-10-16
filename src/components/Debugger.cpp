@@ -115,7 +115,6 @@ void A32u4::Debugger::doHaltActionsLog(){
 	uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
 
 	if (!halted) {
-		static int cnt = 0;
 		mcu->log(ATmega32u4::LogLevel_Output, "Halted at : " + Disassembler::disassemble(word, word2, mcu->cpu.PC)); // + stringExtras::intToHex(PC * 2,4)
 	}
 	halted = true;
