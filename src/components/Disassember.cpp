@@ -13,11 +13,69 @@
 #define INST_PAR_TYPE_OFFSET16 5
 #define INST_PAR_TYPE_REG_OFFSET 6
 
-A32u4::Disassembler::DisasmFile::DisasmFile(size_t size) : disasmed(size){
+static bool compareLine(const A32u4::Disassembler::DisasmFile::DisasmData::Line& a, const A32u4::Disassembler::DisasmFile::DisasmData::Line& b) {
+	return a.addr < b.addr;
+}
+
+A32u4::Disassembler::DisasmFile::DisasmFile(){
 
 }
-A32u4::Disassembler::DisasmFile::DisasmFile() : disasmed(0){
+void A32u4::Disassembler::DisasmFile::addDisasmData(size_t size){
+	disasmData = std::make_shared<DisasmData>(size);
+}
+void A32u4::Disassembler::DisasmFile::generateContent(){
+	content.clear();
+	if(!disasmData)
+		throw std::runtime_error("has no disasmData");
+	
+	std::sort(disasmData->lines.begin(),disasmData->lines.end(),compareLine);
 
+	for (size_t i = 0; i < disasmData->lines.size(); i++){
+		auto& line = disasmData->lines[i];
+		if(disasmData.get()->funcCalls.find(i) != disasmData.get()->funcCalls.end())
+			content += StringUtils::format("\n%08x <func@%x>:\n", line.addr, line.addr).get();
+
+		content += line.str + "\n";
+
+		switch(line.inst_ind){
+			case IND_RET:
+			case IND_RETI:
+				content += "\n";
+				break;
+		}
+	}
+		
+}
+
+void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data){
+	if(!disasmData)
+		addDisasmData(data->size());
+	for(size_t i = 0; i <= 0xa8;i+=4)
+		disasmRecurse(i/2,data, disasmData.get());
+
+	generateContent();
+}
+void A32u4::Disassembler::DisasmFile::disassembleBinFileWithAnalytics(const Flash* data, const Analytics* analytics){
+	if(!disasmData)
+		addDisasmData(data->size());
+	for(size_t i = 0; i <= 0xa8;i+=4)
+		disasmRecurse(i/2, data, disasmData.get());
+
+	for(size_t i = 0; i < std::min(data->size(), Analytics::PCHeatArrSize); i++){
+		if(analytics->getPCHeat()[i] > 0 && !disasmData.get()->disasmed.get(i))
+			disasmRecurse(i, data, disasmData.get());
+	}
+
+	generateContent();
+}
+
+A32u4::Disassembler::DisasmFile::DisasmData::DisasmData(size_t size) : disasmed(size){
+
+}
+void A32u4::Disassembler::DisasmFile::DisasmData::addFuncCallAddr(uint16_t addr){
+	if(funcCalls.find(addr) != funcCalls.end()){
+		funcCalls.insert(addr);
+	}
 }
 
 std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
@@ -43,7 +101,6 @@ std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
 		return std::to_string(val);
 
 	default:
-		//("Invalid paramType: " << type);
 		return "ERROR: " + std::to_string(type);
 	}
 }
@@ -177,27 +234,10 @@ std::string A32u4::Disassembler::getSignInt(uint32_t val) {
 	}
 }
 
-static bool compareLine(const std::pair<uint16_t,std::string>& a, const std::pair<uint16_t,std::string>& b) {
-	return a.first < b.first;
-}
-
-A32u4::Disassembler::DisasmFile A32u4::Disassembler::disassembleBin(const Flash* data){
-	DisasmFile out(data->size());
-	std::vector<std::pair<uint16_t,std::string>> lines;
-	for(size_t i = 0; i <= 0xa8;i+=4)
-		disasmRecurse(i/2,data, &out.disasmed, &lines);
-
-	std::sort(lines.begin(),lines.end(),compareLine);
-
-	for (size_t i = 0; i < lines.size(); i++)
-		out.content += lines[i].second + "\n";
-	return out;
-}
-
-void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitArray* disasmed, std::vector<std::pair<uint16_t,std::string>>* lines){
+void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, DisasmFile::DisasmData* disasmData){
 	uint16_t PC = start;
 	while(true){
-		if (disasmed->get(PC)) {
+		if (disasmData->disasmed.get(PC)) {
 			//printf("finished at %x from %x\n", PC*2, start*2);
 			return;
 		}
@@ -211,8 +251,8 @@ void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitAr
 
 		std::string disasm = disassemble(word, word2, PC);
 		//std::cout << disasm << std::endl;
-		lines->push_back({ PC, disasm });
-		disasmed->set(PC,true);
+		disasmData->lines.push_back({ PC, disasm, Inst_ind });
+		disasmData->disasmed.set(PC,true);
 
 		switch(Inst_ind){
 			case IND_JMP:
@@ -233,7 +273,7 @@ void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitAr
 			case IND_SBIC:
 			case IND_SBIS:
 			{
-				disasmRecurse(PC+2, data, disasmed, lines);
+				disasmRecurse(PC+2, data, disasmData);
 				break;
 			}
 
@@ -242,7 +282,7 @@ void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitAr
 			case IND_BRBS:
 			{
 				int8_t k = (int8_t)InstHandler::getk7_c_sin(word);
-				disasmRecurse(PC+k+1, data, disasmed, lines);
+				disasmRecurse(PC+k+1, data, disasmData);
 				break;
 			}
 
@@ -250,13 +290,15 @@ void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, BitAr
 			case IND_CALL:
 			{
 				uint32_t k = InstHandler::getLongAddr(word, word2);
-				disasmRecurse(k, data, disasmed, lines);
+				disasmRecurse(k, data, disasmData);
+				disasmData->addFuncCallAddr(k);
 				break;
 			}
 			case IND_RCALL:
 			{
 				int16_t k = InstHandler::getk12_c_sin(word);
-				disasmRecurse(PC+k+1, data, disasmed, lines);
+				disasmRecurse(PC+k+1, data, disasmData);
+				disasmData->addFuncCallAddr(PC+k+1);
 				break;
 			}
 

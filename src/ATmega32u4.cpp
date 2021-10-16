@@ -62,7 +62,7 @@ void A32u4::ATmega32u4::log(LogLevel logLevel, const char* msg, const char* file
 		if (Module && (logFlags & LogFlags_ShowModule)) {
 			info += Module;
 		}
-		if (fileName && lineNum != -1 && (logFlags & LogFlags_ShowFileNameAndLineNum)) {
+		if (fileName && lineNum != (size_t)-1 && (logFlags & LogFlags_ShowFileNameAndLineNum)) {
 			if (info.size() > 0) info += ", ";
 			info += "in File: " + std::string(fileName) + " at line: " + std::to_string(lineNum);
 		}

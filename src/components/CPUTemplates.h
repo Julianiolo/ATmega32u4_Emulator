@@ -12,7 +12,7 @@ void A32u4::CPU::execute(uint64_t amt) {
 			return;
 		}
 	}
-	execute3T<debug, analyse>(amt);
+	execute4T<debug, analyse>(amt);
 }
 
 template<bool debug, bool analyse>
@@ -95,6 +95,9 @@ void A32u4::CPU::execute3T(uint64_t amt) {
 			mcu->dataspace.timers.checkForIntr();
 
 			addCycles(cycsLeft);
+			if(analyse){
+				mcu->analytics.sleepSum += cycsLeft;
+			}
 	#endif
 		}
 		//executeInterrupts();
@@ -193,12 +196,18 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				mcu->dataspace.timers.checkForIntr();
 
 				addCycles(sleepCycsLeft);
+				if(analyse){
+					mcu->analytics.sleepSum += sleepCycsLeft;
+				}
 				sleepCycsLeft = 0;
 			}
 			else {
 				uint64_t skipCycs = targetCycs - totalCycls;
 				sleepCycsLeft -= skipCycs;
-				addCycles(sleepCycsLeft);
+				if(analyse){
+					mcu->analytics.sleepSum += skipCycs;
+				}
+				addCycles(skipCycs);
 			}
 #endif
 		}
