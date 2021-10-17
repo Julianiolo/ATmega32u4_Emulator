@@ -322,7 +322,7 @@ uint8_t A32u4::DataSpace::Updates::setEECR(uint8_t val, uint8_t oldVal){
 		return 4;
 	}
 
-	if ((val & (1 << Consts::EECR_EEMPE)) && (oldVal & (1 << Consts::EECR_EEMPE))) {
+	if ((val & (1 << Consts::EECR_EEMPE)) && !(oldVal & (1 << Consts::EECR_EEMPE))) {
 		lastEECR_EEMPE_set = mcu->cpu.totalCycls;
 		return 0;
 	}
@@ -345,6 +345,9 @@ uint8_t A32u4::DataSpace::Updates::setEECR(uint8_t val, uint8_t oldVal){
 				mcu->dataspace.eeprom[Addr] |= mcu->dataspace.data[Consts::EEDR]; //idk if it actually works like that
 				break;
 			}
+
+			// set EEPE to 0 to indicate being ready again
+			REF_EECR &= ~(1 << Consts::EECR_EEPE);
 		}
 		return 0;
 	}

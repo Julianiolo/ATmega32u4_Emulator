@@ -47,7 +47,7 @@ void A32u4::Debugger::resetBreakpoints(){
 
 void A32u4::Debugger::pushAddrOnAddressStack(uint16_t addr, uint16_t fromAddr) {
 	//return;
-	A32U4_ASSERT_INRANGE_M(addressStackPointer, 0, addressStackMaxSize, A32U4_ADDR_ERR_STR("Debug Address Stack overflow: ",addressStackPointer,4), "Debugger", return);
+	A32U4_ASSERT_INRANGE_M(addressStackPointer+1, 0, addressStackMaxSize, A32U4_ADDR_ERR_STR("Debug Address Stack overflow: ",addressStackPointer,4), "Debugger", return);
 	addressStack[addressStackPointer] = addr;
 	fromAddressStack[addressStackPointer++] = fromAddr;
 }
