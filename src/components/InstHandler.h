@@ -16,19 +16,13 @@ namespace A32u4 {
 		ATmega32u4* const mcu;
 		InstHandler(ATmega32u4* mcu);
 
-		uint64_t indAdd = 0;
-		bool printUnkownInstError = true;
-
 		void handleInst(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref);
 		template<bool debug,bool analyse>
 		void handleInstT(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref);
 		void executeInstSwitch(uint16_t word);
 		static constexpr uint8_t startIndArr2[] = { 73, 94, 109, 107, 99, 0, 71, 87 };
-
 		
-		static uint8_t getInstInd(uint16_t word);
 		static uint8_t getInstInd3(uint16_t word);
-
 
 		//static void getRegsDirect2(uint16_t word, uint8_t& Rd, uint8_t& Rr);
 		static uint8_t getRd2_c_arr(uint16_t word);
@@ -54,8 +48,6 @@ namespace A32u4 {
 		//static int16_t conv12to16BitInt(uint16_t word);
 		static uint32_t getLongAddr(uint16_t word1, uint16_t word2);
 		
-		/*__declspec(noinline)*/ static bool is2WordInstOld(uint16_t word);
-		/*__declspec(noinline)*/ static bool is2WordInstNew(uint16_t word);
 		void setPC_Cycs_Skip(bool cond);
 		uint32_t getExtendedZ();
 
@@ -195,6 +187,7 @@ namespace A32u4 {
 
 	public:
 		static bool is2WordInst(uint16_t word);
+		static uint8_t getInstInd(uint16_t word);
 
 		struct Inst_ELEM {
 			void (InstHandler::*func)(uint16_t word);

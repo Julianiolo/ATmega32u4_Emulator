@@ -49,7 +49,7 @@ void A32u4::Disassembler::DisasmFile::generateContent(){
 
 void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data){
 	if(!disasmData)
-		addDisasmData(data->size());
+		addDisasmData(data->sizeWords());
 	for(size_t i = 0; i <= 0xa8;i+=4)
 		disasmRecurse(i/2,data, disasmData.get());
 
@@ -57,11 +57,11 @@ void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data){
 }
 void A32u4::Disassembler::DisasmFile::disassembleBinFileWithAnalytics(const Flash* data, const Analytics* analytics){
 	if(!disasmData)
-		addDisasmData(data->size());
+		addDisasmData(data->sizeWords());
 	for(size_t i = 0; i <= 0xa8;i+=4)
 		disasmRecurse(i/2, data, disasmData.get());
 
-	for(size_t i = 0; i < std::min(data->size(), Analytics::PCHeatArrSize); i++){
+	for(size_t i = 0; i < std::min(data->sizeWords(), Analytics::PCHeatArrSize); i++){
 		if(analytics->getPCHeat()[i] > 0 && !disasmData.get()->disasmed.get(i))
 			disasmRecurse(i, data, disasmData.get());
 	}

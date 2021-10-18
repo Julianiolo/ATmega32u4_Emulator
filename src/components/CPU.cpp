@@ -25,15 +25,6 @@ void A32u4::CPU::reset() {
 	totalCycls = 0;
 	targetCycs = 0;
 	breakOutOfOptim = false;
-#if USE_INSTCACHE
-	populateInstCache();
-#endif
-}
-void A32u4::CPU::populateInstCache() {
-	for (int i = 0; i < Flash::sizeMax / 2; i++) {
-		uint16_t inst = mcu->flash.getInst(i);
-		mcu->flash.instCache[i] = instHandler.getInstInd(inst);
-	}
 }
 
 void A32u4::CPU::execute1(uint64_t amt) {
