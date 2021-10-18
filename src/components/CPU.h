@@ -46,8 +46,6 @@ namespace A32u4 {
 		template<bool debug, bool analyse>
 		void execute4T(uint64_t amt);
 
-		void populateInstCache();
-
 		void queueInterrupt(uint16_t addr);
 		void executeInterrupts();
 		void directExecuteInterrupt(uint8_t num);

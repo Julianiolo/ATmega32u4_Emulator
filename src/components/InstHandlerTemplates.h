@@ -25,7 +25,7 @@ void A32u4::InstHandler::handleInstT(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref)
 		}
 	}
 
-	uint8_t ind = mcu->flash.getInstIndCache(mcu->cpu.PC);
+	uint8_t ind = mcu->flash.getInstInd(mcu->cpu.PC);
 
 	if (analyse) {
 		mcu->analytics.addData(ind, mcu->cpu.PC);
@@ -33,8 +33,6 @@ void A32u4::InstHandler::handleInstT(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref)
 
 	(this->*(instList[ind].func))(word);
 	//std::invoke(instList[ind].func, this, word);
-
-	indAdd++;
 
 	PC_ADD_Ref = PC_add;
 	CYCL_ADD_Ref = cycs;

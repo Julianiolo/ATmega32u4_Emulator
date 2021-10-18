@@ -167,7 +167,6 @@ void A32u4::InstHandler::handleInst(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref) 
 	indAdd ^= 20874;
 	indAdd ^= 32874*ind;
 #endif
-	indAdd++;
 
 	PC_ADD_Ref = PC_add;
 	CYCL_ADD_Ref = cycs;
@@ -590,21 +589,6 @@ uint32_t A32u4::InstHandler::getExtendedZ() {
 }
 
 bool A32u4::InstHandler::is2WordInst(uint16_t word) {
-	return is2WordInstNew(word);
-}
-bool A32u4::InstHandler::is2WordInstOld(uint16_t word) {
-	uint8_t inds[] = { IND_LDS, IND_STS, IND_JMP, IND_CALL }; //{28,32,85,97};
-
-	for (uint8_t i = 0; i < 4; i++) {
-		uint8_t ind = inds[i];
-		if ((word & instList[ind].mask) == instList[ind].res) {
-			return true;
-		}
-	}
-
-	return false;
-}
-bool A32u4::InstHandler::is2WordInstNew(uint16_t word) {
 	//const uint16_t all = instList[IND_LDS].mask & instList[IND_STS].mask & instList[IND_JMP].mask & instList[IND_CALL].mask;
 
 	//if ((word & all) != all) {
@@ -2357,6 +2341,19 @@ uint8_t A32u4::InstHandler::getInstInd2(uint16_t word) {
 	}
 	println("Unhaldled Inst: 0x" << std::hex << word); // << " At: 0x" << mcu->cpu.PC
 	return 0xff;
+}
+
+bool A32u4::InstHandler::is2WordInstOld(uint16_t word) {
+	uint8_t inds[] = { IND_LDS, IND_STS, IND_JMP, IND_CALL }; //{28,32,85,97};
+
+	for (uint8_t i = 0; i < 4; i++) {
+		uint8_t ind = inds[i];
+		if ((word & instList[ind].mask) == instList[ind].res) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 */
