@@ -6,6 +6,7 @@
 
 #include "../utils/StringUtils.h"
 #include "../ATmega32u4.h"
+#include "InstHandler.h"
 
 A32u4::Flash::Flash(ATmega32u4* mcu):
 	mcu(mcu)
@@ -28,23 +29,40 @@ uint8_t A32u4::Flash::getByte(uint16_t addr) const {
 
 	return data[addr];
 }
-
 uint16_t A32u4::Flash::getWord(uint16_t addr) const {
 	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getWord Address to Big: ",addr,4), "Flash", return 0);
 
 	return ((uint16_t)data[addr + 1] << 8) | data[addr];
 }
 
-uint16_t A32u4::Flash::getInst(uint16_t addr) const {
-	return getWord(addr * 2);
+// get Inst Word at PC
+uint16_t A32u4::Flash::getInst(uint16_t pc) const {
+	return getWord(pc * 2);
 }
 
-uint8_t A32u4::Flash::getInstIndCache(uint16_t addr) {
-	if (addr >= sizeMax / 2) {
-		return 0xFF;
-	}
-	return instCache[addr];
+uint8_t A32u4::Flash::getInstIndCache(uint16_t pc) const {
+	A32U4_ASSERT_INRANGE_M(pc, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getInstIndCache Address to Big: ",pc,4), "Flash", return 0xFF);
+	return instCache[pc];
 }
+uint8_t A32u4::Flash::getInstInd(uint16_t pc) const{
+#if FLASH_USE_INSTIND_CACHE
+	return getInstIndCache(pc);
+#else
+	return InstHandler::getInstInd(getInst(pc));
+#endif
+}
+
+uint8_t* A32u4::Flash::getData() {
+	return data;
+}
+
+size_t A32u4::Flash::size() const {
+	return size_*2;
+}
+size_t A32u4::Flash::sizeWords() const{
+	return size_;
+}
+
 
 void A32u4::Flash::clear() {
 	for (uint16_t i = 0; i < sizeMax; i++) {
@@ -52,8 +70,6 @@ void A32u4::Flash::clear() {
 	}
 	hasProgram = false;
 }
-
-
 
 void A32u4::Flash::loadFromHexString(const char* str) {
 	clear();
@@ -89,8 +105,10 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 
 	hasProgram = true;
 	size_ = flashInd;
+#if FLASH_USE_INSTIND_CACHE
+	populateInstIndCache();
+#endif
 }
-
 bool A32u4::Flash::loadFromHexFile(const char* str) {
 	std::ifstream t;
 	size_t len;
@@ -110,14 +128,13 @@ bool A32u4::Flash::loadFromHexFile(const char* str) {
 	delete[] buffer;
 	return true;
 }
-
-uint8_t* A32u4::Flash::getData() {
-	return data;
+void A32u4::Flash::populateInstIndCache(){
+	for (uint16_t i = 0; i < sizeWords() / 2; i++) {
+		uint16_t inst = getInst(i);
+		instCache[i] = InstHandler::getInstInd(inst);
+	}
 }
 
-size_t A32u4::Flash::size() const {
-	return size_;
-}
 
 /*
 
