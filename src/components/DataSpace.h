@@ -135,7 +135,7 @@ namespace A32u4 {
 
 		uint8_t* getEEPROM();
 		const uint8_t* getData();
-		const uint8_t getDataByte(uint16_t Addr);
+		uint8_t getDataByte(uint16_t Addr);
 		void setDataByte(uint16_t Addr, uint8_t byte);
 		void setBitTo(uint16_t Addr, uint8_t bit, bool val);
 		void setBitsTo(uint16_t Addr, uint8_t mask, uint8_t bits);

@@ -254,13 +254,13 @@ const uint16_t* A32u4::Debugger::getAddressStack() const {
 const uint16_t* A32u4::Debugger::getFromAddressStack() const {
 	return fromAddressStack;
 }
-const uint16_t A32u4::Debugger::getAddressStackPointer() const {
+uint16_t A32u4::Debugger::getAddressStackPointer() const {
 	return addressStackPointer;
 }
-const uint16_t A32u4::Debugger::getAddresAt(uint16_t stackInd) const {
+uint16_t A32u4::Debugger::getAddresAt(uint16_t stackInd) const {
 	return addressStack[stackInd];
 }
-const uint16_t A32u4::Debugger::getFromAddresAt(uint16_t stackInd) const {
+uint16_t A32u4::Debugger::getFromAddresAt(uint16_t stackInd) const {
 	return fromAddressStack[stackInd];
 }
 

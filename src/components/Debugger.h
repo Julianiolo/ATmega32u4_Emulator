@@ -86,9 +86,9 @@ namespace A32u4 {
 		const Breakpoint* getBreakpointsRead() const;
 		const uint16_t* getAddressStack() const;
 		const uint16_t* getFromAddressStack() const;
-		const uint16_t getAddressStackPointer() const;
-		const uint16_t getAddresAt(uint16_t stackInd) const;
-		const uint16_t getFromAddresAt(uint16_t stackInd) const;
+		uint16_t getAddressStackPointer() const;
+		uint16_t getAddresAt(uint16_t stackInd) const;
+		uint16_t getFromAddresAt(uint16_t stackInd) const;
 	};
 }
 #endif

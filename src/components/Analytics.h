@@ -30,6 +30,7 @@ namespace A32u4 {
 		void addData(uint8_t instInd,uint16_t PC);
 
 	public:
+		std::string str;
 		uint16_t maxSP = 0xFFFF;
 		uint64_t sleepSum = 0;
 
