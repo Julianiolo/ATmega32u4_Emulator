@@ -24,7 +24,8 @@ BitArray::BitArray(const BitArray& a) {
 }
 bool BitArray::get(bsize_t i){
     if(i < size)
-        return (data[i/8] & (1 << i%8)) != 0;
+        std::runtime_error("Bytearray get index out of bounds");
+    return (data[i/8] & (1 << i%8)) != 0;
 }
 void BitArray::set(bsize_t i, bool val){
     if (i / 8 >= byteSize)
