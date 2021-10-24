@@ -7,11 +7,11 @@
 
 #include "../utils/bitMacros.h"
 
-A32u4::DataSpace::DataSpace(ATmega32u4* mcu) :
+A32u4::DataSpace::DataSpace(ATmega32u4* mcu) : mcu(mcu), 
 #if USE_HEAP
 	data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
 #endif
-	mcu(mcu), funcs(mcu), timers(mcu)
+	funcs(mcu), timers(mcu)
 {
 
 }
@@ -254,12 +254,16 @@ void A32u4::DataSpace::setZ(uint16_t word) {
 
 void A32u4::DataSpace::resetIO() {
 	//add: set all IO Registers to initial Values
-	for (uint8_t i = 0; i < Consts::io_size; i++) {
+	for (size_t i = 0; i < Consts::io_size; i++) {
 		data[Consts::io_start + i] = 0;
 	}
-	for (uint16_t i = 0; i < Consts::eeprom_size; i++) {
+	for (size_t i = 0; i < Consts::ext_io_size; i++) {
+		data[Consts::ext_io_start + i] = 0;
+	}
+	for (size_t i = 0; i < Consts::eeprom_size; i++) {
 		eeprom[i] = 0;
 	}
+	
 	setSP(Consts::ISRAM_start + Consts::ISRAM_size - 1);
 }
 
@@ -386,8 +390,6 @@ void A32u4::DataSpace::Updates::setTCCR0B(uint8_t val) {
 	mcu->dataspace.timers.timer0_presc_cache = val & 0b111;
 	mcu->cpu.breakOutOfOptim = true;
 
-	std::cout << "switch to " << ((int)val & 0b111) << std::endl;
-
 #if 1
 	switch (mcu->dataspace.timers.timer0_presc_cache) {
 	case 2:
@@ -461,7 +463,7 @@ const uint8_t* A32u4::DataSpace::getData() {
 	}
 	return data;
 }
-const uint8_t A32u4::DataSpace::getDataByte(uint16_t Addr) {
+uint8_t A32u4::DataSpace::getDataByte(uint16_t Addr) {
 	return getByteAt(Addr);
 }
 void A32u4::DataSpace::setDataByte(uint16_t Addr, uint8_t byte) {

@@ -87,7 +87,7 @@ namespace StringUtils {
 	bool writeStringToFile(const std::string& str, const char* path);
 
 	size_t findCharInStr(char c, const char* str, const char* strEnd = nullptr);
-};
+}
 #endif
 
 /*

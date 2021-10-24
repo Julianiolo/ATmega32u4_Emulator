@@ -578,7 +578,7 @@ uint8_t A32u4::InstHandler::getq6_d123(uint16_t word) {//q val 6Bit distributed 
 	return ((word & 0x2000) >> 5) | ((word & 0x0C00) >> 7) | (word & 0x0007);
 }
 uint8_t A32u4::InstHandler::getA6_d24(uint16_t word) {//A val 6Bit distributed in 2chunk 4chunk ____ _AA_ ____ AAAA
-	return ((word & 0x0600) >> (4 + 1)) | word & 0x000F;
+	return ((word & 0x0600) >> (4 + 1)) | (word & 0x000F);
 }
 
 uint32_t A32u4::InstHandler::getLongAddr(uint16_t word1, uint16_t word2) {
