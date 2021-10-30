@@ -7,11 +7,11 @@
 
 #include "../utils/bitMacros.h"
 
-A32u4::DataSpace::DataSpace(ATmega32u4* mcu) :
+A32u4::DataSpace::DataSpace(ATmega32u4* mcu) : mcu(mcu), 
 #if USE_HEAP
 	data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
 #endif
-	mcu(mcu), funcs(mcu), timers(mcu)
+	funcs(mcu), timers(mcu)
 {
 
 }
@@ -254,13 +254,17 @@ void A32u4::DataSpace::setZ(uint16_t word) {
 
 void A32u4::DataSpace::resetIO() {
 	//add: set all IO Registers to initial Values
-	for (uint8_t i = 0; i < Consts::io_size; i++) {
+	for (size_t i = 0; i < Consts::io_size; i++) {
 		data[Consts::io_start + i] = 0;
 	}
-	for (uint16_t i = 0; i < Consts::eeprom_size; i++) {
+	for (size_t i = 0; i < Consts::ext_io_size; i++) {
+		data[Consts::ext_io_start + i] = 0;
+	}
+	for (size_t i = 0; i < Consts::eeprom_size; i++) {
 		eeprom[i] = 0;
 	}
-	setSP(Consts::ISRAM_start + Consts::ISRAM_size - 1);
+	
+	setSP(Consts::SP_initaddr);
 }
 
 void A32u4::DataSpace::setSP(uint16_t val) {
@@ -386,8 +390,6 @@ void A32u4::DataSpace::Updates::setTCCR0B(uint8_t val) {
 	mcu->dataspace.timers.timer0_presc_cache = val & 0b111;
 	mcu->cpu.breakOutOfOptim = true;
 
-	std::cout << "switch to " << ((int)val & 0b111) << std::endl;
-
 #if 1
 	switch (mcu->dataspace.timers.timer0_presc_cache) {
 	case 2:
@@ -417,7 +419,7 @@ uint8_t A32u4::DataSpace::popByteFromStack() {
 	A32U4_ASSERT_INRANGE_M(SP+1, Consts::ISRAM_start, Consts::data_size, A32U4_ADDR_ERR_STR("Stack pointer while pop Byte out of bounds: ",SP,4), "DataSpace", return 0);
 	uint8_t Byte = data[SP + 1];
 
-	mcu->debugger.clearAddressByte(SP + 1);
+	mcu->debugger.registerStackDec(SP + 1);
 
 	setSP(SP + 1);
 	return Byte;
@@ -439,8 +441,7 @@ uint16_t A32u4::DataSpace::popAddrFromStack() {
 	uint16_t Addr = data[SP + 2];//maybe this should be SP-1 and SP-2 
 	Addr |= ((uint16_t)data[SP + 1]) << 8;
 
-	mcu->debugger.clearAddressByteRaw(SP+2);
-	mcu->debugger.clearAddressByteRaw(SP+1);
+	//mcu->debugger.registerStackDec(SP + 2);
 
 	setSP(SP + 2);
 	return Addr;
@@ -461,7 +462,7 @@ const uint8_t* A32u4::DataSpace::getData() {
 	}
 	return data;
 }
-const uint8_t A32u4::DataSpace::getDataByte(uint16_t Addr) {
+uint8_t A32u4::DataSpace::getDataByte(uint16_t Addr) {
 	return getByteAt(Addr);
 }
 void A32u4::DataSpace::setDataByte(uint16_t Addr, uint8_t byte) {

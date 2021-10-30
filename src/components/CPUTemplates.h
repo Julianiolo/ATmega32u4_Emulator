@@ -76,8 +76,7 @@ void A32u4::CPU::execute3T(uint64_t amt) {
 			}
 
 		skip_for:
-
-			Deb_cycCnt++;
+		;
 		}
 		else {
 	#if !SLEEP_SKIP
@@ -113,6 +112,12 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 	targetCycs += amt;
 	while (totalCycls < targetCycs) {
 		breakOutOfOptim = false;
+
+		if (mcu->debugger.isHalted()) {
+			targetCycs = std::max(targetCycs - amt, totalCycls);
+			return;
+		}
+
 		if (!CPU_sleep) {
 
 			uint16_t prescCycs;
@@ -176,8 +181,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 			}
 
 		skip_for:
-
-			Deb_cycCnt++;
+		;
 		}
 		else {
 #if !SLEEP_SKIP
@@ -212,10 +216,5 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 #endif
 		}
 		//executeInterrupts();
-
-		if (mcu->debugger.isHalted()) {
-			targetCycs = std::max(targetCycs - amt, totalCycls);
-			return;
-		}
 	}
 }
