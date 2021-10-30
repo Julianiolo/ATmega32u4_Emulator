@@ -21,7 +21,7 @@ namespace A32u4 {
 		uint64_t* instCounter;
 #endif
 
-		
+		uint64_t instTotalCnt = 0;
 
 		Analytics();
 		~Analytics();
@@ -38,6 +38,7 @@ namespace A32u4 {
 
 		const uint64_t* getPCHeat() const;
 		const uint64_t* getInstHeat() const;
+		uint64_t getTotalInstCnt() const;
 	};
 }
 

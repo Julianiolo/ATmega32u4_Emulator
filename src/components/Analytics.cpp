@@ -28,6 +28,7 @@ void A32u4::Analytics::reset() {
 void A32u4::Analytics::addData(uint8_t instInd, uint16_t PC) {
 	instCounter[instInd]++;
 	pcCounter[PC]++;
+	instTotalCnt++;
 }
 
 uint64_t A32u4::Analytics::getPCCnt(uint16_t addr) {
@@ -51,4 +52,8 @@ const uint64_t* A32u4::Analytics::getPCHeat() const{
 }
 const uint64_t* A32u4::Analytics::getInstHeat() const{
 	return instCounter;
+}
+
+uint64_t A32u4::Analytics::getTotalInstCnt() const {
+	return instTotalCnt;
 }
