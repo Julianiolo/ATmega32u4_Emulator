@@ -92,8 +92,11 @@ bool A32u4::Debugger::doHaltActions() {
 			ret = false;
 
 		doStep = false;
-		if (skipCycs == mcu->cpu.getTotalCycles())
+		if (skipCycs == mcu->cpu.getTotalCycles()) {
 			halted = false;
+			ret = false;
+		}
+			
 		else
 			halted = true;
 		mcu->cpu.breakOutOfOptim = true;
@@ -227,17 +230,20 @@ void A32u4::Debugger::continue_() {
 	//doStep = true;
 	skipCycs = mcu->cpu.getTotalCycles();
 }
-void A32u4::Debugger::setBreakpoint(uint16_t addr) {
-	breakpoints[addr/2] = 1;
+void A32u4::Debugger::setBreakpoint(uint16_t pc) {
+	breakpoints[pc] = 1;
+	breakpointList.insert(pc);
 }
-void A32u4::Debugger::clearBreakpoint(uint16_t addr) {
-	breakpoints[addr/2] = 0;
+void A32u4::Debugger::clearBreakpoint(uint16_t pc) {
+	breakpoints[pc] = 0;
+	if (breakpointList.find(pc) != breakpointList.end())
+		breakpointList.erase(pc);
+}
+const std::set<uint16_t>& A32u4::Debugger::getBreakpointList() const {
+	return breakpointList;
 }
 
-A32u4::Debugger::Breakpoint* A32u4::Debugger::getBreakpoints() const {
-	return breakpoints;
-}
-const A32u4::Debugger::Breakpoint* A32u4::Debugger::getBreakpointsRead() const {
+const A32u4::Debugger::Breakpoint* A32u4::Debugger::getBreakpoints() const {
 	return breakpoints;
 }
 const uint16_t* A32u4::Debugger::getAddressStack() const {
