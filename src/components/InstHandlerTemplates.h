@@ -25,11 +25,6 @@ void A32u4::InstHandler::handleInstT(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref)
 		}
 	}
 
-	if(analyse && 0){
-		uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
-		mcu->analytics.str +=  Disassembler::disassemble(word, word2, mcu->cpu.PC) + "\n";
-	}
-
 	uint8_t ind = mcu->flash.getInstInd(mcu->cpu.PC);
 
 	if (analyse) {

@@ -42,6 +42,10 @@ namespace A32u4 {
 		uint16_t* fromAddressStack;
 		uint8_t* addressStackIndicators;
 #endif
+
+		// last recived SP (relative to ISRAM_start)
+		uint16_t lastSPRecived = DataSpace::Consts::SP_initaddr - DataSpace::Consts::ISRAM_start;
+
 		Debugger(ATmega32u4* mcu);
 		~Debugger();
 
@@ -52,8 +56,7 @@ namespace A32u4 {
 		void popAddrFromAddressStack();
 
 		void registerAddressBytes(uint16_t addr);
-		void clearAddressByte(uint16_t addr);
-		void clearAddressByteRaw(uint16_t addr);
+		void registerStackDec(uint16_t addr);
 
 		bool checkBreakpoints();
 		bool doHaltActions();

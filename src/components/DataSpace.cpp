@@ -264,7 +264,7 @@ void A32u4::DataSpace::resetIO() {
 		eeprom[i] = 0;
 	}
 	
-	setSP(Consts::ISRAM_start + Consts::ISRAM_size - 1);
+	setSP(Consts::SP_initaddr);
 }
 
 void A32u4::DataSpace::setSP(uint16_t val) {
@@ -419,7 +419,7 @@ uint8_t A32u4::DataSpace::popByteFromStack() {
 	A32U4_ASSERT_INRANGE_M(SP+1, Consts::ISRAM_start, Consts::data_size, A32U4_ADDR_ERR_STR("Stack pointer while pop Byte out of bounds: ",SP,4), "DataSpace", return 0);
 	uint8_t Byte = data[SP + 1];
 
-	mcu->debugger.clearAddressByte(SP + 1);
+	mcu->debugger.registerStackDec(SP + 1);
 
 	setSP(SP + 1);
 	return Byte;
@@ -441,8 +441,7 @@ uint16_t A32u4::DataSpace::popAddrFromStack() {
 	uint16_t Addr = data[SP + 2];//maybe this should be SP-1 and SP-2 
 	Addr |= ((uint16_t)data[SP + 1]) << 8;
 
-	mcu->debugger.clearAddressByteRaw(SP+2);
-	mcu->debugger.clearAddressByteRaw(SP+1);
+	//mcu->debugger.registerStackDec(SP + 2);
 
 	setSP(SP + 2);
 	return Addr;

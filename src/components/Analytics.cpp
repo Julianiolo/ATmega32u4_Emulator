@@ -23,6 +23,9 @@ void A32u4::Analytics::reset() {
 	for (int i = 0; i < Flash::sizeMax / 2; i++) {
 		pcCounter[i] = 0;
 	}
+
+	sleepSum = 0;
+	maxSP = 0xFFFF;
 }
 
 void A32u4::Analytics::addData(uint8_t instInd, uint16_t PC) {
@@ -30,8 +33,8 @@ void A32u4::Analytics::addData(uint8_t instInd, uint16_t PC) {
 	pcCounter[PC]++;
 }
 
-uint64_t A32u4::Analytics::getPCCnt(uint16_t addr) {
-	return pcCounter[addr];
+uint64_t A32u4::Analytics::getPCCnt(uint16_t addr) const {
+	return pcCounter[addr/2];
 }
 
 uint16_t A32u4::Analytics::findMostUsedPCCnt() {

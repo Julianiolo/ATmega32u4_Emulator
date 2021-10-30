@@ -225,7 +225,7 @@ end_params:
 	return out;
 }
 
-std::string A32u4::Disassembler::getSignInt(uint32_t val) {
+std::string A32u4::Disassembler::getSignInt(int32_t val) {
 	if (val >= 0) {
 		return "+" +std::to_string(val);
 	}
