@@ -107,7 +107,7 @@ std::string StringUtils::loadFileIntoString(const char* path, const char* errorM
 	fileStr = "";
 
 	t.seekg(0, std::ios::end);   
-	fileStr.reserve(t.tellg());
+	fileStr.reserve((size_t)t.tellg());
 	t.seekg(0, std::ios::beg);
 
 	fileStr.assign(std::istreambuf_iterator<char>(t), std::istreambuf_iterator<char>());
