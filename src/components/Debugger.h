@@ -2,6 +2,7 @@
 #define _A32u4_DEBUGGER
 
 #include <string>
+#include <set>
 
 #include "config.h"
 #include "Flash.h"
@@ -32,6 +33,7 @@ namespace A32u4 {
 		bool doStep = false;
 		uint64_t skipCycs = -1;
 
+		std::set<uint16_t> breakpointList;
 #if !USE_HEAP
 		Breakpoint breakpoints[breakPointArrMaxSize];
 		uint16_t addressStack[addressStackMaxSize];
@@ -83,11 +85,11 @@ namespace A32u4 {
 		void halt();
 		void step();
 		void continue_();
-		void setBreakpoint(uint16_t addr);
-		void clearBreakpoint(uint16_t addr);
+		void setBreakpoint(uint16_t pc);
+		void clearBreakpoint(uint16_t pc);
+		const std::set<uint16_t>& getBreakpointList() const;
 
-		Breakpoint* getBreakpoints() const;
-		const Breakpoint* getBreakpointsRead() const;
+		const Breakpoint* getBreakpoints() const;
 		const uint16_t* getAddressStack() const;
 		const uint16_t* getFromAddressStack() const;
 		uint16_t getAddressStackPointer() const;
