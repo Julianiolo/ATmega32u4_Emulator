@@ -64,26 +64,17 @@ void A32u4::Debugger::registerAddressBytes(uint16_t addr) {
 	addr -= DataSpace::Consts::ISRAM_start;
 	addressStackIndicators[addr] = 1;
 	addressStackIndicators[addr - 1] = 2;
+	lastSPRecived = addr;
 }
 
-void A32u4::Debugger::clearAddressByte(uint16_t addr) {
-	//static bool doPopAddress = false;
-
+void A32u4::Debugger::registerStackDec(uint16_t addr){
 	addr -= DataSpace::Consts::ISRAM_start;
-
-	if (addressStackIndicators[addr] == 1) {
-		//if (doPopAddress) {
-		popAddrFromAddressStack();
-		//}
-		//doPopAddress = !doPopAddress;
+	for(uint16_t i = lastSPRecived+1; i<=addr; i++){
+		if(addressStackIndicators[i] == 1)
+			popAddrFromAddressStack();
+		addressStackIndicators[i] = 0;
 	}
-
-	addressStackIndicators[addr] = 0;
-}
-void A32u4::Debugger::clearAddressByteRaw(uint16_t addr) {
-	addr -= DataSpace::Consts::ISRAM_start;
-
-	addressStackIndicators[addr] = 0;
+	lastSPRecived = addr;
 }
 
 bool A32u4::Debugger::checkBreakpoints() {
@@ -254,17 +245,38 @@ const uint16_t* A32u4::Debugger::getAddressStack() const {
 const uint16_t* A32u4::Debugger::getFromAddressStack() const {
 	return fromAddressStack;
 }
-const uint16_t A32u4::Debugger::getAddressStackPointer() const {
+uint16_t A32u4::Debugger::getAddressStackPointer() const {
 	return addressStackPointer;
 }
-const uint16_t A32u4::Debugger::getAddresAt(uint16_t stackInd) const {
+uint16_t A32u4::Debugger::getAddresAt(uint16_t stackInd) const {
 	return addressStack[stackInd];
 }
-const uint16_t A32u4::Debugger::getFromAddresAt(uint16_t stackInd) const {
+uint16_t A32u4::Debugger::getFromAddresAt(uint16_t stackInd) const {
 	return fromAddressStack[stackInd];
 }
 
 /*
+
+void A32u4::Debugger::clearAddressByte(uint16_t addr) {
+	//static bool doPopAddress = false;
+
+	addr -= DataSpace::Consts::ISRAM_start;
+
+	if (addressStackIndicators[addr] == 1) {
+		//if (doPopAddress) {
+		popAddrFromAddressStack();
+		//}
+		//doPopAddress = !doPopAddress;
+	}
+
+	addressStackIndicators[addr] = 0;
+}
+void A32u4::Debugger::clearAddressByteRaw(uint16_t addr) {
+	addr -= DataSpace::Consts::ISRAM_start;
+
+	addressStackIndicators[addr] = 0;
+}
+
 std::string regNumStr = stringExtras::paddRight(std::to_string(ind), 2, ' ');
 std::string decValStr = stringExtras::paddLeft(std::to_string(regVal), 3, ' ');
 return "R" + regNumStr + ": 0x" + stringExtras::intToHex(regVal, 2) + " > " + decValStr;

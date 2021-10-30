@@ -33,7 +33,7 @@ namespace A32u4 {
 		uint16_t maxSP = 0xFFFF;
 		uint64_t sleepSum = 0;
 
-		uint64_t getPCCnt(uint16_t addr);
+		uint64_t getPCCnt(uint16_t addr) const;
 		uint16_t findMostUsedPCCnt();
 
 		const uint64_t* getPCHeat() const;

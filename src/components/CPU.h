@@ -18,19 +18,16 @@ namespace A32u4 {
 		InstHandler instHandler;
 		ATmega32u4* const mcu;
 
-		uint64_t interruptFlags;
-		bool insideInterrupt;
-
 		uint16_t PC;
 		uint64_t totalCycls, targetCycs;
+
+		uint64_t interruptFlags;
+		bool insideInterrupt;
 
 		bool breakOutOfOptim = false;
 
 		uint8_t& REF_SREG;
 
-#if 1
-		uint64_t Deb_cycCnt = 0;
-#endif
 		bool CPU_sleep = false;
 		uint64_t sleepCycsLeft = 0;
 

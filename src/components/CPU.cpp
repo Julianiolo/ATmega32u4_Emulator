@@ -127,8 +127,6 @@ void A32u4::CPU::execute2(uint64_t amt) {
 				mcu->dataspace.timers.checkForIntr();
 				break;
 			}
-
-			Deb_cycCnt++;
 		}
 		else {
 #if !SLEEP_SKIP
@@ -221,8 +219,7 @@ void A32u4::CPU::execute3(uint64_t amt) {
 			}
 
 			skip_for:
-
-			Deb_cycCnt++;
+			;
 		}
 		else {
 #if !SLEEP_SKIP
@@ -336,7 +333,7 @@ void A32u4::CPU::setFlags_NZ(uint8_t res) {
 		val |= 1 << DataSpace::Consts::SREG_Z;
 	}
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
-	reg = reg & 0b11111001 | val;
+	reg = (reg & 0b11111001) | val;
 #else
 	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_N, (res & 0b10000000) != 0);
 	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_Z, res == 0);
@@ -354,7 +351,7 @@ void A32u4::CPU::setFlags_NZ(uint16_t res) {
 		val |= 1 << DataSpace::Consts::SREG_Z;
 	}
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
-	reg = reg & 0b11111001 | val;
+	reg = (reg & 0b11111001) | val;
 #else
 	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_N, N);
 	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_Z, Z);
@@ -546,7 +543,7 @@ void A32u4::CPU::setFlags_SVNZ(uint8_t res) {
 	}
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
-	reg = reg & 0b11100001 | val;
+	reg = (reg & 0b11100001) | val;
 #else
 	setFlags_NZ(res);
 
@@ -621,7 +618,7 @@ void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
 	}
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
-	reg = reg & 0b11100000 | val;
+	reg = (reg & 0b11100000) | val;
 #else
 	setFlags_NZ(res);
 	

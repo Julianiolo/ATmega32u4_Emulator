@@ -46,7 +46,7 @@ namespace A32u4 {
 
 	private:
 		static std::string getParamStr(uint16_t val, uint8_t type);
-		static std::string getSignInt(uint32_t val);
+		static std::string getSignInt(int32_t val);
 
 		static void disasmRecurse(uint16_t start, const Flash* data, DisasmFile::DisasmData* disasmData);
 	};

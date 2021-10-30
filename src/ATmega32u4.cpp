@@ -80,7 +80,7 @@ void A32u4::ATmega32u4::log(LogLevel logLevel, const char* msg, const char* file
 	}
 
 	if (logLevel == LogLevel_Error) {
-		if (currentExecFlags == -1 || currentExecFlags & ExecFlags_Debug) {
+		if (currentExecFlags == (uint8_t)-1 || currentExecFlags & ExecFlags_Debug) {
 			debugger.halt();
 		}
 		else {
