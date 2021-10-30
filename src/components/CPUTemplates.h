@@ -113,7 +113,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 	while (totalCycls < targetCycs) {
 		breakOutOfOptim = false;
 
-		if (mcu->debugger.isHalted()) {
+		if (mcu->debugger.isHalted() && !mcu->debugger.doStep) {
 			targetCycs = std::max(targetCycs - amt, totalCycls);
 			return;
 		}

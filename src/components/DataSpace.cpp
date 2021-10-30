@@ -441,7 +441,7 @@ uint16_t A32u4::DataSpace::popAddrFromStack() {
 	uint16_t Addr = data[SP + 2];//maybe this should be SP-1 and SP-2 
 	Addr |= ((uint16_t)data[SP + 1]) << 8;
 
-	//mcu->debugger.registerStackDec(SP + 2);
+	mcu->debugger.registerStackDec(SP + 2);
 
 	setSP(SP + 2);
 	return Addr;

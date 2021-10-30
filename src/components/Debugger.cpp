@@ -32,7 +32,7 @@ uint8_t A32u4::Debugger::debugOutputMode = OutputMode_Log;
 void A32u4::Debugger::reset() {
 	halted = false;
 	doStep = false;
-	skipHalting = false;
+	skipCycs = -1;
 
 	addressStackPointer = 0;
 	for (int i = 0; i < DataSpace::Consts::ISRAM_size; i++) {
@@ -69,7 +69,7 @@ void A32u4::Debugger::registerAddressBytes(uint16_t addr) {
 
 void A32u4::Debugger::registerStackDec(uint16_t addr){
 	addr -= DataSpace::Consts::ISRAM_start;
-	for(uint16_t i = lastSPRecived+1; i<=addr; i++){
+	for(uint16_t i = lastSPRecived-1; i<=addr; i++){
 		if(addressStackIndicators[i] == 1)
 			popAddrFromAddressStack();
 		addressStackIndicators[i] = 0;
@@ -92,9 +92,10 @@ bool A32u4::Debugger::doHaltActions() {
 			ret = false;
 
 		doStep = false;
-		if(!skipHalting)
+		if (skipCycs == mcu->cpu.getTotalCycles())
+			halted = false;
+		else
 			halted = true;
-		skipHalting = false;
 		mcu->cpu.breakOutOfOptim = true;
 
 		return ret;
@@ -223,8 +224,8 @@ void A32u4::Debugger::step() {
 }
 void A32u4::Debugger::continue_() {
 	halted = false;
-	doStep = true;
-	skipHalting = true;
+	//doStep = true;
+	skipCycs = mcu->cpu.getTotalCycles();
 }
 void A32u4::Debugger::setBreakpoint(uint16_t addr) {
 	breakpoints[addr/2] = 1;
@@ -254,6 +255,10 @@ uint16_t A32u4::Debugger::getAddresAt(uint16_t stackInd) const {
 uint16_t A32u4::Debugger::getFromAddresAt(uint16_t stackInd) const {
 	return fromAddressStack[stackInd];
 }
+const uint8_t* A32u4::Debugger::getAddressStackIndicators() const {
+	return addressStackIndicators;
+}
+
 
 /*
 

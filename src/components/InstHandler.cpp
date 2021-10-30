@@ -899,7 +899,7 @@ void A32u4::InstHandler::INST_RET(uint16_t word) {
 	uint16_t addr = mcu->dataspace.popAddrFromStack();
 	mcu->cpu.PC = addr;
 
-	mcu->debugger.popAddrFromAddressStack();
+	//mcu->debugger.popAddrFromAddressStack();
 
 	cycs = 5; PC_add = 0;
 }
@@ -909,7 +909,7 @@ void A32u4::InstHandler::INST_RETI(uint16_t word) {
 
 	mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG) |= (1 << DataSpace::Consts::SREG_I);//mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_I, true);
 
-	mcu->debugger.popAddrFromAddressStack();
+	//mcu->debugger.popAddrFromAddressStack();
 
 	mcu->cpu.insideInterrupt = false;
 
