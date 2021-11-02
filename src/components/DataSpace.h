@@ -4,9 +4,9 @@
 #define _A32u4_DATASPACE
 
 #include <stdint.h>
+#include "../A32u4Types.h"
 
 #include "config.h"
-
 #include "CPU.h"
 
 namespace A32u4 {
@@ -117,8 +117,8 @@ namespace A32u4 {
 
 		void pushByteToStack(uint8_t val);
 		uint8_t popByteFromStack();
-		void pushAddrToStack(uint16_t Addr);
-		uint16_t popAddrFromStack();
+		void pushAddrToStack(addr_t Addr);
+		addr_t popAddrFromStack();
 
 	public:
 		void setSPIByteCallB(SPIByteCallB func);
@@ -135,12 +135,12 @@ namespace A32u4 {
 
 		uint8_t* getEEPROM();
 		const uint8_t* getData();
-		uint8_t getDataByte(uint16_t Addr);
-		void setDataByte(uint16_t Addr, uint8_t byte);
-		void setBitTo(uint16_t Addr, uint8_t bit, bool val);
-		void setBitsTo(uint16_t Addr, uint8_t mask, uint8_t bits);
+		uint8_t getDataByte(addr_t Addr);
+		void setDataByte(addr_t Addr, uint8_t byte);
+		void setBitTo(addr_t Addr, uint8_t bit, bool val);
+		void setBitsTo(addr_t Addr, uint8_t mask, uint8_t bits);
 
-		uint16_t getSP() const;
+		addr_t getSP() const;
 	};
 }
 

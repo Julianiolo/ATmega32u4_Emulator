@@ -2,6 +2,7 @@
 #define _A32u4_CPU
 
 #include "InstHandler.h"
+#include "../A32u4Types.h"
 
 namespace A32u4 {
 	class ATmega32u4;
@@ -18,7 +19,7 @@ namespace A32u4 {
 		InstHandler instHandler;
 		ATmega32u4* const mcu;
 
-		uint16_t PC;
+		pc_t PC;
 		uint64_t totalCycls, targetCycs;
 
 		uint64_t interruptFlags;
@@ -65,9 +66,9 @@ namespace A32u4 {
 
 		void reset();
 	public:
-		uint16_t& getPCRef();
-		uint16_t getPC() const;
-		uint16_t getPCAddr() const;
+		pc_t& getPCRef();
+		pc_t getPC() const;
+		addr_t getPCAddr() const;
 		uint64_t getTotalCycles() const;
 		bool isSleeping() const;
 	};
