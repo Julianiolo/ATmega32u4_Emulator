@@ -24,27 +24,27 @@ A32u4::Flash::~Flash() {
 #endif
 }
 
-uint8_t A32u4::Flash::getByte(uint16_t addr) const {
+uint8_t A32u4::Flash::getByte(addr_t addr) const {
 	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getByte Address to Big: ",addr,4), "Flash", return 0);
 
 	return data[addr];
 }
-uint16_t A32u4::Flash::getWord(uint16_t addr) const {
+uint16_t A32u4::Flash::getWord(addr_t addr) const {
 	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getWord Address to Big: ",addr,4), "Flash", return 0);
 
 	return ((uint16_t)data[addr + 1] << 8) | data[addr];
 }
 
 // get Inst Word at PC
-uint16_t A32u4::Flash::getInst(uint16_t pc) const {
+uint16_t A32u4::Flash::getInst(pc_t pc) const {
 	return getWord(pc * 2);
 }
 
-uint8_t A32u4::Flash::getInstIndCache(uint16_t pc) const {
+uint8_t A32u4::Flash::getInstIndCache(pc_t pc) const {
 	A32U4_ASSERT_INRANGE_M(pc, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getInstIndCache Address to Big: ",pc,4), "Flash", return 0xFF);
 	return instCache[pc];
 }
-uint8_t A32u4::Flash::getInstInd(uint16_t pc) const{
+uint8_t A32u4::Flash::getInstInd(pc_t pc) const{
 #if FLASH_USE_INSTIND_CACHE
 	return getInstIndCache(pc);
 #else
@@ -56,10 +56,10 @@ uint8_t* A32u4::Flash::getData() {
 	return data;
 }
 
-size_t A32u4::Flash::size() const {
+sizemcu_t A32u4::Flash::size() const {
 	return size_*2;
 }
-size_t A32u4::Flash::sizeWords() const{
+sizemcu_t A32u4::Flash::sizeWords() const{
 	return size_;
 }
 

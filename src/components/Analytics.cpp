@@ -60,3 +60,9 @@ const uint64_t* A32u4::Analytics::getInstHeat() const{
 uint64_t A32u4::Analytics::getTotalInstCnt() const {
 	return instTotalCnt;
 }
+
+void A32u4::Analytics::resetPCHeat(){
+	for(uint16_t i = 0; i<PCHeatArrSize;i++){
+		pcCounter[i] = 0;
+	}
+}

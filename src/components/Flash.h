@@ -3,7 +3,7 @@
 
 #include "config.h"
 
-#include <stdint.h>
+#include "../A32u4Types.h"
 
 #define FLASH_USE_INSTIND_CACHE 1
 
@@ -12,7 +12,7 @@ namespace A32u4 {
 
 	class Flash {
 	public:
-		static constexpr uint16_t sizeMax = 32768;
+		static constexpr sizemcu_t sizeMax = 32768;
 	private:
 		friend class Disassembler;
 		friend class InstHandler;
@@ -33,19 +33,19 @@ namespace A32u4 {
 #endif
 #endif
 
-		size_t size_ = sizeMax;
+		sizemcu_t size_ = sizeMax;
 		bool hasProgram = false;
 
 		Flash(ATmega32u4* mcu);
 		~Flash();
 
-		uint8_t getInstIndCache(uint16_t addr) const;
+		uint8_t getInstIndCache(pc_t pc) const;
 		void populateInstIndCache();
 	public:
-		uint8_t getByte(uint16_t addr) const;
-		uint16_t getWord(uint16_t addr) const;
-		uint16_t getInst(uint16_t pc) const;
-		uint8_t getInstInd(uint16_t pc) const;
+		uint8_t getByte(addr_t addr) const;
+		uint16_t getWord(addr_t addr) const;
+		uint16_t getInst(pc_t pc) const;
+		uint8_t getInstInd(pc_t pc) const;
 
 		uint8_t* getData();
 
@@ -53,8 +53,8 @@ namespace A32u4 {
 		void loadFromHexString(const char* str);
 		void clear();
 
-		size_t size() const;
-		size_t sizeWords() const;
+		sizemcu_t size() const;
+		sizemcu_t sizeWords() const;
 	};
 }
 #endif

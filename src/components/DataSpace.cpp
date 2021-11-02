@@ -425,7 +425,7 @@ uint8_t A32u4::DataSpace::popByteFromStack() {
 	return Byte;
 }
 
-void A32u4::DataSpace::pushAddrToStack(uint16_t Addr) {
+void A32u4::DataSpace::pushAddrToStack(addr_t Addr) {
 	uint16_t SP = getWordRegRam(Consts::SPL);
 	A32U4_ASSERT_INRANGE_M(SP, Consts::ISRAM_start+1, Consts::data_size, A32U4_ADDR_ERR_STR("Stack pointer while push Addr out of bounds: ",SP,4), "DataSpace", return);
 	data[SP] = (uint8_t)Addr; //maybe this should be SP-1 and SP-2
@@ -435,7 +435,7 @@ void A32u4::DataSpace::pushAddrToStack(uint16_t Addr) {
 
 	setSP(SP - 2);
 }
-uint16_t A32u4::DataSpace::popAddrFromStack() {
+addr_t A32u4::DataSpace::popAddrFromStack() {
 	uint16_t SP = getWordRegRam(Consts::SPL);
 	A32U4_ASSERT_INRANGE_M(SP+1, Consts::ISRAM_start, Consts::data_size-1, A32U4_ADDR_ERR_STR("Stack pointer while pop Addr out of bounds: ",SP,4), "DataSpace", return 0);
 	uint16_t Addr = data[SP + 2];//maybe this should be SP-1 and SP-2 
@@ -462,14 +462,14 @@ const uint8_t* A32u4::DataSpace::getData() {
 	}
 	return data;
 }
-uint8_t A32u4::DataSpace::getDataByte(uint16_t Addr) {
+uint8_t A32u4::DataSpace::getDataByte(addr_t Addr) {
 	return getByteAt(Addr);
 }
-void A32u4::DataSpace::setDataByte(uint16_t Addr, uint8_t byte) {
+void A32u4::DataSpace::setDataByte(addr_t Addr, uint8_t byte) {
 	setByteAt(Addr, byte);
 }
 
-void A32u4::DataSpace::setBitTo(uint16_t Addr, uint8_t bit, bool val) {
+void A32u4::DataSpace::setBitTo(addr_t Addr, uint8_t bit, bool val) {
 	uint8_t byte = getData()[Addr];
 	if (val)
 		byte |= 1 << bit;
@@ -477,12 +477,12 @@ void A32u4::DataSpace::setBitTo(uint16_t Addr, uint8_t bit, bool val) {
 		byte &= ~(1 << bit);
 	setDataByte(Addr, byte);
 }
-void A32u4::DataSpace::setBitsTo(uint16_t Addr, uint8_t mask, uint8_t bits) {
+void A32u4::DataSpace::setBitsTo(addr_t Addr, uint8_t mask, uint8_t bits) {
 	uint8_t byte = getData()[Addr];
 	byte = (byte & ~mask) | bits;
 	setDataByte(Addr, byte);
 }
 
-uint16_t A32u4::DataSpace::getSP() const {
+addr_t A32u4::DataSpace::getSP() const {
 	return getWordRegRam(Consts::SPL);
 }

@@ -272,9 +272,10 @@ void A32u4::CPU::directExecuteInterrupt(uint8_t num) {
 
 	mcu->dataspace.pushAddrToStack(mcu->cpu.PC);
 
-	mcu->debugger.pushAddrOnAddressStack(num * 2, mcu->cpu.PC);
+	pc_t targetPC = num*2;
+	mcu->debugger.pushPCOnCallStack(targetPC, mcu->cpu.PC);
 
-	mcu->cpu.PC = num * 2;
+	mcu->cpu.PC = targetPC;
 }
 
 uint64_t A32u4::CPU::cycsToNextTimerInt() {
@@ -688,13 +689,13 @@ void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
 	reg = (reg & 0b11100000) | val;
 }
 
-uint16_t& A32u4::CPU::getPCRef() {
+pc_t& A32u4::CPU::getPCRef() {
 	return PC;
 }
-uint16_t A32u4::CPU::getPC() const {
+pc_t A32u4::CPU::getPC() const {
 	return PC;
 }
-uint16_t A32u4::CPU::getPCAddr() const {
+addr_t A32u4::CPU::getPCAddr() const {
 	return getPC() * 2;
 }
 uint64_t A32u4::CPU::getTotalCycles() const {
