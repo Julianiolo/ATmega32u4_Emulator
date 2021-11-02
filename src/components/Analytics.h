@@ -1,6 +1,8 @@
 #ifndef _A32u4_ANALYTICS
 #define _A32u4_ANALYTICS
 
+#include "../A32u4Types.h"
+
 #include "config.h"
 #include "InstHandler.h"
 #include "Flash.h"
@@ -8,8 +10,8 @@
 namespace A32u4 {
 	class Analytics {
 	public:
-		static constexpr size_t PCHeatArrSize = A32u4::Flash::sizeMax / 2;
-		static constexpr size_t InstHeatArrSize = InstHandler::instListLen;
+		static constexpr sizemcu_t PCHeatArrSize = A32u4::Flash::sizeMax / 2;
+		static constexpr uint8_t InstHeatArrSize = InstHandler::instListLen;
 	private:
 		friend class ATmega32u4;
 		friend class InstHandler;
@@ -30,7 +32,7 @@ namespace A32u4 {
 		void addData(uint8_t instInd,uint16_t PC);
 
 	public:
-		uint16_t maxSP = 0xFFFF;
+		addr_t maxSP = 0xFFFF;
 		uint64_t sleepSum = 0;
 
 		uint64_t getPCCnt(uint16_t addr) const;
@@ -39,6 +41,7 @@ namespace A32u4 {
 		const uint64_t* getPCHeat() const;
 		const uint64_t* getInstHeat() const;
 		uint64_t getTotalInstCnt() const;
+		void resetPCHeat();
 	};
 }
 

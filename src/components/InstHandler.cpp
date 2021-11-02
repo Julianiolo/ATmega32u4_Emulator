@@ -857,7 +857,7 @@ void A32u4::InstHandler::INST_RCALL(uint16_t word) {
 
 	mcu->dataspace.pushAddrToStack(mcu->cpu.PC+1);
 
-	mcu->debugger.pushAddrOnAddressStack(mcu->cpu.PC+k+1, mcu->cpu.PC);
+	mcu->debugger.pushPCOnCallStack(mcu->cpu.PC+k+1, mcu->cpu.PC);
 	
 	cycs = 4; PC_add = k+1;
 }
@@ -866,7 +866,7 @@ void A32u4::InstHandler::INST_ICALL(uint16_t word) {
 
 	uint16_t addr = mcu->dataspace.getZ();
 
-	mcu->debugger.pushAddrOnAddressStack(addr, mcu->cpu.PC);
+	mcu->debugger.pushPCOnCallStack(addr, mcu->cpu.PC);
 
 	mcu->cpu.PC = addr;
 
@@ -877,7 +877,7 @@ void A32u4::InstHandler::INST_EICALL(uint16_t word) {
 
 	uint16_t addr = mcu->dataspace.getZ();
 
-	mcu->debugger.pushAddrOnAddressStack(addr, mcu->cpu.PC);
+	mcu->debugger.pushPCOnCallStack(addr, mcu->cpu.PC);
 
 	mcu->cpu.PC = addr;
 
@@ -889,7 +889,7 @@ void A32u4::InstHandler::INST_CALL(uint16_t word) {
 
 	mcu->dataspace.pushAddrToStack(mcu->cpu.PC + 2);
 
-	mcu->debugger.pushAddrOnAddressStack(k, mcu->cpu.PC);
+	mcu->debugger.pushPCOnCallStack(k, mcu->cpu.PC);
 
 	mcu->cpu.PC = k;
 
@@ -899,7 +899,7 @@ void A32u4::InstHandler::INST_RET(uint16_t word) {
 	uint16_t addr = mcu->dataspace.popAddrFromStack();
 	mcu->cpu.PC = addr;
 
-	//mcu->debugger.popAddrFromAddressStack();
+	//mcu->debugger.popPCFromCallStack();
 
 	cycs = 5; PC_add = 0;
 }
@@ -909,7 +909,7 @@ void A32u4::InstHandler::INST_RETI(uint16_t word) {
 
 	mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG) |= (1 << DataSpace::Consts::SREG_I);//mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_I, true);
 
-	//mcu->debugger.popAddrFromAddressStack();
+	//mcu->debugger.popPCFromCallStack();
 
 	mcu->cpu.insideInterrupt = false;
 
