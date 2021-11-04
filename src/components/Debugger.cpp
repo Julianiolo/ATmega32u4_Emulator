@@ -143,11 +143,11 @@ void A32u4::Debugger::doHaltActionsLog(){
 			}
 		}
 		else if (input.substr(0, 2) == "io") {
-			int addr = StringUtils::numStrToUInt(input.c_str() + 3, input.c_str() + input.size());
+			uint64_t addr = StringUtils::numStrToUInt<uint64_t>(input.c_str() + 3, input.c_str() + input.size());
 
 			if (addr < DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) {
 				uint8_t ioVal = mcu->dataspace.getIOAt(addr);
-				mcu->logf(ATmega32u4::LogLevel_Output, "%s: 0x%02h > %d", input.c_str(), ioVal, ioVal); // (input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str());
+				mcu->logf(ATmega32u4::LogLevel_Output, "%d: 0x%02h > %d", addr, ioVal, ioVal); // (input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str());
 			}
 			else {
 				mcu->log(ATmega32u4::LogLevel_Output, input + " is out of Range of the IO space (0-" + std::to_string(DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) + ")");

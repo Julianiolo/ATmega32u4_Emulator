@@ -11,7 +11,7 @@ A32u4::DataSpace::DataSpace(ATmega32u4* mcu) : mcu(mcu),
 #if USE_HEAP
 	data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
 #endif
-	funcs(mcu), timers(mcu)
+	timers(mcu)
 {
 
 }
@@ -23,11 +23,6 @@ A32u4::DataSpace::~DataSpace() {
 #endif
 }
 
-A32u4::DataSpace::Updates::Updates(ATmega32u4* mcu) : mcu(mcu), 
-REF_EECR(mcu->dataspace.data[Consts::EECR]), REF_PLLCSR(mcu->dataspace.data[Consts::PLLCSR]),
-REF_PORTB(mcu->dataspace.data[Consts::PORTB]), REF_SPDR(mcu->dataspace.data[Consts::SPDR]){
-
-}
 A32u4::DataSpace::Timers::Timers(ATmega32u4* mcu) : mcu(mcu), lastCounter(0), 
 REF_TCCR0B(mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B]), 
 REF_TIFR0(mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0])
@@ -88,7 +83,7 @@ void A32u4::DataSpace::Timers::update() {
 		abort();
 	}
 
-	//uint8_t& REF_TIFR0 = mcu->dataspace.getByteRefAtAddr(mcu->dataspace.TIFR0);
+	//uint8_t& REF_TIFR0 = mcu->dataspace.getByteRefAtAddr(TIFR0);
 
 	if (doTick) {
 #if 1
@@ -176,22 +171,29 @@ uint8_t A32u4::DataSpace::getGPReg(uint8_t ind) const {
 uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
 	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds: ",addr,4), "DataSpace", return 0);
 
-	funcs.update_Get(addr, true);
+	update_Get(addr, true);
 
 	return data[addr];
 }
-uint8_t A32u4::DataSpace::setByteAt(uint16_t addr, uint8_t val) {
-	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data set Index out of bounds: ",addr,4), "DataSpace", return 0);
+constexpr uint8_t A32u4::DataSpace::getByteAtC(uint16_t addr) {
+	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds: ",addr,4), "DataSpace", return 0);
+
+	update_GetC(addr, true);
+
+	return data[addr];
+}
+void A32u4::DataSpace::setByteAt(uint16_t addr, uint8_t val) {
+	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data set Index out of bounds: ",addr,4), "DataSpace", return);
 
 	uint8_t oldVal = data[addr];
 	data[addr] = val;
-	return funcs.update_Set(addr, val, oldVal);
+	return update_Set(addr, val, oldVal);
 }
 uint8_t A32u4::DataSpace::getIOAt(uint8_t ind) {
 	return getByteAt(ind + Consts::io_start);
 }
-uint8_t A32u4::DataSpace::setIOAt(uint8_t ind, uint8_t val) {
-	return setByteAt(ind + Consts::io_start, val);
+void A32u4::DataSpace::setIOAt(uint8_t ind, uint8_t val) {
+	setByteAt(ind + Consts::io_start, val);
 }
 
 uint8_t A32u4::DataSpace::getRegBit(uint16_t id, uint8_t bit) {
@@ -273,27 +275,47 @@ void A32u4::DataSpace::setSP(uint16_t val) {
 		mcu->analytics.maxSP = val;
 }
 
-void A32u4::DataSpace::Updates::update_Get(uint16_t Addr, bool onlyOne) {
+void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 	if (Addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size && Addr >= Consts::GPRs_size) { //only io needs updates
 		switch (Addr) {
 			case 0xFFFF: //case for updating everything
 			case Consts::EECR: {
-				if ((REF_EECR & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastEECR_EEMPE_set > 4) { // check if EE;PE is set but shouldnt
-					REF_EECR &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
+				if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastEECR_EEMPE_set > 4) { // check if EE;PE is set but shouldnt
+					data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
 				}
 				if (onlyOne) break;
 			}
 
 			case Consts::PLLCSR: {
-				if ((REF_PLLCSR & (1 << Consts::PLLCSR_PLLE)) && !(REF_PLLCSR & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastPLLCSR_PLLE_set > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
-					REF_PLLCSR |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
+				if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && !(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastPLLCSR_PLLE_set > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
+					data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
 				}
 				if (onlyOne) break;
 			}
 		}
 	}
 }
-uint8_t A32u4::DataSpace::Updates::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
+constexpr void A32u4::DataSpace::update_GetC(uint16_t Addr, bool onlyOne) {
+	if (Addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size && Addr >= Consts::GPRs_size) { //only io needs updates
+		switch (Addr) {
+			case 0xFFFF: //case for updating everything
+			case Consts::EECR: {
+				if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastEECR_EEMPE_set > 4) { // check if EE;PE is set but shouldnt
+					data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
+				}
+				if (onlyOne) break;
+			}
+
+			case Consts::PLLCSR: {
+				if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && !(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastPLLCSR_PLLE_set > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
+					data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
+				}
+				if (onlyOne) break;
+			}
+		}
+	}
+}
+void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 	if (Addr <= Consts::io_start+Consts::io_size+Consts::ext_io_size && Addr >= Consts::GPRs_size) { //only io needs updates
 		switch (Addr) {
 			case Consts::EECR:
@@ -312,52 +334,49 @@ uint8_t A32u4::DataSpace::Updates::update_Set(uint16_t Addr, uint8_t val, uint8_
 				break;
 
 			case Consts::TIFR0:
-				mcu->dataspace.timers.checkForIntr();
+				timers.checkForIntr();
 				break;
 		}
 	}
-	return 0;
 }
 
-uint8_t A32u4::DataSpace::Updates::setEECR(uint8_t val, uint8_t oldVal){
+
+void A32u4::DataSpace::setEECR(uint8_t val, uint8_t oldVal){
 	if (val & (1 << Consts::EECR_EERE)) {
-		mcu->dataspace.data[Consts::EEDR] = mcu->dataspace.eeprom[mcu->dataspace.getWordRegRam(Consts::EEARL)];
+		data[Consts::EEDR] = eeprom[getWordRegRam(Consts::EEARL)];
 		val = val & ~(1 << Consts::EECR_EERE); //idk if this should be done bc its not stated anywhere but its the only logical thing
-		return 4;
+		mcu->cpu.addCycles(4);
 	}
 
 	if ((val & (1 << Consts::EECR_EEMPE)) && !(oldVal & (1 << Consts::EECR_EEMPE))) {
 		lastEECR_EEMPE_set = mcu->cpu.totalCycls;
-		return 0;
 	}
 
 	if (val & (1 << Consts::EECR_EEPE)) {
-		if (REF_EECR & (1 << Consts::EECR_EEMPE)) {
-			uint8_t mode = mcu->dataspace.data[Consts::EECR] >> 4;
-			uint16_t Addr = mcu->dataspace.getWordRegRam(Consts::EEARL);
+		if (data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) {
+			uint8_t mode = data[Consts::EECR] >> 4;
+			uint16_t Addr = getWordRegRam(Consts::EEARL);
 
-			A32U4_ASSERT_INRANGE_M(Addr, 0, Consts::eeprom_size, A32U4_ADDR_ERR_STR("Eeprom addr out of bounds",Addr,4), "DataSpace", return 0);
+			A32U4_ASSERT_INRANGE_M(Addr, 0, Consts::eeprom_size, A32U4_ADDR_ERR_STR("Eeprom addr out of bounds",Addr,4), "DataSpace", return);
 
 			switch (mode) {
 			case 0b00:
-				mcu->dataspace.eeprom[Addr] = mcu->dataspace.data[Consts::EEDR];
+				eeprom[Addr] = data[Consts::EEDR];
 				break;
 			case 0b01:
-				mcu->dataspace.eeprom[Addr] = 0;
+				eeprom[Addr] = 0;
 				break;
 			case 0b10:
-				mcu->dataspace.eeprom[Addr] |= mcu->dataspace.data[Consts::EEDR]; //idk if it actually works like that
+				eeprom[Addr] |= data[Consts::EEDR]; //idk if it actually works like that
 				break;
 			}
 
 			// set EEPE to 0 to indicate being ready again
-			REF_EECR &= ~(1 << Consts::EECR_EEPE);
+			data[Consts::EECR] &= ~(1 << Consts::EECR_EEPE);
 		}
-		return 0;
 	}
-	return 0;
 }
-void A32u4::DataSpace::Updates::setPLLCSR(uint8_t val, uint8_t oldVal) {
+void A32u4::DataSpace::setPLLCSR(uint8_t val, uint8_t oldVal) {
 	if (val & (1 << Consts::PLLCSR_PLLE)) {
 		if (!(oldVal & (1 << Consts::PLLCSR_PLLE))) { //if PLLE is 0 but should be 1
 			lastPLLCSR_PLLE_set = mcu->cpu.totalCycls;
@@ -365,44 +384,44 @@ void A32u4::DataSpace::Updates::setPLLCSR(uint8_t val, uint8_t oldVal) {
 	}
 	else {
 		if (oldVal & (1 << Consts::PLLCSR_PLLE)) { //if PLLE is 1 but should be 0
-			REF_PLLCSR &= ~(1 << Consts::PLLCSR_PLOCK); //clear PLOCK
+			data[Consts::PLLCSR] &= ~(1 << Consts::PLLCSR_PLOCK); //clear PLOCK
 		}
 	}
 }
-void A32u4::DataSpace::Updates::setSPDR() {
+void A32u4::DataSpace::setSPDR() {
 	if(SPI_Byte_Callback)
-		SPI_Byte_Callback(REF_SPDR);
+		SPI_Byte_Callback(data[Consts::SPDR]);
 
 	for (uint8_t i = 0; i < 8; i++) {
 		//Set SCK High
 		//Set MOSI to REF_SPDR&0b1
-		REF_SPDR >>= 1;
+		data[Consts::SPDR] >>= 1;
 		if (SCK_Callback != NULL) {
 			SCK_Callback();
 		}
 		//Set SCK LOW
 	}
-	mcu->dataspace.data[Consts::SPSR] |= (1 << Consts::SPSR_SPIF);
+	data[Consts::SPSR] |= (1 << Consts::SPSR_SPIF);
 
 	//request Interrupt if SPIE set
 }
-void A32u4::DataSpace::Updates::setTCCR0B(uint8_t val) {
-	mcu->dataspace.timers.timer0_presc_cache = val & 0b111;
+void A32u4::DataSpace::setTCCR0B(uint8_t val) {
+	timers.timer0_presc_cache = val & 0b111;
 	mcu->cpu.breakOutOfOptim = true;
 
 #if 1
-	switch (mcu->dataspace.timers.timer0_presc_cache) {
+	switch (timers.timer0_presc_cache) {
 	case 2:
-		mcu->dataspace.timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 8;
+		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 8;
 		break;
 	case 3:
-		mcu->dataspace.timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 64;
+		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 64;
 		break;
 	case 4:
-		mcu->dataspace.timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 256;
+		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 256;
 		break;
 	case 5:
-		mcu->dataspace.timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 1024;
+		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 1024;
 		break;
 	}
 #endif
@@ -448,7 +467,7 @@ addr_t A32u4::DataSpace::popAddrFromStack() {
 }
 
 void A32u4::DataSpace::setSPIByteCallB(SPIByteCallB func) {
-	funcs.SPI_Byte_Callback = func;
+	SPI_Byte_Callback = func;
 }
 uint8_t* A32u4::DataSpace::getEEPROM() {
 	return eeprom;
@@ -458,12 +477,15 @@ const uint8_t* A32u4::DataSpace::getData() {
 	static uint64_t lastCycs = 0;
 	if (lastCycs != mcu->cpu.totalCycls) {
 		lastCycs = mcu->cpu.totalCycls;
-		funcs.update_Get(0xFFFF, false);
+		update_Get(0xFFFF, false);
 	}
 	return data;
 }
 uint8_t A32u4::DataSpace::getDataByte(addr_t Addr) {
 	return getByteAt(Addr);
+}
+constexpr uint8_t A32u4::DataSpace::getDataByteC(addr_t Addr) {
+	return getByteAtC(Addr);
 }
 void A32u4::DataSpace::setDataByte(addr_t Addr, uint8_t byte) {
 	setByteAt(Addr, byte);

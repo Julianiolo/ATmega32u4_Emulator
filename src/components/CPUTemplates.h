@@ -119,42 +119,24 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 		}
 
 		if (!CPU_sleep) {
-
-			uint16_t prescCycs;
-			switch (mcu->dataspace.timers.timer0_presc_cache) {
-			case 0: {
-				uint8_t addToCycs;
-				int16_t addToPC;
-				instHandler.handleInstT<debug, analyse>(addToCycs, addToPC);
-				addCycles(addToCycs);
-				PC += addToPC;
-				goto skip_for;
+			if(mcu->dataspace.timers.timer0_presc_cache <= 1){
+				if(mcu->dataspace.timers.timer0_presc_cache == 0){
+					uint8_t addToCycs;
+					int16_t addToPC;
+					instHandler.handleInstT<debug, analyse>(addToCycs, addToPC);
+					addCycles(addToCycs);
+					PC += addToPC;
+				}else{
+					uint8_t addToCycs;
+					int16_t addToPC;
+					instHandler.handleInstT<debug, analyse>(addToCycs, addToPC);
+					addCycles(addToCycs);
+					PC += addToPC;
+					mcu->dataspace.timers.doTicks(mcu->dataspace.data[DataSpace::Consts::TCNT0], addToCycs);
+					mcu->dataspace.timers.checkForIntr();
+				}
 			}
-			case 1: {
-				uint8_t addToCycs;
-				int16_t addToPC;
-				instHandler.handleInstT<debug, analyse>(addToCycs, addToPC);
-				addCycles(addToCycs);
-				PC += addToPC;
-				mcu->dataspace.timers.doTicks(mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0), addToCycs);
-				mcu->dataspace.timers.checkForIntr();
-				goto skip_for;
-			}
-			case 2:
-				prescCycs = 8;
-				break;
-			case 3:
-				prescCycs = 64;
-				break;
-			case 4:
-				prescCycs = 256;
-				break;
-			case 5:
-				prescCycs = 1024;
-				break;
-			}
-
-			{
+			else{
 				uint8_t addToCycs;
 				int16_t addToPC;
 
@@ -179,9 +161,6 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				}
 				mcu->dataspace.timers.checkForIntr();
 			}
-
-		skip_for:
-		;
 		}
 		else {
 #if !SLEEP_SKIP
