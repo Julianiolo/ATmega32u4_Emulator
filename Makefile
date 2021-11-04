@@ -5,7 +5,7 @@ BUILD_MODE?=DEBUG
 CC    :=g++
 CFLAGS?=-Wall -Wno-narrowing
 CSTD  ?=-std=c++17
-RELEASE_OPTIM?= -O2
+RELEASE_OPTIM?= -Ofast
 
 SRC_DIR         ?=src/
 BUILD_DIR       ?=build/make/
