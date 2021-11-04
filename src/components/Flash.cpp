@@ -83,11 +83,11 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 			abort();
 		}
 		str_ind += 1;
-		uint8_t ByteCount = (uint8_t)StringUtils::hexStrToUIntLen(str + str_ind, 2);
+		uint8_t ByteCount = StringUtils::hexStrToUIntLen<uint8_t>(str + str_ind, 2);
 		str_ind += 2;
-		uint32_t Addr = (uint32_t)((StringUtils::hexStrToUIntLen(str + str_ind, 2)<<8) | StringUtils::hexStrToUIntLen(str + str_ind + 2, 2));
+		uint32_t Addr = ((StringUtils::hexStrToUIntLen<uint32_t>(str + str_ind, 2)<<8) | StringUtils::hexStrToUIntLen<uint32_t>(str + str_ind + 2, 2));
 		str_ind += 4;
-		uint8_t type = (uint8_t)StringUtils::hexStrToUIntLen(str + str_ind, 2);
+		uint8_t type = StringUtils::hexStrToUIntLen<uint8_t>(str + str_ind, 2);
 		//str_ind += 7;
 		for (uint8_t i = 0; i < ByteCount; i++) {
 #if RANGE_CHECK
@@ -95,7 +95,7 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 				abort();
 			}
 #endif
-			data[flashInd++] = StringUtils::hexStrToUIntLen(str + (str_ind+=2), 2);
+			data[flashInd++] = StringUtils::hexStrToUIntLen<uint8_t>(str + (str_ind+=2), 2);
 		}
 		str_ind += 4; //skip checksum
 		if (str[str_ind] == '\n') {

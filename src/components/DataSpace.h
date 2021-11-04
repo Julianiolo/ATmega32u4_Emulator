@@ -25,33 +25,6 @@ namespace A32u4 {
 		friend class Debugger;
 		friend class InstHandler;
 
-		class Updates {
-		public:
-			ATmega32u4* const mcu;
-
-			uint64_t lastEECR_EEMPE_set = 0;
-			uint8_t& REF_EECR;
-
-			static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
-			uint64_t lastPLLCSR_PLLE_set = 0;
-			uint8_t& REF_PLLCSR;
-
-			uint8_t& REF_PORTB;
-			uint8_t& REF_SPDR;
-			void (*SCK_Callback)() = NULL;
-			SPIByteCallB SPI_Byte_Callback = NULL;
-
-			Updates(ATmega32u4* mcu);
-
-			void update_Get(uint16_t Addr, bool onlyOne);
-
-			uint8_t update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal);
-			uint8_t setEECR(uint8_t val, uint8_t oldVal);
-			void setPLLCSR(uint8_t val, uint8_t oldVal);
-			void setSPDR();
-			void setTCCR0B(uint8_t val);
-		};
-
 		class Timers {
 		public:
 			ATmega32u4* const mcu;
@@ -85,8 +58,6 @@ namespace A32u4 {
 #else
 		uint8_t* eeprom;
 #endif
-
-		Updates funcs;
 		Timers timers;
 
 		uint8_t errorIndicator = -1;
@@ -98,10 +69,11 @@ namespace A32u4 {
 
 		
 		uint8_t getByteAt(uint16_t Addr);
-		uint8_t setByteAt(uint16_t Addr, uint8_t val);
+		constexpr uint8_t getByteAtC(uint16_t Addr);
+		void setByteAt(uint16_t Addr, uint8_t val);
 
 		uint8_t getIOAt(uint8_t ind);
-		uint8_t setIOAt(uint8_t ind, uint8_t val);
+		void setIOAt(uint8_t ind, uint8_t val);
 
 		uint8_t getRegBit(uint16_t id, uint8_t bit);
 		void setRegBit(uint16_t id, uint8_t bit, bool val);
@@ -120,6 +92,22 @@ namespace A32u4 {
 		void pushAddrToStack(addr_t Addr);
 		addr_t popAddrFromStack();
 
+		uint64_t lastEECR_EEMPE_set = 0;
+
+		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
+		uint64_t lastPLLCSR_PLLE_set = 0;
+		void (*SCK_Callback)() = NULL;
+		SPIByteCallB SPI_Byte_Callback = NULL;
+
+		void update_Get(uint16_t Addr, bool onlyOne);
+		constexpr void update_GetC(uint16_t Addr, bool onlyOne);
+
+		void update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal);
+		void setEECR(uint8_t val, uint8_t oldVal);
+		void setPLLCSR(uint8_t val, uint8_t oldVal);
+		void setSPDR();
+		void setTCCR0B(uint8_t val);
+
 	public:
 		void setSPIByteCallB(SPIByteCallB func);
 
@@ -136,6 +124,7 @@ namespace A32u4 {
 		uint8_t* getEEPROM();
 		const uint8_t* getData();
 		uint8_t getDataByte(addr_t Addr);
+		constexpr uint8_t getDataByteC(addr_t Addr);
 		void setDataByte(addr_t Addr, uint8_t byte);
 		void setBitTo(addr_t Addr, uint8_t bit, bool val);
 		void setBitsTo(addr_t Addr, uint8_t mask, uint8_t bits);

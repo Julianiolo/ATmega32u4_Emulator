@@ -19,7 +19,6 @@ namespace A32u4 {
 		void handleInst(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref);
 		template<bool debug,bool analyse>
 		void handleInstT(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref);
-		void executeInstSwitch(uint16_t word);
 		static constexpr uint8_t startIndArr2[] = { 73, 94, 109, 107, 99, 0, 71, 87 };
 		
 		static uint8_t getInstInd3(uint16_t word);
@@ -193,12 +192,12 @@ namespace A32u4 {
 			void (InstHandler::*func)(uint16_t word);
 			const uint16_t mask;
 			const uint16_t res;
-			const char* name;
+			const char* const name;
 
 			const uint8_t parTypes;
 
-			uint8_t(*par1)(uint16_t word) = NULL;
-			uint8_t(*par2)(uint16_t word) = NULL;
+			uint8_t(*par1)(uint16_t word) = nullptr;
+			uint8_t(*par2)(uint16_t word) = nullptr;
 		};
 
 		static constexpr uint8_t instListLen = 111;
@@ -322,3 +321,9 @@ namespace A32u4 {
 }
 
 #endif
+
+/*
+
+void executeInstSwitch(uint16_t word);
+
+*/

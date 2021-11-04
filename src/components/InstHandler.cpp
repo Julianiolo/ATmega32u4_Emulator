@@ -56,332 +56,6 @@ void A32u4::InstHandler::handleInst(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref) 
 	CYCL_ADD_Ref = cycs;
 }
 
-void A32u4::InstHandler::executeInstSwitch(uint16_t word) {
-	switch ((word & 0xD208) >> 12) {
-	case 0b1000000000000000:
-		INST_LDD_Z(word); goto break_all;
-	case 0b1000000000001000:
-		INST_LDD_Y(word); goto break_all;
-	case 0b1000001000000000:
-		INST_STD_Z(word); goto break_all;
-	case 0b1000001000001000:
-		INST_STD_Y(word); goto break_all;
-	}
-
-	switch ((word & 0xF000) >> 12) {
-	case 0b0000:
-		switch ((word & 0x0C00) >> (8 + 2)) {
-		case 0b01:
-			INST_CPC(word); goto break_all;
-		case 0b10:
-			INST_SBC(word); goto break_all;
-		case 0b11:
-			INST_ADD(word); goto break_all;
-		}
-
-		switch ((word & 0x0F00) >> (8)) {
-		case 0b0000:
-			switch (word & 0x00FF) {
-			case 0b00000000:
-				INST_NOP(word); goto break_all;
-			}
-		case 0b0001:
-			INST_MOVW(word); goto break_all;
-		case 0b0010:
-			INST_MULS(word); goto break_all;
-		case 0b0011:
-			switch ((word & 0x0088) >> (8)) {
-			case 0b00000000:
-				INST_MULSU(word); goto break_all;
-			case 0b00001000:
-				INST_FMUL(word); goto break_all;
-			case 0b10000000:
-				INST_FMULS(word); goto break_all;
-			case 0b10001000:
-				INST_FMULSU(word); goto break_all;
-			}
-			break;
-		}
-		break;
-
-	case 0b0001:
-		switch ((word & 0x0C00) >> (8 + 2)) {
-		case 0b00:
-			INST_CPSE(word); goto break_all;
-		case 0b01:
-			INST_CP(word); goto break_all;
-		case 0b10:
-			INST_SUB(word); goto break_all;
-		case 0b11:
-			INST_ADC(word); goto break_all;
-		}
-		break;
-
-	case 0b0010:
-		switch ((word & 0x0C00) >> (8 + 2)) {
-		case 0b00:
-			INST_AND(word); goto break_all;
-		case 0b01:
-			INST_EOR(word); goto break_all;
-		case 0b10:
-			INST_OR(word); goto break_all;
-		case 0b11:
-			INST_MOV(word); goto break_all;
-		}
-		break;
-
-	case 0b0011:
-		INST_CPI(word); goto break_all;
-
-	case 0b0100:
-		INST_SBCI(word); goto break_all;
-	case 0b0101:
-		INST_SUBI(word); goto break_all;
-
-	case 0b0110:
-		INST_ORI(word); goto break_all; //also SBR
-
-	case 0b0111:
-		INST_ANDI(word); goto break_all; //also CBR (but with complement of K, but i dont have to worry about that)
-
-	case 0b1000:
-		switch ((word & 0x0E00) >> (8 + 1)) {
-		case 0b000:
-			switch (word & 0x000F) {
-			case 0b0000:
-				INST_LD_Z(word); goto break_all;
-			case 0b1000:
-				INST_LD_Y(word); goto break_all;
-			}
-			break;
-		case 0b001:
-			switch (word & 0x000F) {
-			case 0b0000:
-				INST_ST_Z(word); goto break_all;
-			case 0b1000:
-				INST_ST_Y(word); goto break_all;
-			}
-			break;
-		}
-		break;
-
-	case 0b1001:
-		switch ((word & 0x0C00) >> (8 + 2)) {
-		case 0b11:
-			INST_MUL(word); goto break_all;
-		}
-
-		switch ((word & 0x0E00) >> (8 + 1)) {
-		case 0b000:
-			switch (word & 0x000F) {
-			case 0b0000:
-				INST_LDS(word); goto break_all;
-			case 0b0001:
-				INST_LD_ZpostInc(word); goto break_all;
-			case 0b0010:
-				INST_LD_ZpreDec(word); goto break_all;
-			case 0b0100:
-				INST_LPM_d(word); goto break_all;
-			case 0b0101:
-				INST_LPM_dpostInc(word); goto break_all;
-			case 0b0110:
-				INST_ELPM_d(word); goto break_all;
-			case 0b0111:
-				INST_ELPM_dpostInc(word); goto break_all;
-			case 0b1001:
-				INST_LD_YpostInc(word); goto break_all;
-			case 0b1010:
-				INST_LD_YpreDec(word); goto break_all;
-			case 0b1111:
-				INST_POP(word); goto break_all;
-			}
-
-		case 0b001:
-			switch (word & 0x000F) {
-			case 0b0000:
-				INST_STS(word); goto break_all;
-			case 0b0001:
-				INST_ST_ZpostInc(word); goto break_all;
-			case 0b0010:
-				INST_ST_ZpreDec(word); goto break_all;
-			case 0b1001:
-				INST_ST_YpostInc(word); goto break_all;
-			case 0b1010:
-				INST_ST_YpreDec(word); goto break_all;
-			case 0b1100:
-				INST_ST_X(word); goto break_all;
-			case 0b1101:
-				INST_ST_XpostInc(word); goto break_all;
-			case 0b1110:
-				INST_ST_XpreDec(word); goto break_all;
-			case 0b1111:
-				INST_PUSH(word); goto break_all;
-			}
-
-		case 0b010:
-		{
-			switch ((word & 0x000E) >> 1) {
-			case 0b110:
-				INST_JMP(word);  goto break_all;
-			case 0b111:
-				INST_CALL(word);  goto break_all;
-			}
-		}
-
-		switch (word & 0x000F) {
-		case 0b0000:
-			INST_COM(word); goto break_all;
-		case 0b0001:
-			INST_NEG(word); goto break_all;
-		case 0b0010:
-			INST_SWAP(word); goto break_all;
-		case 0b0011:
-			INST_INC(word); goto break_all;
-		case 0b0101:
-			INST_ASR(word); goto break_all;
-		case 0b0110:
-			INST_LSR(word); goto break_all;
-		case 0b0111:
-			INST_ROR(word); goto break_all;
-		case 0b1010:
-			INST_DEC(word); goto break_all;
-		case 0b1100:
-			INST_LD_X(word); goto break_all;
-		case 0b1101:
-			INST_LD_XpostInc(word); goto break_all;
-		case 0b1110:
-			INST_LD_XpreDec(word); goto break_all;
-		}
-		break;
-		}
-
-		switch ((word & 0x0F00) >> 8) {
-		case 0b0100:
-			switch (word & 0x00FF) {
-			case 0b00001000:
-				INST_SEC(word); goto break_all;
-			case 0b10001000:
-				INST_CLC(word); goto break_all;
-			case 0b00011000:
-				INST_SEZ(word); goto break_all;
-			case 0b10011000:
-				INST_CLZ(word); goto break_all;
-			case 0b00101000:
-				INST_SEN(word); goto break_all;
-			case 0b10101000:
-				INST_CLN(word); goto break_all;
-			case 0b00111000:
-				INST_SEV(word); goto break_all;
-			case 0b10111000:
-				INST_CLV(word); goto break_all;
-			case 0b01001000:
-				INST_SES(word); goto break_all;
-			case 0b11001000:
-				INST_CLS(word); goto break_all;
-			case 0b01011000:
-				INST_SEH(word); goto break_all;
-			case 0b11011000:
-				INST_CLH(word); goto break_all;
-			case 0b01101000:
-				INST_SET(word); goto break_all;
-			case 0b11101000:
-				INST_CLT(word); goto break_all;
-			case 0b01111000:
-				INST_SEI(word); goto break_all;
-			case 0b11111000:
-				INST_CLI(word); goto break_all;
-
-			case 0b00001001:
-				INST_IJMP(word); goto break_all;
-			case 0b00011001:
-				INST_EIJMP(word); goto break_all;
-			}
-			break;
-		case 0b0101:
-			switch (word & 0b10001111) {
-			case 0b00001000:
-				INST_BSET(word); goto break_all;
-			}
-			switch (word & 0x00FF) {
-			case 0b00001000:
-				INST_RET(word); goto break_all;
-			case 0b00011000:
-				INST_RETI(word); goto break_all;
-			case 0b00001001:
-				INST_ICALL(word); goto break_all;
-			case 0b00011001:
-				INST_EICALL(word); goto break_all;
-			case 0b10001000:
-				INST_SLEEP(word); goto break_all;
-			case 0b10011000:
-				INST_BREAK(word); goto break_all;
-			case 0b10101000:
-				INST_WDR(word); goto break_all;
-			case 0b11001000:
-				INST_LPM_0(word); goto break_all;
-			case 0b11011000:
-				INST_ELPM_0(word); goto break_all;
-			case 0b11101000:
-				INST_SPM(word); goto break_all;
-			}
-			break;
-		case 0b0110:
-			INST_ADIW(word); goto break_all;
-		case 0b0111:
-			INST_SBIW(word); goto break_all;
-		case 0b1000:
-			INST_CBI(word); goto break_all;
-		case 0b1001:
-			INST_SBIC(word); goto break_all;
-		case 0b1010:
-			INST_SBI(word); goto break_all;
-		case 0b1011:
-			INST_SBIS(word); goto break_all;
-		}
-		break;
-
-	case 0b1011:
-		switch ((word & 0x0800) >> (8 + 3)) {
-		case 0:
-			INST_IN(word); goto break_all;
-		case 1:
-			INST_OUT(word); goto break_all;
-		}
-		break;
-
-	case 0b1100:
-		INST_RJMP(word); goto break_all;
-
-	case 0b1101:
-		INST_RCALL(word); goto break_all;
-
-	case 0b1110:
-		INST_LDI(word); goto break_all;
-
-	case 0b1111:
-		switch ((word & 0x0C00) >> (8 + 2)) {
-		case 0b00:
-			INST_BRBS(word); goto break_all;
-		case 0b01:
-			INST_BRBC(word); goto break_all;
-		}
-
-		switch (word & 0x0E09) {
-		case 0b100000000000:
-			INST_BLD(word); goto break_all;
-		case 0b101000000000:
-			INST_BST(word); goto break_all;
-		case 0b110000000000:
-			INST_SBRC(word); goto break_all;
-		case 0b111000000000:
-			INST_SBRS(word); goto break_all;
-		}
-	}
-	mcu->logf(ATmega32u4::LogLevel_Error, "unhandled Inst p1: 0x%04x", word);
-break_all:
-	return;
-}
-
 uint8_t A32u4::InstHandler::getInstInd(uint16_t word) {
 	return getInstInd3(word);
 }
@@ -1558,7 +1232,9 @@ void A32u4::InstHandler::INST_OUT(uint16_t word) {
 	uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint8_t A = getA6_d24(word);
 
-	cycs = 1 + mcu->dataspace.setIOAt(A, Rr);
+	mcu->dataspace.setIOAt(A, Rr);
+
+	cycs = 1;
 	PC_add = 1;
 }
 void A32u4::InstHandler::INST_PUSH(uint16_t word) {
@@ -2238,6 +1914,333 @@ bool A32u4::InstHandler::is2WordInstOld(uint16_t word) {
 	}
 
 	return false;
+}
+
+
+void A32u4::InstHandler::executeInstSwitch(uint16_t word) {
+	switch ((word & 0xD208) >> 12) {
+	case 0b1000000000000000:
+		INST_LDD_Z(word); goto break_all;
+	case 0b1000000000001000:
+		INST_LDD_Y(word); goto break_all;
+	case 0b1000001000000000:
+		INST_STD_Z(word); goto break_all;
+	case 0b1000001000001000:
+		INST_STD_Y(word); goto break_all;
+	}
+
+	switch ((word & 0xF000) >> 12) {
+	case 0b0000:
+		switch ((word & 0x0C00) >> (8 + 2)) {
+		case 0b01:
+			INST_CPC(word); goto break_all;
+		case 0b10:
+			INST_SBC(word); goto break_all;
+		case 0b11:
+			INST_ADD(word); goto break_all;
+		}
+
+		switch ((word & 0x0F00) >> (8)) {
+		case 0b0000:
+			switch (word & 0x00FF) {
+			case 0b00000000:
+				INST_NOP(word); goto break_all;
+			}
+		case 0b0001:
+			INST_MOVW(word); goto break_all;
+		case 0b0010:
+			INST_MULS(word); goto break_all;
+		case 0b0011:
+			switch ((word & 0x0088) >> (8)) {
+			case 0b00000000:
+				INST_MULSU(word); goto break_all;
+			case 0b00001000:
+				INST_FMUL(word); goto break_all;
+			case 0b10000000:
+				INST_FMULS(word); goto break_all;
+			case 0b10001000:
+				INST_FMULSU(word); goto break_all;
+			}
+			break;
+		}
+		break;
+
+	case 0b0001:
+		switch ((word & 0x0C00) >> (8 + 2)) {
+		case 0b00:
+			INST_CPSE(word); goto break_all;
+		case 0b01:
+			INST_CP(word); goto break_all;
+		case 0b10:
+			INST_SUB(word); goto break_all;
+		case 0b11:
+			INST_ADC(word); goto break_all;
+		}
+		break;
+
+	case 0b0010:
+		switch ((word & 0x0C00) >> (8 + 2)) {
+		case 0b00:
+			INST_AND(word); goto break_all;
+		case 0b01:
+			INST_EOR(word); goto break_all;
+		case 0b10:
+			INST_OR(word); goto break_all;
+		case 0b11:
+			INST_MOV(word); goto break_all;
+		}
+		break;
+
+	case 0b0011:
+		INST_CPI(word); goto break_all;
+
+	case 0b0100:
+		INST_SBCI(word); goto break_all;
+	case 0b0101:
+		INST_SUBI(word); goto break_all;
+
+	case 0b0110:
+		INST_ORI(word); goto break_all; //also SBR
+
+	case 0b0111:
+		INST_ANDI(word); goto break_all; //also CBR (but with complement of K, but i dont have to worry about that)
+
+	case 0b1000:
+		switch ((word & 0x0E00) >> (8 + 1)) {
+		case 0b000:
+			switch (word & 0x000F) {
+			case 0b0000:
+				INST_LD_Z(word); goto break_all;
+			case 0b1000:
+				INST_LD_Y(word); goto break_all;
+			}
+			break;
+		case 0b001:
+			switch (word & 0x000F) {
+			case 0b0000:
+				INST_ST_Z(word); goto break_all;
+			case 0b1000:
+				INST_ST_Y(word); goto break_all;
+			}
+			break;
+		}
+		break;
+
+	case 0b1001:
+		switch ((word & 0x0C00) >> (8 + 2)) {
+		case 0b11:
+			INST_MUL(word); goto break_all;
+		}
+
+		switch ((word & 0x0E00) >> (8 + 1)) {
+		case 0b000:
+			switch (word & 0x000F) {
+			case 0b0000:
+				INST_LDS(word); goto break_all;
+			case 0b0001:
+				INST_LD_ZpostInc(word); goto break_all;
+			case 0b0010:
+				INST_LD_ZpreDec(word); goto break_all;
+			case 0b0100:
+				INST_LPM_d(word); goto break_all;
+			case 0b0101:
+				INST_LPM_dpostInc(word); goto break_all;
+			case 0b0110:
+				INST_ELPM_d(word); goto break_all;
+			case 0b0111:
+				INST_ELPM_dpostInc(word); goto break_all;
+			case 0b1001:
+				INST_LD_YpostInc(word); goto break_all;
+			case 0b1010:
+				INST_LD_YpreDec(word); goto break_all;
+			case 0b1111:
+				INST_POP(word); goto break_all;
+			}
+
+		case 0b001:
+			switch (word & 0x000F) {
+			case 0b0000:
+				INST_STS(word); goto break_all;
+			case 0b0001:
+				INST_ST_ZpostInc(word); goto break_all;
+			case 0b0010:
+				INST_ST_ZpreDec(word); goto break_all;
+			case 0b1001:
+				INST_ST_YpostInc(word); goto break_all;
+			case 0b1010:
+				INST_ST_YpreDec(word); goto break_all;
+			case 0b1100:
+				INST_ST_X(word); goto break_all;
+			case 0b1101:
+				INST_ST_XpostInc(word); goto break_all;
+			case 0b1110:
+				INST_ST_XpreDec(word); goto break_all;
+			case 0b1111:
+				INST_PUSH(word); goto break_all;
+			}
+
+		case 0b010:
+		{
+			switch ((word & 0x000E) >> 1) {
+			case 0b110:
+				INST_JMP(word);  goto break_all;
+			case 0b111:
+				INST_CALL(word);  goto break_all;
+			}
+		}
+
+		switch (word & 0x000F) {
+		case 0b0000:
+			INST_COM(word); goto break_all;
+		case 0b0001:
+			INST_NEG(word); goto break_all;
+		case 0b0010:
+			INST_SWAP(word); goto break_all;
+		case 0b0011:
+			INST_INC(word); goto break_all;
+		case 0b0101:
+			INST_ASR(word); goto break_all;
+		case 0b0110:
+			INST_LSR(word); goto break_all;
+		case 0b0111:
+			INST_ROR(word); goto break_all;
+		case 0b1010:
+			INST_DEC(word); goto break_all;
+		case 0b1100:
+			INST_LD_X(word); goto break_all;
+		case 0b1101:
+			INST_LD_XpostInc(word); goto break_all;
+		case 0b1110:
+			INST_LD_XpreDec(word); goto break_all;
+		}
+		break;
+		}
+
+		switch ((word & 0x0F00) >> 8) {
+		case 0b0100:
+			switch (word & 0x00FF) {
+			case 0b00001000:
+				INST_SEC(word); goto break_all;
+			case 0b10001000:
+				INST_CLC(word); goto break_all;
+			case 0b00011000:
+				INST_SEZ(word); goto break_all;
+			case 0b10011000:
+				INST_CLZ(word); goto break_all;
+			case 0b00101000:
+				INST_SEN(word); goto break_all;
+			case 0b10101000:
+				INST_CLN(word); goto break_all;
+			case 0b00111000:
+				INST_SEV(word); goto break_all;
+			case 0b10111000:
+				INST_CLV(word); goto break_all;
+			case 0b01001000:
+				INST_SES(word); goto break_all;
+			case 0b11001000:
+				INST_CLS(word); goto break_all;
+			case 0b01011000:
+				INST_SEH(word); goto break_all;
+			case 0b11011000:
+				INST_CLH(word); goto break_all;
+			case 0b01101000:
+				INST_SET(word); goto break_all;
+			case 0b11101000:
+				INST_CLT(word); goto break_all;
+			case 0b01111000:
+				INST_SEI(word); goto break_all;
+			case 0b11111000:
+				INST_CLI(word); goto break_all;
+
+			case 0b00001001:
+				INST_IJMP(word); goto break_all;
+			case 0b00011001:
+				INST_EIJMP(word); goto break_all;
+			}
+			break;
+		case 0b0101:
+			switch (word & 0b10001111) {
+			case 0b00001000:
+				INST_BSET(word); goto break_all;
+			}
+			switch (word & 0x00FF) {
+			case 0b00001000:
+				INST_RET(word); goto break_all;
+			case 0b00011000:
+				INST_RETI(word); goto break_all;
+			case 0b00001001:
+				INST_ICALL(word); goto break_all;
+			case 0b00011001:
+				INST_EICALL(word); goto break_all;
+			case 0b10001000:
+				INST_SLEEP(word); goto break_all;
+			case 0b10011000:
+				INST_BREAK(word); goto break_all;
+			case 0b10101000:
+				INST_WDR(word); goto break_all;
+			case 0b11001000:
+				INST_LPM_0(word); goto break_all;
+			case 0b11011000:
+				INST_ELPM_0(word); goto break_all;
+			case 0b11101000:
+				INST_SPM(word); goto break_all;
+			}
+			break;
+		case 0b0110:
+			INST_ADIW(word); goto break_all;
+		case 0b0111:
+			INST_SBIW(word); goto break_all;
+		case 0b1000:
+			INST_CBI(word); goto break_all;
+		case 0b1001:
+			INST_SBIC(word); goto break_all;
+		case 0b1010:
+			INST_SBI(word); goto break_all;
+		case 0b1011:
+			INST_SBIS(word); goto break_all;
+		}
+		break;
+
+	case 0b1011:
+		switch ((word & 0x0800) >> (8 + 3)) {
+		case 0:
+			INST_IN(word); goto break_all;
+		case 1:
+			INST_OUT(word); goto break_all;
+		}
+		break;
+
+	case 0b1100:
+		INST_RJMP(word); goto break_all;
+
+	case 0b1101:
+		INST_RCALL(word); goto break_all;
+
+	case 0b1110:
+		INST_LDI(word); goto break_all;
+
+	case 0b1111:
+		switch ((word & 0x0C00) >> (8 + 2)) {
+		case 0b00:
+			INST_BRBS(word); goto break_all;
+		case 0b01:
+			INST_BRBC(word); goto break_all;
+		}
+
+		switch (word & 0x0E09) {
+		case 0b100000000000:
+			INST_BLD(word); goto break_all;
+		case 0b101000000000:
+			INST_BST(word); goto break_all;
+		case 0b110000000000:
+			INST_SBRC(word); goto break_all;
+		case 0b111000000000:
+			INST_SBRS(word); goto break_all;
+		}
+	}
+	mcu->logf(ATmega32u4::LogLevel_Error, "unhandled Inst p1: 0x%04x", word);
+break_all:
+	return;
 }
 
 */

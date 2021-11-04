@@ -10,6 +10,7 @@
 namespace StringUtils {
 	constexpr char hexDigitsLowerCase[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 	constexpr char hexDigitsUpperCase[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+	extern char texBuf[128];
 
 	template<bool upperCase = false>
 	void uIntToHexBuf(uint64_t num, uint8_t digits, char* buf) {
@@ -27,22 +28,38 @@ namespace StringUtils {
 	}
 	void uIntToHexBufCase(uint64_t num, uint8_t digits, char* buf, bool upperCase);
 
-	uint64_t hexStrToUInt(const char* str, const char* strEnd = nullptr);
-	uint64_t hexStrToUIntLen(const char* str, size_t len);
 
-	void uIntToBinBuf(uint64_t num, uint8_t digits, char* buf);
-	std::string uIntToBinStr(uint64_t num, uint8_t digits);
-
-	uint64_t binStrToUInt(const char* str, const char* strEnd = nullptr);
-	
-	
-	uint64_t numBaseStrToUInt(uint8_t base, const char* str, const char* strEnd = nullptr);
-	template<uint8_t base>
-	uint64_t numBaseStrToUIntT(const char* str, const char* strEnd) {
+	template<typename T = uint64_t>
+	T numBaseStrToUInt(uint8_t base, const char* str, const char* strEnd = nullptr){
 		if (strEnd == nullptr)
 			strEnd = str + std::strlen(str);
 
 		uint64_t num = 0;
+		const char* strPtr = str;
+		while (strPtr != strEnd) {
+			const char c = *strPtr++;
+			uint8_t cNum = -1;
+			if (c >= '0' && c <= '9')
+				cNum = c - '0';
+			else {
+				if (c >= 'A' && c <= 'Z')
+					cNum = c - 'A' + 10;
+				else if (c >= 'a' && c <= 'z')
+					cNum = c - 'a' + 10;
+				else
+					return -1;
+			}
+			num *= base;
+			num |= cNum;
+		}
+		return num;
+	}
+	template<uint8_t base, typename T = uint64_t>
+	T numBaseStrToUIntT(const char* str, const char* strEnd) {
+		if (strEnd == nullptr)
+			strEnd = str + std::strlen(str);
+
+		T num = 0;
 		const char* strPtr = str;
 		while (strPtr != strEnd) {
 			const char c = *strPtr++;
@@ -66,10 +83,50 @@ namespace StringUtils {
 		return num;
 	}
 
-	uint64_t numStrToUInt(const char* str, const char* strEnd = nullptr);
+	template<typename T = uint64_t>
+	T binStrToUInt(const char* str, const char* strEnd = nullptr){
+		if (strEnd == nullptr)
+			strEnd = str + std::strlen(str);
 
-	std::string paddLeft(std::string s, int paddedLength, char paddWith);
-	std::string paddRight(std::string s, int paddedLength, char paddWith);
+		T out = 0;
+		for (const char* cPtr = str; cPtr < strEnd; cPtr++) {
+			out <<= 1;
+			if (*cPtr == '1')
+				out |= 1;
+		}
+		return out;
+	}
+	template<typename T = uint64_t>
+	T hexStrToUInt(const char* str, const char* strEnd = nullptr){
+		return numBaseStrToUIntT<16,T>(str, strEnd);
+	}
+	template<typename T = uint64_t>
+	T hexStrToUIntLen(const char* str, size_t len){
+		return hexStrToUInt<T>(str, str + len);
+	}
+
+	template<typename T = uint64_t>
+	T numStrToUInt(const char* str, const char* strEnd = nullptr){
+		// str at least 3 long
+		if (str + 2 < strEnd && str[0] == '0') {
+			switch (str[1]) {
+				case 'b':
+					return binStrToUInt<T>(str+2, strEnd);
+				case 'x':
+					return hexStrToUInt<T>(str+2, strEnd);
+				default:
+					return numBaseStrToUIntT<8,T>(str+2, strEnd);
+			}
+		}
+
+		return numBaseStrToUIntT<10,T>(str, strEnd);
+	}
+
+	void uIntToBinBuf(uint64_t num, uint8_t digits, char* buf);
+	std::string uIntToBinStr(uint64_t num, uint8_t digits);
+
+	std::string paddLeft(const std::string& s, int paddedLength, char paddWith);
+	std::string paddRight(const std::string& s, int paddedLength, char paddWith);
 
 	template<typename ... Args>
 	std::shared_ptr<char[]> format(const char* str, Args ... args) { // https://stackoverflow.com/a/26221725
