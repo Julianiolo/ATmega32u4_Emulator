@@ -692,8 +692,9 @@ void A32u4::InstHandler::INST_SBI(uint16_t word) {
 	io |= 1 << b;
 	
 	//mcu->dataspace.setRegBit(mcu->dataspace.data[DataSpace::Consts::io_start + A], b, true);
-	cycs = 2 + mcu->dataspace.setIOAt(A, io);
+	mcu->dataspace.setIOAt(A, io);
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_CBI(uint16_t word) {
 	const uint8_t A = getA5_c(word);
@@ -704,8 +705,9 @@ void A32u4::InstHandler::INST_CBI(uint16_t word) {
 	uint8_t io = mcu->dataspace.getIOAt(A);
 	io &= ~(1 << b);
 
-	cycs = 2 + mcu->dataspace.setIOAt(A, io);
+	mcu->dataspace.setIOAt(A, io);
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_LSR(uint16_t word) {
 	const uint8_t Rd_id = getRd5_c(word);
@@ -1040,61 +1042,67 @@ void A32u4::InstHandler::INST_ST_X(uint16_t word) {
 	const uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint16_t Addr = mcu->dataspace.getX();
 	
-	cycs = 2 + mcu->dataspace.setByteAt(Addr, Rr);
+	mcu->dataspace.setByteAt(Addr, Rr);
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_ST_XpostInc(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
 	const uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint16_t Addr = mcu->dataspace.getX();
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr, Rr);
+	mcu->dataspace.setByteAt(Addr, Rr);
 
 	mcu->dataspace.setX(Addr + 1);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_ST_XpreDec(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
 	const uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint16_t Addr = mcu->dataspace.getX();
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr - 1, Rr);
+	mcu->dataspace.setByteAt(Addr - 1, Rr);
 
 	mcu->dataspace.setX(Addr - 1);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_ST_Y(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
 	const uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint16_t Addr = mcu->dataspace.getY();
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr, Rr);
+	mcu->dataspace.setByteAt(Addr, Rr);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_ST_YpostInc(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
 	const uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint16_t Addr = mcu->dataspace.getY();
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr, Rr);
+	mcu->dataspace.setByteAt(Addr, Rr);
 
 	mcu->dataspace.setY(Addr + 1);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_ST_YpreDec(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
 	const uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint16_t Addr = mcu->dataspace.getY();
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr - 1, Rr);
+	mcu->dataspace.setByteAt(Addr - 1, Rr);
 
 	mcu->dataspace.setY(Addr - 1);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_STD_Y(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
@@ -1102,40 +1110,44 @@ void A32u4::InstHandler::INST_STD_Y(uint16_t word) {
 	const uint8_t q = getq6_d123(word);
 	const uint16_t Addr = mcu->dataspace.getY() + q;
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr, Rr);
+	mcu->dataspace.setByteAt(Addr, Rr);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_ST_Z(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
 	const uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint16_t Addr = mcu->dataspace.getZ();
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr, Rr);
+	mcu->dataspace.setByteAt(Addr, Rr);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_ST_ZpostInc(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
 	const uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint16_t Addr = mcu->dataspace.getZ();
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr, Rr);
+	mcu->dataspace.setByteAt(Addr, Rr);
 
 	mcu->dataspace.setZ(Addr + 1);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_ST_ZpreDec(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
 	const uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	const uint16_t Addr = mcu->dataspace.getZ();
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr - 1, Rr);
+	mcu->dataspace.setByteAt(Addr - 1, Rr);
 
 	mcu->dataspace.setZ(Addr - 1);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_STD_Z(uint16_t word) {
 	const uint8_t Rr_id = getRd5_c(word);
@@ -1143,9 +1155,10 @@ void A32u4::InstHandler::INST_STD_Z(uint16_t word) {
 	const uint8_t q = getq6_d123(word);
 	const uint16_t Addr = mcu->dataspace.getZ() + q;
 
-	cycs = 2 + mcu->dataspace.setByteAt(Addr, Rr);
+	mcu->dataspace.setByteAt(Addr, Rr);
 
 	PC_add = 1;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_STS(uint16_t word) {
 	const uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
@@ -1153,9 +1166,10 @@ void A32u4::InstHandler::INST_STS(uint16_t word) {
 	const uint8_t& Rd = mcu->dataspace.getGPRegRef(Rd_id);
 	const uint16_t k = word2;
 
-	cycs = 2 + mcu->dataspace.setByteAt(k, Rd);
+	mcu->dataspace.setByteAt(k, Rd);
 
 	PC_add = 2;
+	cycs = 2;
 }
 void A32u4::InstHandler::INST_LPM_0(uint16_t word) {
 	uint8_t& R0 = mcu->dataspace.getGPRegRef(0);

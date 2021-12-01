@@ -7,6 +7,8 @@
 
 #include "../utils/bitMacros.h"
 
+#include "CPUTemplates.h" // for addCycles
+
 A32u4::DataSpace::DataSpace(ATmega32u4* mcu) : mcu(mcu), 
 #if USE_HEAP
 	data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
@@ -187,7 +189,7 @@ void A32u4::DataSpace::setByteAt(uint16_t addr, uint8_t val) {
 
 	uint8_t oldVal = data[addr];
 	data[addr] = val;
-	return update_Set(addr, val, oldVal);
+	update_Set(addr, val, oldVal);
 }
 uint8_t A32u4::DataSpace::getIOAt(uint8_t ind) {
 	return getByteAt(ind + Consts::io_start);
