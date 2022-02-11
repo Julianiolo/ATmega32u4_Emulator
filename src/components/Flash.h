@@ -42,8 +42,8 @@ namespace A32u4 {
 		uint8_t getInstIndCache(pc_t pc) const;
 		void populateInstIndCache();
 	public:
-		uint8_t getByte(addr_t addr) const;
-		uint16_t getWord(addr_t addr) const;
+		uint8_t getByte(at_addr_t addr) const;
+		uint16_t getWord(at_addr_t addr) const;
 		uint16_t getInst(pc_t pc) const;
 		uint8_t getInstInd(pc_t pc) const;
 
@@ -55,6 +55,8 @@ namespace A32u4 {
 
 		sizemcu_t size() const;
 		sizemcu_t sizeWords() const;
+
+		bool isProgramLoaded() const; // returns true if a program was loaded
 	};
 }
 #endif

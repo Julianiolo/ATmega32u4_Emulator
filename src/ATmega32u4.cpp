@@ -15,9 +15,9 @@ void A32u4::ATmega32u4::reset() { //add: reason
 	log(LogLevel_Output, "Reset", __FILE__, __LINE__, "ATmega32u4");
 	debugger.reset();
 	analytics.reset();
-	hardwareReset();
+	resetHardware();
 }
-void A32u4::ATmega32u4::hardwareReset() {
+void A32u4::ATmega32u4::resetHardware() {
 	dataspace.resetIO();
 	cpu.reset();
 }
@@ -28,7 +28,7 @@ void A32u4::ATmega32u4::powerOn() {
 
 void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
 	currentExecFlags = flags;
-	if(!flash.hasProgram)
+	if(!flash.isProgramLoaded())
 		return;
 	switch (flags) {
 		case ExecFlags_None:

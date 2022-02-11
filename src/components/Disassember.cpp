@@ -30,8 +30,13 @@ void A32u4::Disassembler::DisasmFile::generateContent(){
 	
 	std::sort(disasmData->lines.begin(),disasmData->lines.end(),compareLine);
 
+	at_addr_t lastAddr = 0;
 	for (size_t i = 0; i < disasmData->lines.size(); i++){
 		auto& line = disasmData->lines[i];
+
+		if (line.addr - lastAddr > 512) // make big gaps in code stand out
+			content += "\n     ...\n\n";
+
 		if(disasmData.get()->funcCalls.find(i) != disasmData.get()->funcCalls.end())
 			content += StringUtils::format("\n%08x <func@%x>:\n", line.addr, line.addr).get();
 
@@ -43,11 +48,18 @@ void A32u4::Disassembler::DisasmFile::generateContent(){
 				content += "\n";
 				break;
 		}
+
+		lastAddr = line.addr;
 	}
 		
 }
 
 void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data){
+	if (!data->isProgramLoaded()) {
+		content = "Could not disassemble because no program is loaded!";
+		return;
+	}
+
 	if(!disasmData)
 		addDisasmData(data->sizeWords());
 	for(uint16_t i = 0; i <= 0xa8;i+=4)
@@ -56,6 +68,11 @@ void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data){
 	generateContent();
 }
 void A32u4::Disassembler::DisasmFile::disassembleBinFileWithAnalytics(const Flash* data, const Analytics* analytics){
+	if (!data->isProgramLoaded()) {
+		content = "Could not disassemble because no program is loaded!";
+		return;
+	}
+
 	if(!disasmData)
 		addDisasmData(data->sizeWords());
 	for(uint16_t i = 0; i <= 0xa8;i+=4)
@@ -73,7 +90,7 @@ A32u4::Disassembler::DisasmFile::DisasmData::DisasmData(size_t size) : disasmed(
 
 }
 void A32u4::Disassembler::DisasmFile::DisasmData::addFuncCallAddr(uint16_t addr){
-	if(funcCalls.find(addr) != funcCalls.end()){
+	if(funcCalls.find(addr) == funcCalls.end()){
 		funcCalls.insert(addr);
 	}
 }
