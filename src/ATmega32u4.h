@@ -65,7 +65,7 @@ namespace A32u4 {
 
 		void reset();
 
-		void hardwareReset();
+		void resetHardware();
 
 		void powerOn();
 

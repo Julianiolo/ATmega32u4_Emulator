@@ -15,8 +15,9 @@ namespace A32u4 {
 		friend class InstHandler;
 		friend class DataSpace;
 		friend class Debugger;
-
+public:
 		InstHandler instHandler;
+private:
 		ATmega32u4* const mcu;
 
 		pc_t PC;
@@ -68,7 +69,7 @@ namespace A32u4 {
 	public:
 		pc_t& getPCRef();
 		pc_t getPC() const;
-		addr_t getPCAddr() const;
+		at_addr_t getPCAddr() const;
 		uint64_t getTotalCycles() const;
 		bool isSleeping() const;
 	};

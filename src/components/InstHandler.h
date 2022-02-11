@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+
 namespace A32u4 {
 	class ATmega32u4;
 
@@ -17,8 +18,26 @@ namespace A32u4 {
 		InstHandler(ATmega32u4* mcu);
 
 		void handleInst(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref);
+public:
+		struct inst_effect_t{
+			uint8_t addCycs;
+			int16_t addPC;
+
+			inst_effect_t(uint8_t addCycs, int16_t addPC) : addCycs(addCycs), addPC(addPC) {}
+		};
+
 		template<bool debug,bool analyse>
-		void handleInstT(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref);
+		inst_effect_t handleInstRawT(uint16_t word);
+
+	private:
+		template<bool debug,bool analyse>
+		inst_effect_t handleCurrentInstT();
+
+		template<bool debug,bool analyse>
+		inst_effect_t handleInstT(uint16_t word);
+
+		
+
 		static constexpr uint8_t startIndArr2[] = { 73, 94, 109, 107, 99, 0, 71, 87 };
 		
 		static uint8_t getInstInd3(uint16_t word);

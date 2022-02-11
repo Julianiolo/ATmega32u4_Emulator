@@ -355,7 +355,8 @@ void A32u4::InstHandler::INST_NEG(uint16_t word) {
 	Rd = 0x00 - Rd;
 	mcu->cpu.setFlags_NZ(Rd);
 
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_H, isBitSet(Rd,3) || !isBitSet(Rd_copy,3));
+	uint8_t res_h = 0x00 - (Rd_copy & 0b1111);
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_H, isBitSet(res_h,4)); // isBitSet(Rd,3) || !isBitSet(Rd_copy,3)
 	const bool V = Rd == 0x80;
 	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_V, V);
 	const bool N = (Rd & 0b10000000) != 0;
@@ -414,7 +415,7 @@ void A32u4::InstHandler::INST_MUL(uint16_t word) {
 	R1 = (uint8_t)(res >> 8);
 	
 	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_C, isBitSet(R1,7));
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, (R0 == 0) && (R1 == 0));
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, res == 0);
 	cycs = 2; PC_add = 1;
 }
 void A32u4::InstHandler::INST_MULS(uint16_t word) {
@@ -426,12 +427,12 @@ void A32u4::InstHandler::INST_MULS(uint16_t word) {
 	uint8_t& R0 = mcu->dataspace.getGPRegRef(0);
 	uint8_t& R1 = mcu->dataspace.getGPRegRef(1);
 
-	int16_t res = (int16_t)Rd * (int16_t)Rr;
+	int16_t res = (int16_t)(int8_t)Rd * (int16_t)(int8_t)Rr;
 	R0 = (uint8_t)res;
 	R1 = (uint8_t)(res >> 8);
 
 	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_C, isBitSet(R1, 7));
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, (R0 == 0) && (R1 == 0));
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, res == 0);
 	cycs = 2; PC_add = 1;
 }
 void A32u4::InstHandler::INST_MULSU(uint16_t word) {
@@ -443,12 +444,12 @@ void A32u4::InstHandler::INST_MULSU(uint16_t word) {
 	uint8_t& R0 = mcu->dataspace.getGPRegRef(0);
 	uint8_t& R1 = mcu->dataspace.getGPRegRef(1);
 
-	int16_t res = (int16_t)Rd * (uint16_t)Rr;
+	int16_t res = (int16_t)(int8_t)Rd * (uint16_t)Rr;
 	R0 = (uint8_t)res;
 	R1 = (uint8_t)((uint16_t)res >> 8);
 
 	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_C, isBitSet(R1, 7));
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, (R0 == 0) && (R1 == 0));
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, res == 0);
 	cycs = 2; PC_add = 1;
 }
 void A32u4::InstHandler::INST_FMUL(uint16_t word) {
@@ -461,30 +462,30 @@ void A32u4::InstHandler::INST_FMUL(uint16_t word) {
 	uint8_t& R1 = mcu->dataspace.getGPRegRef(1);
 
 	uint16_t res = (uint16_t)Rd * (uint16_t)Rr;
-	res <<= 1;
-	R0 = (uint8_t)res;
-	R1 = (uint8_t)((uint16_t)res >> 8);
+	int16_t res_sh = res << 1;
+	R0 = (uint8_t)res_sh;
+	R1 = (uint8_t)((uint16_t)res_sh >> 8);
 
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_C, isBitSet(R1, 7));
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, (R0 == 0) && (R1 == 0));
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_C, isBitSet(res, 15));
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, res_sh == 0);
 	cycs = 2; PC_add = 1;
 }
 void A32u4::InstHandler::INST_FMULS(uint16_t word) {
-	uint8_t Rd_id = getRd4_c_a16(word);
-	uint8_t Rr_id = getRr4_c_a16(word);
+	uint8_t Rd_id = getRd3_c_a16(word);
+	uint8_t Rr_id = getRr3_c_a16(word);
 
 	uint8_t& Rd = mcu->dataspace.getGPRegRef(Rd_id);
 	uint8_t& Rr = mcu->dataspace.getGPRegRef(Rr_id);
 	uint8_t& R0 = mcu->dataspace.getGPRegRef(0);
 	uint8_t& R1 = mcu->dataspace.getGPRegRef(1);
 
-	int16_t res = (int16_t)Rd * (int16_t)Rr;
-	res <<= 1;
-	R0 = (uint8_t)res;
-	R1 = (uint8_t)(res >> 8);
+	int16_t res = (int16_t)(int8_t)Rd * (int16_t)(int8_t)Rr;
+	int16_t res_sh = res << 1;
+	R0 = (uint8_t)res_sh;
+	R1 = (uint8_t)(res_sh >> 8);
 
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_C, isBitSet(R1, 7));
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, (R0 != 0) && (R1 != 0));
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_C, isBitSet(res, 15));
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, res_sh == 0);
 	cycs = 2; PC_add = 1;
 }
 void A32u4::InstHandler::INST_FMULSU(uint16_t word) {
@@ -496,13 +497,13 @@ void A32u4::InstHandler::INST_FMULSU(uint16_t word) {
 	uint8_t& R0 = mcu->dataspace.getGPRegRef(0);
 	uint8_t& R1 = mcu->dataspace.getGPRegRef(1);
 
-	int16_t res = (int16_t)Rd * (uint16_t)Rr;
-	res <<= 1;
-	R0 = (uint8_t)res;
-	R1 = (uint8_t)((uint16_t)res >> 8);
+	int16_t res = (int16_t)(int8_t)Rd * (uint16_t)Rr;
+	int16_t res_sh = res << 1;
+	R0 = (uint8_t)res_sh;
+	R1 = (uint8_t)((uint16_t)res_sh >> 8);
 
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_C, isBitSet(R1, 7));
-	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, (R0 == 0) && (R1 == 0));
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_C, isBitSet(res, 15));
+	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_Z, res_sh == 0);
 	cycs = 2; PC_add = 1;
 }
 
