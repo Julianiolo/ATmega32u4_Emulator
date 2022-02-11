@@ -4,6 +4,7 @@
 #define _A32u4_DATASPACE
 
 #include <stdint.h>
+#include <string.h> //for NULL
 #include "../A32u4Types.h"
 
 #include "config.h"
@@ -89,8 +90,8 @@ namespace A32u4 {
 
 		void pushByteToStack(uint8_t val);
 		uint8_t popByteFromStack();
-		void pushAddrToStack(addr_t Addr);
-		addr_t popAddrFromStack();
+		void pushAddrToStack(at_addr_t Addr);
+		at_addr_t popAddrFromStack();
 
 		uint64_t lastEECR_EEMPE_set = 0;
 
@@ -123,13 +124,13 @@ namespace A32u4 {
 
 		uint8_t* getEEPROM();
 		const uint8_t* getData();
-		uint8_t getDataByte(addr_t Addr);
-		constexpr uint8_t getDataByteC(addr_t Addr);
-		void setDataByte(addr_t Addr, uint8_t byte);
-		void setBitTo(addr_t Addr, uint8_t bit, bool val);
-		void setBitsTo(addr_t Addr, uint8_t mask, uint8_t bits);
+		uint8_t getDataByte(at_addr_t Addr);
+		constexpr uint8_t getDataByteC(at_addr_t Addr);
+		void setDataByte(at_addr_t Addr, uint8_t byte);
+		void setBitTo(at_addr_t Addr, uint8_t bit, bool val);
+		void setBitsTo(at_addr_t Addr, uint8_t mask, uint8_t bits);
 
-		addr_t getSP() const;
+		at_addr_t getSP() const;
 	};
 }
 

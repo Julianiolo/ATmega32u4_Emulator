@@ -2,6 +2,8 @@
 #define __BITARRAY_H__
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <string.h> //for size_t
 
 class BitArray{
 private:

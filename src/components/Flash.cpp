@@ -24,12 +24,12 @@ A32u4::Flash::~Flash() {
 #endif
 }
 
-uint8_t A32u4::Flash::getByte(addr_t addr) const {
+uint8_t A32u4::Flash::getByte(at_addr_t addr) const {
 	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getByte Address to Big: ",addr,4), "Flash", return 0);
 
 	return data[addr];
 }
-uint16_t A32u4::Flash::getWord(addr_t addr) const {
+uint16_t A32u4::Flash::getWord(at_addr_t addr) const {
 	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getWord Address to Big: ",addr,4), "Flash", return 0);
 
 	return ((uint16_t)data[addr + 1] << 8) | data[addr];
@@ -133,6 +133,10 @@ void A32u4::Flash::populateInstIndCache(){
 		uint16_t inst = getInst(i);
 		instCache[i] = InstHandler::getInstInd(inst);
 	}
+}
+
+bool A32u4::Flash::isProgramLoaded() const {
+	return hasProgram;
 }
 
 
