@@ -49,7 +49,7 @@ namespace A32u4 {
 
 		uint8_t* getData();
 
-		bool loadFromHexFile(const char* str);
+		bool loadFromHexFile(const char* path);
 		void loadFromHexString(const char* str);
 		void clear();
 

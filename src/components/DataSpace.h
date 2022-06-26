@@ -33,16 +33,23 @@ namespace A32u4 {
 			uint8_t& REF_TCCR0B;
 			uint8_t& REF_TIFR0;
 			uint8_t timer0_presc_cache = 0;
+			uint64_t lastTimer0Update = 0;
 			uint32_t lastCounter;
 
 			static constexpr uint16_t presc[] = {0,1,8,64,256,1024};
 
 			Timers(ATmega32u4* mcu);
 
+
+			void reset();
+
 			void update();
 			void doTick(uint8_t& timer);
 			void doTicks(uint8_t& timer,uint8_t num);
 			void checkForIntr();
+			uint8_t getTimer0Presc() const;
+			uint16_t getTimer0PrescDiv() const;
+			void markTimer0Update(bool print = true);
 		};
 
 		ATmega32u4* mcu;
@@ -66,11 +73,13 @@ namespace A32u4 {
 		DataSpace(ATmega32u4* mcu);
 		~DataSpace();
 
+		void reset();
+		void resetIO();
+
 		uint8_t& getByteRefAtAddr(uint16_t addr);
 
 		
 		uint8_t getByteAt(uint16_t Addr);
-		constexpr uint8_t getByteAtC(uint16_t Addr);
 		void setByteAt(uint16_t Addr, uint8_t val);
 
 		uint8_t getIOAt(uint8_t ind);
@@ -79,12 +88,11 @@ namespace A32u4 {
 		uint8_t getRegBit(uint16_t id, uint8_t bit);
 		void setRegBit(uint16_t id, uint8_t bit, bool val);
 
-		uint16_t getWordReg(uint8_t id) const;
-		void setWordReg(uint8_t id, uint16_t val);
+		
 		uint16_t getWordRegRam(uint16_t id) const;
 		void setWordRegRam(uint16_t id, uint16_t val);
 
-		void resetIO();
+		
 
 		void setSP(uint16_t val);
 
@@ -101,7 +109,6 @@ namespace A32u4 {
 		SPIByteCallB SPI_Byte_Callback = NULL;
 
 		void update_Get(uint16_t Addr, bool onlyOne);
-		constexpr void update_GetC(uint16_t Addr, bool onlyOne);
 
 		void update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal);
 		void setEECR(uint8_t val, uint8_t oldVal);
@@ -122,10 +129,11 @@ namespace A32u4 {
 		void setY(uint16_t word);
 		void setZ(uint16_t word);
 
+		uint16_t getWordReg(uint8_t id) const;
+		void setWordReg(uint8_t id, uint16_t val);
 		uint8_t* getEEPROM();
 		const uint8_t* getData();
 		uint8_t getDataByte(at_addr_t Addr);
-		constexpr uint8_t getDataByteC(at_addr_t Addr);
 		void setDataByte(at_addr_t Addr, uint8_t byte);
 		void setBitTo(at_addr_t Addr, uint8_t bit, bool val);
 		void setBitsTo(at_addr_t Addr, uint8_t mask, uint8_t bits);

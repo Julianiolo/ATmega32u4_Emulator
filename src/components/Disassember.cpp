@@ -3,6 +3,8 @@
 #include "../utils/StringUtils.h"
 #include "InstHandler.h"
 #include <algorithm>
+#include <fstream>
+#include <streambuf>
 #include <iostream>
 
 #define INST_PAR_TYPE_RAWVAL 0
@@ -23,6 +25,27 @@ A32u4::Disassembler::DisasmFile::DisasmFile(){
 void A32u4::Disassembler::DisasmFile::addDisasmData(size_t size){
 	disasmData = std::make_shared<DisasmData>(size);
 }
+const A32u4::Disassembler::DisasmFile::DisasmData* A32u4::Disassembler::DisasmFile::getDisasmData() {
+	return disasmData.get();
+}
+
+bool A32u4::Disassembler::DisasmFile::loadSrcFile(const char* path) {
+	std::ifstream t(path);
+
+	if(!t.is_open())
+		return false;
+
+	content = "";
+
+	t.seekg(0, std::ios::end);   
+	content.reserve((size_t)t.tellg());
+	t.seekg(0, std::ios::beg);
+
+	content.assign(std::istreambuf_iterator<char>(t), std::istreambuf_iterator<char>());
+	processContent();
+	return true;
+}
+
 void A32u4::Disassembler::DisasmFile::generateContent(){
 	content.clear();
 	if(!disasmData)
@@ -37,8 +60,8 @@ void A32u4::Disassembler::DisasmFile::generateContent(){
 		if (line.addr - lastAddr > 512) // make big gaps in code stand out
 			content += "\n     ...\n\n";
 
-		if(disasmData.get()->funcCalls.find(i) != disasmData.get()->funcCalls.end())
-			content += StringUtils::format("\n%08x <func@%x>:\n", line.addr, line.addr).get();
+		if(disasmData.get()->funcCalls.find(line.addr) != disasmData.get()->funcCalls.end())
+			content += StringUtils::format("\n%08x <func@%x>:\n", line.addr*2, line.addr*2).get();
 
 		content += line.str + "\n";
 
@@ -51,7 +74,8 @@ void A32u4::Disassembler::DisasmFile::generateContent(){
 
 		lastAddr = line.addr;
 	}
-		
+	
+	processContent();
 }
 
 void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data){
@@ -86,10 +110,132 @@ void A32u4::Disassembler::DisasmFile::disassembleBinFileWithAnalytics(const Flas
 	generateContent();
 }
 
+uint16_t A32u4::Disassembler::DisasmFile::generateAddrFromLine(const char* start, const char* end) {
+	if (start + 8 > end || *start != ' ' || start[8] != ':') {
+		if (*start == '0' && start[8] == ' ' && isValidHexAddr(start,start+8))
+			return Addrs_symbolLabel;
+		else
+			return Addrs_notAnAddr;
+	}
+
+	if(!isValidHexAddr(start,start+8))
+		return Addrs_notAnAddr;
+
+	return (uint16_t)StringUtils::hexStrToUIntLen<uint64_t>(start, 8);
+}
+bool A32u4::Disassembler::DisasmFile::isValidHexAddr(const char* start, const char* end) {
+	static constexpr char validHexDigits[] = {' ','0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+	for(const char* it = start; it < end; it++) {
+		char c = *it;
+		if(c >= 'A' && c <= 'Z') {
+			c += ('a'-'A');
+		}
+		for(int i = 0; i<17;i++){
+			if(c == validHexDigits[i])
+				goto continue_outer;
+		}
+		return false;
+	continue_outer:
+		;
+	}
+	if(*(end-1) == ' ')
+		return false;
+	return true;
+}
+void A32u4::Disassembler::DisasmFile::addAddrToList(const char* start, const char* end, size_t lineInd) {
+	uint16_t Addr = generateAddrFromLine(start, end);
+	if(lineInd >= addrs.size()){
+		addrs.resize(lineInd);
+	}
+	addrs[lineInd-1] = Addr;
+
+	if (Addr == Addrs_symbolLabel) {
+		// should never be bigger than 2 bytes
+		at_addr_t symbAddr = (at_addr_t)StringUtils::hexStrToUIntLen<uint64_t>(start, 8);
+		labels[symbAddr] = lineInd-1;
+	}
+}
+
+void A32u4::Disassembler::DisasmFile::processContent() {
+	size_t lineInd = 1;
+	lines.clear();
+	lines.push_back(0);
+	addrs.clear();
+
+	const char* str = content.c_str();
+	size_t i = 0;
+	for(; i < content.size(); i++) {
+		if(str[i] == '\n'){
+			lines.push_back(i+1);
+
+			addAddrToList(str + lines[lineInd - 1], str + i, lineInd);
+
+			lineInd++;
+		}
+	}
+	addAddrToList(str + lines[lineInd - 1], str + content.size(), lineInd);
+	//lineInd++;
+
+	lines.resize(lineInd);
+	addrs.resize(lineInd);
+
+	for (size_t i = 0; i < lines.size(); i++) {
+		at_addr_t addr = addrs[i];
+		if (addr != Addrs_notAnAddr && addr != Addrs_symbolLabel) {
+
+		}
+	}
+}
+
+size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(uint16_t Addr) const{
+	if(isEmpty())
+		return -1;
+
+	size_t from = 0;
+	size_t to = lines.size()-1;
+	while ((addrs[to] == Addrs_notAnAddr || addrs[to] == Addrs_symbolLabel) && to > 0)
+		to--;
+	if (addrs[to] < Addr || to == 0)
+		return 0;
+
+	while(from != to){
+		size_t mid = from + ((to-from)/2);
+
+		uint16_t lineAddr;
+		while((lineAddr = addrs[mid]) == Addrs_notAnAddr || lineAddr == Addrs_symbolLabel)
+			mid++;
+
+		if(lineAddr == Addr){
+			return mid;
+		}
+		else {
+			if (lineAddr < Addr) {
+				if(mid == from)
+					break;
+				from = mid;
+			}else{
+				if(mid == to)
+					break;
+				to = mid;
+			}
+		}
+	}
+	return from;
+}
+bool A32u4::Disassembler::DisasmFile::isEmpty() const {
+	return content.size() == 0;
+}
+size_t A32u4::Disassembler::DisasmFile::getNumLines() const {
+	return lines.size();
+}
+bool A32u4::Disassembler::DisasmFile::isSelfDisassembled() const {
+	return disasmData.get() != nullptr;
+}
+
 A32u4::Disassembler::DisasmFile::DisasmData::DisasmData(size_t size) : disasmed(size){
 
 }
-void A32u4::Disassembler::DisasmFile::DisasmData::addFuncCallAddr(uint16_t addr){
+void A32u4::Disassembler::DisasmFile::DisasmData::addFuncCallAddr(pc_t addr){
 	if(funcCalls.find(addr) == funcCalls.end()){
 		funcCalls.insert(addr);
 	}
@@ -251,8 +397,8 @@ std::string A32u4::Disassembler::getSignInt(int32_t val) {
 	}
 }
 
-void A32u4::Disassembler::disasmRecurse(uint16_t start, const Flash* data, DisasmFile::DisasmData* disasmData){
-	uint16_t PC = start;
+void A32u4::Disassembler::disasmRecurse(pc_t start, const Flash* data, DisasmFile::DisasmData* disasmData){
+	pc_t PC = start;
 	while(true){
 		if (disasmData->disasmed.get(PC)) {
 			//printf("finished at %x from %x\n", PC*2, start*2);

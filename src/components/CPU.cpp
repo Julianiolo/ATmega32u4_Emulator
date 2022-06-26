@@ -264,6 +264,9 @@ void A32u4::CPU::executeInterrupts() {
 }
 void A32u4::CPU::directExecuteInterrupt(uint8_t num) {
 	insideInterrupt = true;
+	static uint64_t count = 0;
+	count++;
+	//printf("cnt: %llu\n", count);
 
 	if (CPU_sleep) {
 		CPU_sleep = false;
@@ -279,11 +282,18 @@ void A32u4::CPU::directExecuteInterrupt(uint8_t num) {
 }
 
 uint64_t A32u4::CPU::cycsToNextTimerInt() {
+#if 0
 	const uint8_t& REF_TIMER0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
 	uint8_t ticksLeftT0 = 255 - REF_TIMER0;
 
 	uint16_t prescCycsT0 = DataSpace::Timers::presc[mcu->dataspace.timers.timer0_presc_cache];
 	return (uint64_t)ticksLeftT0 * prescCycsT0 + (prescCycsT0 - (totalCycls%prescCycsT0));
+#else
+	uint8_t timer0 = mcu->dataspace.data[DataSpace::Consts::TCNT0];
+	uint64_t nextOverflow = mcu->dataspace.timers.lastTimer0Update + (256-timer0)*mcu->dataspace.timers.getTimer0PrescDiv();
+	return nextOverflow - totalCycls;
+
+#endif
 }
 
 /*
@@ -466,7 +476,7 @@ void A32u4::CPU::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint8_t re
 	} else {
 		Z = (res == 0) && (reg &  (1 << DataSpace::Consts::SREG_Z));
 	}
-	bool C = res > a;
+	bool C = a < (uint16_t)b + c; //res > a;
 	bool H = (b & 0b1111)+c > (a & 0b1111);//(a3 && b3) || (b3 && !r3) || (a3 && !r3);
 
 	uint8_t val = 0;
@@ -592,9 +602,9 @@ void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
 	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
 	bool R15 = isBitSet(res, 15);
 
-	int8_t sum8 = (int8_t)a + (int8_t)b;
-	int16_t sum16 = (int8_t)a + (int8_t)b;
-	bool V = sum8 != sum16;
+	uint16_t sum16 = a + b;
+	uint32_t sum32 = a + b;
+	bool V = sum16 != sum32;
 	//bool V = ah7 && R15;
 	bool N = R15;
 	bool Z = res == 0;
@@ -647,15 +657,15 @@ void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
 	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
 	bool R15 = isBitSet(res, 15);
 
-	int8_t sub8 = (int8_t)a - (int8_t)b;
-	int16_t sub16 = (int8_t)a - (int8_t)b;
-	bool V = sub8 != sub16;
+	int16_t sub16 = (int16_t)a - (int16_t)b;
+	int32_t sub32 = (int16_t)a - (int16_t)b;
+	bool V = sub16 != sub32;
 	//bool V = R15 && !ah7;// had ah7 && R15; but seems to be wrong
 	bool N = R15;
 	bool Z = res == 0;
 	bool S = V ^ N;
 	//bool S = (int16_t)a < (int16_t)b;
-	bool C = V;//had R15 && !ah7 before but seems to be wrong
+	bool C = b > a;//had R15 && !ah7 before but seems to be wrong
 #endif
 
 	uint8_t val = 0;

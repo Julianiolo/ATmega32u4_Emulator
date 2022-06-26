@@ -146,7 +146,7 @@ void A32u4::Debugger::doHaltActionsLog(){
 			uint64_t addr = StringUtils::numStrToUInt<uint64_t>(input.c_str() + 3, input.c_str() + input.size());
 
 			if (addr < DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) {
-				uint8_t ioVal = mcu->dataspace.getIOAt(addr);
+				uint8_t ioVal = mcu->dataspace.getIOAt((uint8_t)addr);
 				mcu->logf(ATmega32u4::LogLevel_Output, "%d: 0x%02h > %d", addr, ioVal, ioVal); // (input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str());
 			}
 			else {
