@@ -73,11 +73,11 @@ uint8_t A32u4::InstHandler::getInstInd3(uint16_t word) {
 	return 0xff;
 }
 
-int16_t convTo16BitInt(uint16_t word, uint8_t bitCnt) {
-	return isBitSet(word, bitCnt - 1) ? (((int16_t)-1 ^ ((1 << bitCnt) - 1)) | word) : word;
+int16_t convTo16BitInt(uint16_t word, uint8_t bitLen) { // convert a signed int of arbitrary bitLength to a int16_t
+	return isBitSet(word, bitLen - 1) ? (((int16_t)-1 ^ ((1 << bitLen) - 1)) | word) : word;
 }
 //Parameters
-uint8_t A32u4::InstHandler::getRd2_c_arr(uint16_t word) {//Rd 3Bit continous add 16
+uint8_t A32u4::InstHandler::getRd2_c_arr(uint16_t word) {//Rd 2Bit continous use as arr index
 	const uint8_t arr[] = { 24,26,28,30 };
 	return arr[((word & 0x0030) >> 4)];
 }
@@ -133,7 +133,7 @@ uint8_t A32u4::InstHandler::gets3_c(uint16_t word) {//s val 3Bit continuous
 	return (word & 0b1110000) >> 4;
 }
 uint8_t A32u4::InstHandler::getq6_d123(uint16_t word) {//q val 6Bit distributed in 1chunk 2chunk 3chunk
-	return ((word & 0x2000) >> 5) | ((word & 0x0C00) >> 7) | (word & 0x0007);
+	return ((word & 0x2000) >> 8) | ((word & 0x0C00) >> 7) | (word & 0x0007);
 }
 uint8_t A32u4::InstHandler::getA6_d24(uint16_t word) {//A val 6Bit distributed in 2chunk 4chunk ____ _AA_ ____ AAAA
 	return ((word & 0x0600) >> (4 + 1)) | (word & 0x000F);
@@ -847,6 +847,7 @@ void A32u4::InstHandler::INST_CLZ(uint16_t word) {
 }
 void A32u4::InstHandler::INST_SEI(uint16_t word) {
 	mcu->dataspace.setRegBit(DataSpace::Consts::SREG, DataSpace::Consts::SREG_I, true);
+	mcu->cpu.breakOutOfOptim = true; // break out of optimisation to check for execution of interrupts (Global Interrupt Enable)
 	cycs = 1; PC_add = 1;
 }
 void A32u4::InstHandler::INST_CLI(uint16_t word) {

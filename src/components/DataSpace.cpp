@@ -7,29 +7,21 @@
 
 #include "../utils/bitMacros.h"
 
-#include "CPUTemplates.h" // for addCycles
+#include "CPUTemplates.h" // for addCycles (EEPROM)
 
-A32u4::DataSpace::DataSpace(ATmega32u4* mcu) : mcu(mcu), 
-#if USE_HEAP
-	data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
-#endif
-	timers(mcu)
-{
 
-}
-
-A32u4::DataSpace::~DataSpace() {
-#if USE_HEAP
-	delete[] data;
-	delete[] eeprom;
-#endif
-}
 
 A32u4::DataSpace::Timers::Timers(ATmega32u4* mcu) : mcu(mcu), lastCounter(0), 
 REF_TCCR0B(mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B]), 
 REF_TIFR0(mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0])
 {
 
+}
+
+void A32u4::DataSpace::Timers::reset() {
+	timer0_presc_cache = 0;
+	lastCounter = 0;
+	lastTimer0Update = 0;
 }
 
 void A32u4::DataSpace::Timers::update() {
@@ -126,7 +118,21 @@ void A32u4::DataSpace::Timers::doTick(uint8_t& timer) {
 	timer++;
 	if (timer == 0) {
 		REF_TIFR0 |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+		//printf("OVERFLOW at %llu\n", mcu->cpu.totalCycls);
 	}
+
+	markTimer0Update();
+
+
+	static uint64_t last = 0;
+	uint64_t diff = mcu->cpu.totalCycls - last;
+	//printf("%llu\n", diff);
+	last = mcu->cpu.totalCycls;
+
+	if (diff > 17000)
+		int a = 0;
+
+
 }
 void A32u4::DataSpace::Timers::doTicks(uint8_t& timer, uint8_t num) {
 #if 1
@@ -136,12 +142,16 @@ void A32u4::DataSpace::Timers::doTicks(uint8_t& timer, uint8_t num) {
 #endif
 		return;
 	}
+
 	uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
 	uint8_t tim_copy = timer0;
 	timer0 += num;
 	if (timer0 < tim_copy) {
 		REF_TIFR0 |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+		//printf("OVERFLOW at %llu\n", mcu->cpu.totalCycls);
 	}
+
+	markTimer0Update();
 }
 
 void A32u4::DataSpace::Timers::checkForIntr() {
@@ -152,9 +162,69 @@ void A32u4::DataSpace::Timers::checkForIntr() {
 				//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
 				REF_TIFR0 &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
 				mcu->cpu.directExecuteInterrupt(23);
+				//printf("int at %llu\n", mcu->cpu.totalCycls);
 			}
 		}
 	}
+}
+uint8_t A32u4::DataSpace::Timers::getTimer0Presc() const {
+	return timer0_presc_cache;
+}
+uint16_t A32u4::DataSpace::Timers::getTimer0PrescDiv() const {
+	return DataSpace::Timers::presc[getTimer0Presc()];
+}
+void A32u4::DataSpace::Timers::markTimer0Update(bool print) { 
+	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
+	uint64_t diff = mcu->cpu.totalCycls - lastTimer0Update;
+	diff = (diff / getTimer0PrescDiv()) * getTimer0PrescDiv();
+	lastTimer0Update += diff;
+	//if(print)
+	//	printf("marked at %llu\n", lastTimer0Update);
+}
+
+
+
+/*
+
+DataSpace:
+
+*/
+
+A32u4::DataSpace::DataSpace(ATmega32u4* mcu) : mcu(mcu), 
+#if USE_HEAP
+data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
+#endif
+timers(mcu)
+{
+
+}
+
+A32u4::DataSpace::~DataSpace() {
+#if USE_HEAP
+	delete[] data;
+	delete[] eeprom;
+#endif
+}
+
+void A32u4::DataSpace::reset() {
+	resetIO();
+	timers.reset();
+	lastEECR_EEMPE_set = 0;
+	lastPLLCSR_PLLE_set = 0;
+}
+void A32u4::DataSpace::resetIO() {
+	//add: set all IO Registers to initial Values
+	for (size_t i = 0; i < Consts::io_size; i++) {
+		data[Consts::io_start + i] = 0;
+	}
+	for (size_t i = 0; i < Consts::ext_io_size; i++) {
+		data[Consts::ext_io_start + i] = 0;
+	}
+	for (size_t i = 0; i < Consts::eeprom_size; i++) {
+		eeprom[i] = 0;
+	}
+
+	setSP(Consts::SP_initaddr);
 }
 
 uint8_t& A32u4::DataSpace::getByteRefAtAddr(uint16_t addr) {
@@ -177,13 +247,7 @@ uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
 
 	return data[addr];
 }
-constexpr uint8_t A32u4::DataSpace::getByteAtC(uint16_t addr) {
-	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds: ",addr,4), "DataSpace", return 0);
 
-	update_GetC(addr, true);
-
-	return data[addr];
-}
 void A32u4::DataSpace::setByteAt(uint16_t addr, uint8_t val) {
 	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data set Index out of bounds: ",addr,4), "DataSpace", return);
 
@@ -256,21 +320,6 @@ void A32u4::DataSpace::setZ(uint16_t word) {
 	data[0x1e] = word & 0xFF;
 }
 
-void A32u4::DataSpace::resetIO() {
-	//add: set all IO Registers to initial Values
-	for (size_t i = 0; i < Consts::io_size; i++) {
-		data[Consts::io_start + i] = 0;
-	}
-	for (size_t i = 0; i < Consts::ext_io_size; i++) {
-		data[Consts::ext_io_start + i] = 0;
-	}
-	for (size_t i = 0; i < Consts::eeprom_size; i++) {
-		eeprom[i] = 0;
-	}
-	
-	setSP(Consts::SP_initaddr);
-}
-
 void A32u4::DataSpace::setSP(uint16_t val) {
 	setWordRegRam(Consts::SPL, val);
 	if(mcu->analytics.maxSP > val)
@@ -294,29 +343,16 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				}
 				if (onlyOne) break;
 			}
-		}
-	}
-}
-constexpr void A32u4::DataSpace::update_GetC(uint16_t Addr, bool onlyOne) {
-	if (Addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size && Addr >= Consts::GPRs_size) { //only io needs updates
-		switch (Addr) {
-			case 0xFFFF: //case for updating everything
-			case Consts::EECR: {
-				if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastEECR_EEMPE_set > 4) { // check if EE;PE is set but shouldnt
-					data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
-				}
-				if (onlyOne) break;
-			}
 
-			case Consts::PLLCSR: {
-				if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && !(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastPLLCSR_PLLE_set > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
-					data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
-				}
+			case Consts::TCNT0: {
+				data[Consts::TCNT0] += (uint8_t)((mcu->cpu.totalCycls - mcu->dataspace.timers.lastTimer0Update) / DataSpace::Timers::presc[mcu->dataspace.timers.getTimer0Presc()]);
+				timers.markTimer0Update(false);
 				if (onlyOne) break;
 			}
 		}
 	}
 }
+
 void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 	if (Addr <= Consts::io_start+Consts::io_size+Consts::ext_io_size && Addr >= Consts::GPRs_size) { //only io needs updates
 		switch (Addr) {
@@ -337,6 +373,15 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 
 			case Consts::TIFR0:
 				timers.checkForIntr();
+				break;
+
+			case Consts::SREG:
+				if((val & (1<<Consts::SREG_I)) && (data[Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)))
+					mcu->cpu.breakOutOfOptim = true; // we need to break out of Optimisation to check if an interrupt can now occure (Global Interrupt Enable)
+				break;
+
+			case Consts::TCNT0:
+				printf("TIMER!\n");
 				break;
 		}
 	}
@@ -410,6 +455,9 @@ void A32u4::DataSpace::setSPDR() {
 void A32u4::DataSpace::setTCCR0B(uint8_t val) {
 	timers.timer0_presc_cache = val & 0b111;
 	mcu->cpu.breakOutOfOptim = true;
+	printf("SWITCH to div:%d\n", timers.getTimer0PrescDiv());
+	timers.lastTimer0Update = mcu->cpu.totalCycls; // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
+	printf("fmark at %llu\n", mcu->cpu.totalCycls);
 
 #if 1
 	switch (timers.timer0_presc_cache) {
@@ -486,9 +534,7 @@ const uint8_t* A32u4::DataSpace::getData() {
 uint8_t A32u4::DataSpace::getDataByte(at_addr_t Addr) {
 	return getByteAt(Addr);
 }
-constexpr uint8_t A32u4::DataSpace::getDataByteC(at_addr_t Addr) {
-	return getByteAtC(Addr);
-}
+
 void A32u4::DataSpace::setDataByte(at_addr_t Addr, uint8_t byte) {
 	setByteAt(Addr, byte);
 }
@@ -510,3 +556,43 @@ void A32u4::DataSpace::setBitsTo(at_addr_t Addr, uint8_t mask, uint8_t bits) {
 at_addr_t A32u4::DataSpace::getSP() const {
 	return getWordRegRam(Consts::SPL);
 }
+
+/*
+
+
+constexpr uint8_t A32u4::DataSpace::getDataByteC(at_addr_t Addr) {
+return getByteAtC(Addr);
+}
+
+
+constexpr uint8_t A32u4::DataSpace::getByteAtC(uint16_t addr) {
+A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds: ",addr,4), "DataSpace", return 0);
+
+update_GetC(addr, true);
+
+return data[addr];
+}
+
+
+constexpr void A32u4::DataSpace::update_GetC(uint16_t Addr, bool onlyOne) {
+if (Addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size && Addr >= Consts::GPRs_size) { //only io needs updates
+switch (Addr) {
+case 0xFFFF: //case for updating everything
+case Consts::EECR: {
+if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastEECR_EEMPE_set > 4) { // check if EE;PE is set but shouldnt
+data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
+}
+if (onlyOne) break;
+}
+
+case Consts::PLLCSR: {
+if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && !(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastPLLCSR_PLLE_set > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
+data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
+}
+if (onlyOne) break;
+}
+}
+}
+}
+
+*/

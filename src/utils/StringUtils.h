@@ -2,6 +2,7 @@
 #define __STRING_UTILS_H__
 
 #include <stdint.h>
+#include <vector>
 #include <string>
 #include <memory>
 #include <stdexcept>
@@ -27,6 +28,10 @@ namespace StringUtils {
 		return std::string(buf.get(), buf.get() + digits);
 	}
 	void uIntToHexBufCase(uint64_t num, uint8_t digits, char* buf, bool upperCase);
+	
+
+	void uIntToNumBaseBuf(uint64_t num, uint8_t digits, char* buf, uint8_t base = 10, bool upperCase = false);
+	std::string uIntToNumBaseStr(uint64_t num, uint8_t digits, uint8_t base = 10, bool upperCase = false);
 
 
 	template<typename T = uint64_t>
@@ -55,7 +60,7 @@ namespace StringUtils {
 		return num;
 	}
 	template<uint8_t base, typename T = uint64_t>
-	T numBaseStrToUIntT(const char* str, const char* strEnd) {
+	T numBaseStrToUIntT(const char* str, const char* strEnd = nullptr) {
 		if (strEnd == nullptr)
 			strEnd = str + std::strlen(str);
 
@@ -125,6 +130,8 @@ namespace StringUtils {
 	void uIntToBinBuf(uint64_t num, uint8_t digits, char* buf);
 	std::string uIntToBinStr(uint64_t num, uint8_t digits);
 
+
+
 	std::string paddLeft(const std::string& s, int paddedLength, char paddWith);
 	std::string paddRight(const std::string& s, int paddedLength, char paddWith);
 
@@ -140,10 +147,25 @@ namespace StringUtils {
 		return buf;
 	}
 
-	std::string loadFileIntoString(const char* path, const char* errorMsg = nullptr);
+	std::string loadFileIntoString(const char* path, bool* success = 0);
 	bool writeStringToFile(const std::string& str, const char* path);
 
+	std::vector<uint8_t> loadFileIntoByteArray(const char* path, const char* errorMsg = nullptr);
+
 	size_t findCharInStr(char c, const char* str, const char* strEnd = nullptr);
+	size_t findCharInStrFromBack(char c, const char* str, const char* strEnd = nullptr);
+	std::vector<std::pair<size_t,std::string>> findStrings(const uint8_t* data, size_t dataLen, size_t minLen = 1);
+
+	int strcasecmp(const char* a, const char* b, const char* a_end = NULL, const char* b_end = NULL);
+
+
+	// this function ignores any f/l suffixes, as the size of the float is explicitly stated through the bits
+	uint64_t stof(const char* str, const char* str_end, uint8_t exponentBits = 8, uint8_t fractionBits = 23, bool atof_compadible = false);
+
+	uint8_t getLBS(uint64_t x);
+	uint8_t getHBS(uint64_t x);
+
+	std::string getFileExtension(const char* path, const char* path_end = 0);
 }
 #endif
 
