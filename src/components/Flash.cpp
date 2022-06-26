@@ -109,13 +109,20 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 	populateInstIndCache();
 #endif
 }
-bool A32u4::Flash::loadFromHexFile(const char* str) {
+bool A32u4::Flash::loadFromHexFile(const char* path) {
+	std::string ext = StringUtils::getFileExtension(path);
+	if (ext != "hex") {
+		mcu->log(ATmega32u4::LogLevel_Error, StringUtils::format("Wrong Extension for loading Flash contents: %s", ext.c_str()).get(), __FILE__, __LINE__, "Flash");
+		return false;
+	}
+		
+
 	std::ifstream t;
 	size_t len;
-	t.open(str);
+	t.open(path);
 	if (!t.is_open()) {
 		t.close();
-		mcu->log(ATmega32u4::LogLevel_Error, (std::string("Cannot open file: ") + str).c_str(), __FILE__, __LINE__, "Flash");
+		mcu->log(ATmega32u4::LogLevel_Error, StringUtils::format("Cannot open file: %s", path).get(), __FILE__, __LINE__, "Flash");
 		return false;
 	}
 	t.seekg(0, std::ios::end);
