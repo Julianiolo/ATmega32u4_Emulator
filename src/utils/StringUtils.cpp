@@ -511,7 +511,7 @@ stof_calc:
 					comb_fraction += roundUp; // TODO: check for overflow maybe?
 				}
 
-				fraction = comb_fraction & ((uint64_t)1<<fractionBits)-1; // shear off the highest bit set, since thats always set (by the standard)
+				fraction = comb_fraction & (((uint64_t)1<<fractionBits)-1); // shear off the highest bit set, since thats always set (by the standard)
 			}
 			
 

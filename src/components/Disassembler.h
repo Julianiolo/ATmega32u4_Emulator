@@ -63,7 +63,7 @@ namespace A32u4 {
 			DisasmFile();
 
 			void addDisasmData(size_t size);
-			const DisasmData* getDisasmData();
+			const DisasmData* getDisasmData() const;
 			
 			bool loadSrcFile(const char* path);
 			void disassembleBinFile(const Flash* data);
