@@ -57,10 +57,10 @@ uint8_t* A32u4::Flash::getData() {
 }
 
 sizemcu_t A32u4::Flash::size() const {
-	return size_*2;
+	return size_;
 }
 sizemcu_t A32u4::Flash::sizeWords() const{
-	return size_;
+	return size_/2;
 }
 
 
@@ -69,6 +69,18 @@ void A32u4::Flash::clear() {
 		data[i] = 0;
 	}
 	hasProgram = false;
+}
+
+void A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
+	clear();
+
+	memcpy(data, data_, dataLen);
+	size_ = dataLen;
+	hasProgram = true;
+
+#if FLASH_USE_INSTIND_CACHE
+	populateInstIndCache();
+#endif
 }
 
 void A32u4::Flash::loadFromHexString(const char* str) {
@@ -136,7 +148,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	return true;
 }
 void A32u4::Flash::populateInstIndCache(){
-	for (uint16_t i = 0; i < sizeWords() / 2; i++) {
+	for (uint16_t i = 0; i < sizeWords(); i++) {
 		uint16_t inst = getInst(i);
 		instCache[i] = InstHandler::getInstInd(inst);
 	}

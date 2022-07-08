@@ -90,23 +90,36 @@ bool StringUtils::writeStringToFile(const std::string& str, const char* path) {
 	return true;
 }
 
-std::vector<uint8_t> StringUtils::loadFileIntoByteArray(const char* path, const char* errorMsg) {
+std::vector<uint8_t> StringUtils::loadFileIntoByteArray(const char* path, bool* success) {
 	std::ifstream t(path, std::ios::binary);
 	std::vector<uint8_t> byteArr;
 
 	if(!t.is_open()){
-		throw std::runtime_error(std::string("cannot load file: ") + path);
+		if (success)
+			*success = false;
+		return byteArr;
 	}
 
 	byteArr.clear();
 
-	t.seekg(0, std::ios::end);   
+	t.seekg(0, std::ios::end);
 	byteArr.reserve((size_t)t.tellg());
 	t.seekg(0, std::ios::beg);
 
 	byteArr.assign(std::istreambuf_iterator<char>(t), std::istreambuf_iterator<char>());
 	t.close();
+
+	if (success)
+		*success = true;
+
 	return byteArr;
+}
+
+bool StringUtils::writeBytesToFile(const uint8_t* data, size_t dataLen, const char* path) {
+	std::ofstream out(path, std::ios::binary);
+	out.write((const char*)data, dataLen);
+	out.close();
+	return true;
 }
 
 

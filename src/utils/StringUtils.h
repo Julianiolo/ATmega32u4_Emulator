@@ -150,7 +150,8 @@ namespace StringUtils {
 	std::string loadFileIntoString(const char* path, bool* success = 0);
 	bool writeStringToFile(const std::string& str, const char* path);
 
-	std::vector<uint8_t> loadFileIntoByteArray(const char* path, const char* errorMsg = nullptr);
+	std::vector<uint8_t> loadFileIntoByteArray(const char* path, bool* success = 0);
+	bool writeBytesToFile(const uint8_t* data, size_t dataLen, const char* path);
 
 	size_t findCharInStr(char c, const char* str, const char* strEnd = nullptr);
 	size_t findCharInStrFromBack(char c, const char* str, const char* strEnd = nullptr);
