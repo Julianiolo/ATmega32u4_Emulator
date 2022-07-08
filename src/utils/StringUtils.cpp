@@ -90,12 +90,13 @@ bool StringUtils::writeStringToFile(const std::string& str, const char* path) {
 	return true;
 }
 
-std::vector<uint8_t> StringUtils::loadFileIntoByteArray(const char* path, const char* errorMsg) {
+std::vector<uint8_t> StringUtils::loadFileIntoByteArray(const char* path, bool* success) {
 	std::ifstream t(path, std::ios::binary);
 	std::vector<uint8_t> byteArr;
 
 	if(!t.is_open()){
-		throw std::runtime_error(std::string("cannot load file: ") + path);
+		if(success)
+			*success = false;//throw std::runtime_error(std::string("cannot load file: ") + path);
 	}
 
 	byteArr.clear();
@@ -498,7 +499,7 @@ stof_calc:
 					comb_fraction += roundUp; // TODO: check for overflow maybe?
 				}
 
-				fraction = comb_fraction & ((uint64_t)1<<fractionBits)-1; // shear off the highest bit set, since thats always set (by the standard)
+				fraction = comb_fraction & (((uint64_t)1<<fractionBits)-1); // shear off the highest bit set, since thats always set (by the standard)
 			}
 			
 

@@ -12,9 +12,10 @@ namespace A32u4 {
 		friend class CPU;
 		friend class Disassembler;
 
+		ATmega32u4* const mcu;
 		uint8_t cycs;
 		int16_t PC_add;
-		ATmega32u4* const mcu;
+		
 		InstHandler(ATmega32u4* mcu);
 
 		void handleInst(uint8_t& CYCL_ADD_Ref, int16_t& PC_ADD_Ref);
