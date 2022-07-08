@@ -78,7 +78,7 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 
 	size_t str_ind = 0;
 	uint16_t flashInd = 0;
-	while ((str[str_ind] != NULL) && (str_ind < strl)) {
+	while ((str[str_ind] != 0) && (str_ind < strl)) {
 		if (str_ind >= strl) {
 			abort();
 		}
