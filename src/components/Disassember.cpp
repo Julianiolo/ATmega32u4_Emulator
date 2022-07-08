@@ -25,7 +25,7 @@ A32u4::Disassembler::DisasmFile::DisasmFile(){
 void A32u4::Disassembler::DisasmFile::addDisasmData(size_t size){
 	disasmData = std::make_shared<DisasmData>(size);
 }
-const A32u4::Disassembler::DisasmFile::DisasmData* A32u4::Disassembler::DisasmFile::getDisasmData() {
+const A32u4::Disassembler::DisasmFile::DisasmData* A32u4::Disassembler::DisasmFile::getDisasmData() const {
 	return disasmData.get();
 }
 
