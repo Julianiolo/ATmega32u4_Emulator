@@ -1,9 +1,9 @@
 
-/build/*
+build/*
 
-/projects/VS2019/ATmega32u4_Emulator/.vs/*
-/.vscode/*
-/tests/*
+projects/VS2019/ATmega32u4_Emulator/.vs/*
+.vscode/*
+tests/*
 
 *.vcxproj.user
 *.txt

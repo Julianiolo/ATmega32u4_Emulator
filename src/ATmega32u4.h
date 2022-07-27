@@ -12,9 +12,15 @@
 #include "utils/StringUtils.h"
 
 #if RANGE_CHECK
+#if RANGE_CHECK_ERROR
 #define A32U4_ASSERT_INRANGE(val,from,to,msg,action) if((val) < (from) || (val) >= (to)) { mcu->log(ATmega32u4::LogLevel_Error, (msg), __FILE__, __LINE__); action;}
 #define A32U4_ASSERT_INRANGE_M(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ mcu->log(ATmega32u4::LogLevel_Error, (msg), __FILE__, __LINE__,module_); action;}
 #define A32U4_ASSERT_INRANGE_M_W(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ mcu->log(ATmega32u4::LogLevel_Warning, (msg), __FILE__, __LINE__,module_); action;}
+#else
+#define A32U4_ASSERT_INRANGE(val,from,to,msg,action) if((val) < (from) || (val) >= (to)) { action;}
+#define A32U4_ASSERT_INRANGE_M(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ action;}
+#define A32U4_ASSERT_INRANGE_M_W(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ action;}
+#endif
 #else
 #define A32U4_ASSERT_INRANGE(val,from,to,msg,action)
 #define A32U4_ASSERT_INRANGE_M(val,from,to,msg,module_,action)

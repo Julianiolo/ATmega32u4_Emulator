@@ -455,9 +455,9 @@ void A32u4::DataSpace::setSPDR() {
 void A32u4::DataSpace::setTCCR0B(uint8_t val) {
 	timers.timer0_presc_cache = val & 0b111;
 	mcu->cpu.breakOutOfOptim = true;
-	printf("SWITCH to div:%d\n", timers.getTimer0PrescDiv());
+	//printf("SWITCH to div:%d\n", timers.getTimer0PrescDiv());
 	timers.lastTimer0Update = mcu->cpu.totalCycls; // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
-	printf("fmark at %llu\n", mcu->cpu.totalCycls);
+	//printf("fmark at %llu\n", mcu->cpu.totalCycls);
 
 #if 1
 	switch (timers.timer0_presc_cache) {
@@ -494,7 +494,7 @@ uint8_t A32u4::DataSpace::popByteFromStack() {
 	return Byte;
 }
 
-void A32u4::DataSpace::pushAddrToStack(at_addr_t Addr) {
+void A32u4::DataSpace::pushAddrToStack(addrmcu_t Addr) {
 	uint16_t SP = getWordRegRam(Consts::SPL);
 	A32U4_ASSERT_INRANGE_M(SP, Consts::ISRAM_start+1, Consts::data_size, A32U4_ADDR_ERR_STR("Stack pointer while push Addr out of bounds: ",SP,4), "DataSpace", return);
 	data[SP] = (uint8_t)Addr; //maybe this should be SP-1 and SP-2
@@ -504,7 +504,7 @@ void A32u4::DataSpace::pushAddrToStack(at_addr_t Addr) {
 
 	setSP(SP - 2);
 }
-at_addr_t A32u4::DataSpace::popAddrFromStack() {
+addrmcu_t A32u4::DataSpace::popAddrFromStack() {
 	uint16_t SP = getWordRegRam(Consts::SPL);
 	A32U4_ASSERT_INRANGE_M(SP+1, Consts::ISRAM_start, Consts::data_size-1, A32U4_ADDR_ERR_STR("Stack pointer while pop Addr out of bounds: ",SP,4), "DataSpace", return 0);
 	uint16_t Addr = data[SP + 2];//maybe this should be SP-1 and SP-2 
@@ -531,15 +531,15 @@ const uint8_t* A32u4::DataSpace::getData() {
 	}
 	return data;
 }
-uint8_t A32u4::DataSpace::getDataByte(at_addr_t Addr) {
+uint8_t A32u4::DataSpace::getDataByte(addrmcu_t Addr) {
 	return getByteAt(Addr);
 }
 
-void A32u4::DataSpace::setDataByte(at_addr_t Addr, uint8_t byte) {
+void A32u4::DataSpace::setDataByte(addrmcu_t Addr, uint8_t byte) {
 	setByteAt(Addr, byte);
 }
 
-void A32u4::DataSpace::setBitTo(at_addr_t Addr, uint8_t bit, bool val) {
+void A32u4::DataSpace::setBitTo(addrmcu_t Addr, uint8_t bit, bool val) {
 	uint8_t byte = getData()[Addr];
 	if (val)
 		byte |= 1 << bit;
@@ -547,20 +547,20 @@ void A32u4::DataSpace::setBitTo(at_addr_t Addr, uint8_t bit, bool val) {
 		byte &= ~(1 << bit);
 	setDataByte(Addr, byte);
 }
-void A32u4::DataSpace::setBitsTo(at_addr_t Addr, uint8_t mask, uint8_t bits) {
+void A32u4::DataSpace::setBitsTo(addrmcu_t Addr, uint8_t mask, uint8_t bits) {
 	uint8_t byte = getData()[Addr];
 	byte = (byte & ~mask) | bits;
 	setDataByte(Addr, byte);
 }
 
-at_addr_t A32u4::DataSpace::getSP() const {
+addrmcu_t A32u4::DataSpace::getSP() const {
 	return getWordRegRam(Consts::SPL);
 }
 
 /*
 
 
-constexpr uint8_t A32u4::DataSpace::getDataByteC(at_addr_t Addr) {
+constexpr uint8_t A32u4::DataSpace::getDataByteC(addrmcu_t Addr) {
 return getByteAtC(Addr);
 }
 

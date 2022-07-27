@@ -705,7 +705,7 @@ pc_t& A32u4::CPU::getPCRef() {
 pc_t A32u4::CPU::getPC() const {
 	return PC;
 }
-at_addr_t A32u4::CPU::getPCAddr() const {
+addrmcu_t A32u4::CPU::getPCAddr() const {
 	return getPC() * 2;
 }
 uint64_t A32u4::CPU::getTotalCycles() const {

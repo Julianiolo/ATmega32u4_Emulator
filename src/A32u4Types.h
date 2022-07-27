@@ -5,7 +5,7 @@
 
 typedef uint8_t regind_t;
 typedef uint8_t reg_t;
-typedef uint16_t at_addr_t;
+typedef uint16_t addrmcu_t;
 typedef uint16_t pc_t;
 typedef uint16_t sizemcu_t;
 

@@ -32,7 +32,7 @@ namespace A32u4 {
 		void addData(uint8_t instInd,uint16_t PC);
 
 	public:
-		at_addr_t maxSP = 0xFFFF;
+		addrmcu_t maxSP = 0xFFFF;
 		uint64_t sleepSum = 0;
 
 		uint64_t getPCCnt(uint16_t addr) const;

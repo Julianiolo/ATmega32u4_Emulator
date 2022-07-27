@@ -69,7 +69,7 @@ private:
 	public:
 		pc_t& getPCRef();
 		pc_t getPC() const;
-		at_addr_t getPCAddr() const;
+		addrmcu_t getPCAddr() const;
 		uint64_t getTotalCycles() const;
 		bool isSleeping() const;
 	};
