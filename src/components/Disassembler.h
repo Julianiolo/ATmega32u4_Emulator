@@ -21,13 +21,17 @@ namespace A32u4 {
 			std::vector<uint16_t> addrs; // [linenumber] = PC address
 			std::map<uint16_t, size_t> labels;
 
+
+			/*
 			struct BranchRoot {
 				uint8_t displayDepth;
-				at_addr_t dest;
+				addrmcu_t dest;
 			};
 
 			std::vector<std::unique_ptr<BranchRoot>> branchRoots; // [linenumber] = pointer to branch root object of this line (null if line is not a branchroot)
-			std::vector<std::vector<at_addr_t>> passingBranches;  // [linenumber] = root addresses of all branches passing this address/line
+			std::vector<std::vector<addrmcu_t>> passingBranches;  // [linenumber] = root addresses of all branches passing this address/line
+
+			*/
 			
 			struct DisasmData { // data for disasm process
 				BitArray disasmed;
@@ -46,11 +50,26 @@ namespace A32u4 {
 			
 			static constexpr uint16_t Addrs_notAnAddr = -1;
 			static constexpr uint16_t Addrs_symbolLabel = -2;
+
+			struct AdditionalDisasmInfo {
+				// mcu Analytics:
+				const Analytics* analytics = NULL;
+
+				// source line info (debug_line)
+				bool (*getLineInfoFromAddr)(addrmcu_t addr, std::string* out, void* userData) = NULL;
+				void* lineUserData = NULL;
+
+				// symbol info (symboltable)
+				bool (*getSymbolNameFromAddr)(addrmcu_t addr, bool ramNotRom, std::string* out, void* userData) = NULL;
+				void* symbolUserData = NULL;
+
+				inline AdditionalDisasmInfo(){} // needed, bc else clang throws error??
+			};
 		private:
 			std::shared_ptr<DisasmData> disasmData;
 
 			// turn DisasmData into actual String
-			void generateContent();
+			void generateContent(const AdditionalDisasmInfo& info = AdditionalDisasmInfo());
 
 			// setup stuff like line indexes etc
 			
@@ -65,9 +84,9 @@ namespace A32u4 {
 			void addDisasmData(size_t size);
 			const DisasmData* getDisasmData() const;
 			
+			void loadSrc(const char* str, const char* strEnd = NULL);
 			bool loadSrcFile(const char* path);
-			void disassembleBinFile(const Flash* data);
-			void disassembleBinFileWithAnalytics(const Flash* data, const Analytics* analytics);
+			void disassembleBinFile(const Flash* data, const AdditionalDisasmInfo& info = AdditionalDisasmInfo());
 
 			// helpers/utility
 			size_t getLineIndFromAddr(uint16_t Addr) const;

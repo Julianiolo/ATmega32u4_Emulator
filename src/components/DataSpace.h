@@ -98,8 +98,8 @@ namespace A32u4 {
 
 		void pushByteToStack(uint8_t val);
 		uint8_t popByteFromStack();
-		void pushAddrToStack(at_addr_t Addr);
-		at_addr_t popAddrFromStack();
+		void pushAddrToStack(addrmcu_t Addr);
+		addrmcu_t popAddrFromStack();
 
 		uint64_t lastEECR_EEMPE_set = 0;
 
@@ -133,12 +133,12 @@ namespace A32u4 {
 		void setWordReg(uint8_t id, uint16_t val);
 		uint8_t* getEEPROM();
 		const uint8_t* getData();
-		uint8_t getDataByte(at_addr_t Addr);
-		void setDataByte(at_addr_t Addr, uint8_t byte);
-		void setBitTo(at_addr_t Addr, uint8_t bit, bool val);
-		void setBitsTo(at_addr_t Addr, uint8_t mask, uint8_t bits);
+		uint8_t getDataByte(addrmcu_t Addr);
+		void setDataByte(addrmcu_t Addr, uint8_t byte);
+		void setBitTo(addrmcu_t Addr, uint8_t bit, bool val);
+		void setBitsTo(addrmcu_t Addr, uint8_t mask, uint8_t bits);
 
-		at_addr_t getSP() const;
+		addrmcu_t getSP() const;
 	};
 }
 

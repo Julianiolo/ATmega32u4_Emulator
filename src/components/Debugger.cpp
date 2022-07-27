@@ -60,14 +60,14 @@ void A32u4::Debugger::popPCFromCallStack() {
 	callStackFrom[callStackPtr] = 0;
 }
 
-void A32u4::Debugger::registerAddressBytes(at_addr_t addr) {
+void A32u4::Debugger::registerAddressBytes(addrmcu_t addr) {
 	addr -= DataSpace::Consts::ISRAM_start;
 	addressStackIndicators[addr] = 1;
 	addressStackIndicators[addr - 1] = 2;
 	lastSPRecived = addr;
 }
 
-void A32u4::Debugger::registerStackDec(at_addr_t addr){
+void A32u4::Debugger::registerStackDec(addrmcu_t addr){
 	addr -= DataSpace::Consts::ISRAM_start;
 	for(uint16_t i = lastSPRecived-1; i<=addr; i++){
 		if(addressStackIndicators[i] == 1)

@@ -49,7 +49,7 @@ namespace A32u4 {
 #endif
 
 		// last recived SP (relative to ISRAM_start)
-		at_addr_t lastSPRecived = DataSpace::Consts::SP_initaddr - DataSpace::Consts::ISRAM_start;
+		addrmcu_t lastSPRecived = DataSpace::Consts::SP_initaddr - DataSpace::Consts::ISRAM_start;
 
 		Debugger(ATmega32u4* mcu);
 		~Debugger();
@@ -60,8 +60,8 @@ namespace A32u4 {
 		void pushPCOnCallStack(pc_t pc, pc_t fromPC);
 		void popPCFromCallStack();
 
-		void registerAddressBytes(at_addr_t addr);
-		void registerStackDec(at_addr_t addr);
+		void registerAddressBytes(addrmcu_t addr);
+		void registerStackDec(addrmcu_t addr);
 
 		bool checkBreakpoints();
 		bool doHaltActions();

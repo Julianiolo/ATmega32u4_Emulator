@@ -277,7 +277,7 @@ uint64_t StringUtils::stof(const char* str, const char* str_end, uint8_t exponen
 
 					if (n_ / 10 != n) { // overflow
 						// TODO: round
-						exponentDec += digitSeqLen - i;
+						exponentDec += (int)digitSeqLen - (int)i;
 						goto stof_digits_done;
 					}
 					
@@ -397,13 +397,13 @@ stof_calc:
 			uint8_t digitsHBS = getHBS(digits);
 
 
-			uint64_t decimalsBin = 0; // binary representation of fraction, but left aligned (msb = 0.5)
+			uint64_t decimalsBin = 0; // binary representation of fraction, but left aligned (msb set = 0.5)
 			uint8_t decimalsBinInd = 0; // basically the length
 			if (decimals != 0) {
 				if (digits == 0) {
 					digits = decimals;
 					decimals = 0;
-					exponentDec -= decimalsSeqLen;
+					exponentDec -= (int)decimalsSeqLen;
 				}
 				else {
 					if(digitsHBS < fractionBits) {
@@ -561,14 +561,17 @@ uint8_t StringUtils::getHBS(uint64_t x) {
 	return ret;
 }
 
+const char* StringUtils::getFileName(const char* path, const char* path_end) {
+	if (path_end == 0)
+		path_end = path + strlen(path);
 
+	size_t lastSlash = findCharInStrFromBack('/', path, path_end);
+	size_t lastBSlash = findCharInStrFromBack('\\', path, path_end);
+	size_t lastDiv = std::max(lastSlash != (size_t)-1 ? lastSlash : 0, lastBSlash != (size_t)-1 ? lastBSlash : 0);
 
-
-
-
-
-
-std::string StringUtils::getFileExtension(const char* path, const char* path_end) {
+	return path + lastDiv + 1;
+}
+const char* StringUtils::getFileExtension(const char* path, const char* path_end) {
 	if (path_end == 0)
 		path_end = path + strlen(path);
 
@@ -579,17 +582,29 @@ std::string StringUtils::getFileExtension(const char* path, const char* path_end
 	size_t lastDot = findCharInStrFromBack('.', path, path_end);
 
 	if (lastDot > lastDiv) {
-		return std::string(path + lastDot + 1, path_end);
+		return path + lastDot + 1;
 	}
 	else {
-		return "";
+		return path_end;
 	}
 }
 
+std::vector<size_t> StringUtils::generateLineIndexArr(const char* str) {
+	std::vector<size_t> lines;
 
+	const char* ptr = str;
+	lines.push_back(0);
+	while (*ptr) {
+		char c = *ptr;
+		if (c == '\n') {
+			size_t line = (ptr - str) + 1;
+			lines.push_back(line);
+		}
+		ptr++;
+	}
 
-
-
+	return lines;
+}
 
 
 

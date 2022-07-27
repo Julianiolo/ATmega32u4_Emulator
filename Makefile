@@ -1,17 +1,27 @@
 # settings here:
 
 BUILD_MODE?=DEBUG
+PLATFORM?=PLATFORM_DESKTOP
 
-CC    :=g++
+ifeq ($(PLATFORM),PLATFORM_DESKTOP)
+    CC?=gcc
+    CXX?=g++
+	AR:=ar
+endif
+ifeq ($(PLATFORM),PLATFORM_WEB)
+    CC:=emcc
+    CXX:=em++
+	AR:=emar
+endif
 CFLAGS?=-Wall -Wno-narrowing
-CSTD  ?=-std=c++17
-RELEASE_OPTIM?= -Ofast
+CSTD  ?=-std=gnu++17
+RELEASE_OPTIM?= -O2
 
 SRC_DIR         ?=src/
-BUILD_DIR       ?=build/make/
+BUILD_DIR       ?=build/make/$(PLATFORM)_$(BUILD_MODE)/
 OBJ_DIR         ?=$(BUILD_DIR)objs/ATmega32u4_Emulator/
 
-OUT_NAME?=ATmega32u4_Emulator.a
+OUT_NAME?=libATmega32u4_Emulator.a
 OUT_DIR ?=$(BUILD_DIR)
 
 # you dont need to worry about this stuff:
@@ -50,11 +60,11 @@ all: $(OUT_PATH)
 $(OUT_PATH): $(OBJ_FILES)
 	# BUILDING ATmega32u4_Emulator
 	mkdir -p $(OUT_DIR)
-	ar rvs $@ $(OBJ_FILES)
+	$(AR) rvs $@ $(OBJ_FILES)
 
 $(OBJ_DIR)%.o:%.cpp
 	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) $(CSTD) $(BUILD_MODE_CFLAGS) $(DEP_INCLUDE_FLAGS) -c $< -o $@ $(CDEPFLAGS)
+	$(CXX) $(CFLAGS) $(CSTD) $(BUILD_MODE_CFLAGS) $(DEP_INCLUDE_FLAGS) -c $< -o $@ $(CDEPFLAGS)
 
 -include $(DEP_FILES)
 

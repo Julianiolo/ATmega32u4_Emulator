@@ -166,7 +166,10 @@ namespace StringUtils {
 	uint8_t getLBS(uint64_t x);
 	uint8_t getHBS(uint64_t x);
 
-	std::string getFileExtension(const char* path, const char* path_end = 0);
+	const char* getFileExtension(const char* path, const char* path_end = NULL);
+	const char* getFileName(const char* path, const char* path_end = NULL);
+
+	std::vector<size_t> generateLineIndexArr(const char* str);
 }
 #endif
 

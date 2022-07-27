@@ -5,6 +5,8 @@
 
 #include "../A32u4Types.h"
 
+#include <cstring>
+
 #define FLASH_USE_INSTIND_CACHE 1
 
 namespace A32u4 {
@@ -42,8 +44,8 @@ namespace A32u4 {
 		uint8_t getInstIndCache(pc_t pc) const;
 		void populateInstIndCache();
 	public:
-		uint8_t getByte(at_addr_t addr) const;
-		uint16_t getWord(at_addr_t addr) const;
+		uint8_t getByte(addrmcu_t addr) const;
+		uint16_t getWord(addrmcu_t addr) const;
 		uint16_t getInst(pc_t pc) const;
 		uint8_t getInstInd(pc_t pc) const;
 

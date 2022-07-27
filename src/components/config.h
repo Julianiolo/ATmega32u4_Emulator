@@ -1,4 +1,5 @@
 #define RANGE_CHECK 1
+#define RANGE_CHECK_ERROR 1
 #define USE_INSTCACHE 1
 #define SLEEP_SKIP 1
 
