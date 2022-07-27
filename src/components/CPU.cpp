@@ -333,7 +333,6 @@ uint64_t A32u4::CPU::cycsToNextTimerInt() {
 */
 
 void A32u4::CPU::setFlags_NZ(uint8_t res) {
-#if FAST_FLAGSET
 	bool N = (res & 0b10000000) != 0;
 	bool Z = res == 0;
 	uint8_t val = 0;
@@ -345,15 +344,10 @@ void A32u4::CPU::setFlags_NZ(uint8_t res) {
 	}
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11111001) | val;
-#else
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_N, (res & 0b10000000) != 0);
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_Z, res == 0);
-#endif
 }
 void A32u4::CPU::setFlags_NZ(uint16_t res) {
 	bool N = (res & 0b1000000000000000) != 0;
 	bool Z = res == 0;
-#if FAST_FLAGSET
 	uint8_t val = 0;
 	if (N) {
 		val |= 1 << DataSpace::Consts::SREG_N;
@@ -363,16 +357,10 @@ void A32u4::CPU::setFlags_NZ(uint16_t res) {
 	}
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11111001) | val;
-#else
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_N, N);
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_Z, Z);
-#endif
 }
 
 void A32u4::CPU::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t res) {
-#if 1
 	uint8_t val = 0;
-#if 1
 	int8_t sum8 = (int8_t)a + (int8_t)b + c;
 	int16_t sum16 = (int8_t)a + (int8_t)b + c;
 	bool V = sum8 != sum16;
@@ -389,81 +377,11 @@ void A32u4::CPU::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t re
 	uint8_t usum4 = (a & 0b1111) + (b & 0b1111) + c;
 	bool H = isBitSet(usum4, 4);
 	val |= H << DataSpace::Consts::SREG_H;
-#else
-	int8_t sum8 = (int8_t)a + (int8_t)b + c;
-	int16_t sum16 = (int8_t)a + (int8_t)b + c;
-	bool V = sum8 != sum16;
-	if (V) {
-		val |= 1 << mcu->dataspace.SREG_V;
-	}
 
-	bool N = (res & 0b10000000) != 0;
-	if (N) {
-		val |= 1 << mcu->dataspace.SREG_N;
-	}
-
-	bool Z = res == 0;
-	if (Z) {
-		val |= 1 << mcu->dataspace.SREG_Z;
-	}
-
-	uint16_t usum16 = a + b + c; //(a&0b10000000) + (b&0b10000000) + c;
-	bool C = isBitSet(usum16, 8);
-	if (C) {
-		val |= 1 << mcu->dataspace.SREG_C;
-	}
-
-	uint8_t usum4 = (a & 0b1111) + (b & 0b1111) + c;
-	bool H = isBitSet(usum4, 4);
-	if (H) {
-		val |= 1 << mcu->dataspace.SREG_H;
-	}
-#endif
-
-	
-#else
-	bool a7 = isBitSet(a, 7);
-	bool b7 = isBitSet(b, 7);
-	bool r7 = isBitSet(res, 7);
-
-	bool a3 = isBitSet(a, 3);
-	bool b3 = isBitSet(b, 3);
-	bool r3 = isBitSet(res, 3);
-
-	bool V = (a7 && b7 && !r7) || (!a7 && !b7 && r7); //maybe try non branching stuff
-	bool N = (res & 0b10000000) != 0;
-	bool Z = res == 0;
-	bool C = (a7 && b7) || (b7 && !r7) || (a7 && !r7);
-	bool H = (a3 && b3) || (b3 && !r3) || (a3 && !r3);
-
-	uint8_t val = 0;
-	if (V) {
-		val |= 1 << mcu->dataspace.SREG_V;
-	}
-	if (N) {
-		val |= 1 << mcu->dataspace.SREG_N;
-	}
-	if (Z) {
-		val |= 1 << mcu->dataspace.SREG_Z;
-	}
-	if (C) {
-		val |= 1 << mcu->dataspace.SREG_C;
-	}
-	if (H) {
-		val |= 1 << mcu->dataspace.SREG_H;
-	}
-	
-#endif
-
-#if 1
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11000000) | val;
-#else
-	REF_SREG = (REF_SREG & 0b11010000) | val;
-#endif
 }
 void A32u4::CPU::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint8_t res, bool Incl_Z) {
-#if FAST_FLAGSET && 1
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 
 	int16_t res16 = (int8_t)a - (int8_t)b - c;
@@ -488,52 +406,9 @@ void A32u4::CPU::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint8_t re
 	val |= H << DataSpace::Consts::SREG_H;
 
 	reg = (reg & 0b11000000) | val;
-
-#else
-	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(mcu->dataspace.SREG);
-	bool a7 = isBitSet(a, 7);
-	bool b7 = isBitSet(b, 7);
-	bool r7 = isBitSet(res, 7);
-
-	bool a3 = isBitSet(a, 3);
-	bool b3 = isBitSet(b, 3);
-	bool r3 = isBitSet(res, 3);
-
-	bool V = (a7 && !b7 && !r7) || (!a7 && b7 && r7);
-	bool N = (res & 0b10000000) != 0;
-	bool Z;
-	if (!Incl_Z) {
-		Z = res == 0;
-	}
-	else {
-		Z = (res == 0) && (reg &  (1 << mcu->dataspace.SREG_Z));
-	}
-	bool C = (!a7 && b7) || (b7 && r7) || (r7 && !a7);//(a7 && b7) || (b7 && !r7) || (a7 && !r7);
-	bool H = (!a3 && b3) || (b3 && r3) || (r3 && !a3);//(a3 && b3) || (b3 && !r3) || (a3 && !r3);
-
-	uint8_t val = 0;
-	if (V) {
-		val |= 1 << mcu->dataspace.SREG_V;
-	}
-	if (N) {
-		val |= 1 << mcu->dataspace.SREG_N;
-	}
-	if (Z) {
-		val |= 1 << mcu->dataspace.SREG_Z;
-	}
-	if (C) {
-		val |= 1 << mcu->dataspace.SREG_C;
-	}
-	if (H) {
-		val |= 1 << mcu->dataspace.SREG_H;
-	}
-
-	reg = (reg & 0b11010000) | val;
-#endif
 }
 
 void A32u4::CPU::setFlags_SVNZ(uint8_t res) {
-#if FAST_FLAGSET
 	bool V = 0;
 	bool N = (res & 0b10000000) != 0;
 	bool Z = res == 0;
@@ -555,17 +430,8 @@ void A32u4::CPU::setFlags_SVNZ(uint8_t res) {
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11100001) | val;
-#else
-	setFlags_NZ(res);
-
-	bool V = 0;
-	bool N = (res & 0b10000000) != 0;
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_V, V);
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_S, V ^ N);
-#endif
 }
 void A32u4::CPU::setFlags_SVNZC(uint8_t res) {
-#if FAST_FLAGSET
 	bool V = 0;
 	bool N = (res & 0b10000000) != 0;
 	bool Z = res == 0;
@@ -591,14 +457,9 @@ void A32u4::CPU::setFlags_SVNZC(uint8_t res) {
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11100000) | val;
-#else
-	setFlags_SVNZ(res);
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_C, 1);
-#endif
 }
 
 void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
-#if FAST_FLAGSET
 	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
 	bool R15 = isBitSet(res, 15);
 
@@ -630,31 +491,8 @@ void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11100000) | val;
-#else
-	setFlags_NZ(res);
-	
-	bool ah7 = isBitSet(a, 7+8); //bit 7 of high byte of a word
-	bool R15 = isBitSet(res, 15);
-
-	bool V = ah7 && R15;
-	bool N = R15;
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_V, V);
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_S, V ^ N); 
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_C, !R15 && ah7);
-#endif
 }
 void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
-#if FAST_FLAGSET && 0
-	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
-	bool R15 = isBitSet(res, 15);
-
-	bool V = b > a;
-	bool N = isBitSet(res, 15);
-	bool Z = res == 0;
-	bool S = V ^ N;
-	bool C = V;
-#else
-	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
 	bool R15 = isBitSet(res, 15);
 
 	int16_t sub16 = (int16_t)a - (int16_t)b;
@@ -666,34 +504,14 @@ void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
 	bool S = V ^ N;
 	//bool S = (int16_t)a < (int16_t)b;
 	bool C = b > a;//had R15 && !ah7 before but seems to be wrong
-#endif
 
 	uint8_t val = 0;
 
-#if 1
 	val |= V << DataSpace::Consts::SREG_V;
 	val |= N << DataSpace::Consts::SREG_N;
 	val |= Z << DataSpace::Consts::SREG_Z;
 	val |= S << DataSpace::Consts::SREG_S;
 	val |= C << DataSpace::Consts::SREG_C;
-
-#else
-	if (V) {
-		val |= 1 << mcu->dataspace.SREG_V;
-	}
-	if (N) {
-		val |= 1 << mcu->dataspace.SREG_N;
-	}
-	if (Z) {
-		val |= 1 << mcu->dataspace.SREG_Z;
-	}
-	if (S) {
-		val |= 1 << mcu->dataspace.SREG_S;
-	}
-	if (C) {
-		val |= 1 << mcu->dataspace.SREG_C;
-	}
-#endif
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11100000) | val;
