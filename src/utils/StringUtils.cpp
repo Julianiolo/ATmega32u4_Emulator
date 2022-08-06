@@ -72,11 +72,12 @@ std::string StringUtils::loadFileIntoString(const char* path, bool* success) {
 
 	fileStr = "";
 
-	t.seekg(0, std::ios::end);   
-	fileStr.reserve((size_t)t.tellg());
+	t.seekg(0, std::ios::end);
+	uint64_t size = t.tellg();
 	t.seekg(0, std::ios::beg);
+	fileStr.resize((size_t)size);
 
-	fileStr.assign(std::istreambuf_iterator<char>(t), std::istreambuf_iterator<char>());
+	t.read(&fileStr[0], size);
 	t.close();
 	if (success)
 		*success = true;
@@ -103,10 +104,11 @@ std::vector<uint8_t> StringUtils::loadFileIntoByteArray(const char* path, bool* 
 	byteArr.clear();
 
 	t.seekg(0, std::ios::end);
-	byteArr.reserve((size_t)t.tellg());
+	uint64_t size = t.tellg();
 	t.seekg(0, std::ios::beg);
+	byteArr.resize((size_t)size);
 
-	byteArr.assign(std::istreambuf_iterator<char>(t), std::istreambuf_iterator<char>());
+	t.read((char*) & byteArr[0], size);
 	t.close();
 
 	if (success)

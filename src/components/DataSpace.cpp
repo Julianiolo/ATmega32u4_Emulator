@@ -25,7 +25,7 @@ void A32u4::DataSpace::Timers::reset() {
 }
 
 void A32u4::DataSpace::Timers::update() {
-
+	abort();
 #define USE_TIM0_CACHE 1
 
 #if 1
@@ -158,7 +158,7 @@ void A32u4::DataSpace::Timers::checkForIntr() {
 	if (REF_TIFR0 & (1 << DataSpace::Consts::TIFR0_TOV0)) {
 		//std::cout << mcu->cpu.totalCycls << std::endl;
 		if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TIMSK0) & (1 << DataSpace::Consts::TIMSK0_TOIE0)) {
-			if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG) & (1 << DataSpace::Consts::SREG_I)) {
+			if (mcu->dataspace.sreg[DataSpace::Consts::SREG_I]) {
 				//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
 				REF_TIFR0 &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
 				mcu->cpu.directExecuteInterrupt(23);
@@ -211,6 +211,7 @@ void A32u4::DataSpace::reset() {
 	timers.reset();
 	lastEECR_EEMPE_set = 0;
 	lastPLLCSR_PLLE_set = 0;
+	std::memset(sreg, 0, 8);
 }
 void A32u4::DataSpace::resetIO() {
 	//add: set all IO Registers to initial Values
@@ -227,15 +228,15 @@ void A32u4::DataSpace::resetIO() {
 	setSP(Consts::SP_initaddr);
 }
 
-uint8_t& A32u4::DataSpace::getByteRefAtAddr(uint16_t addr) {
+MCU_INLINE uint8_t& A32u4::DataSpace::getByteRefAtAddr(uint16_t addr) {
 	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, "getByteRef addr out of bounds: " + std::to_string(addr), "DataSpace", return errorIndicator);
 	return data[addr];
 }
-uint8_t& A32u4::DataSpace::getGPRegRef(uint8_t ind) {
+MCU_INLINE uint8_t& A32u4::DataSpace::getGPRegRef(uint8_t ind) {
 	A32U4_ASSERT_INRANGE_M(ind, 0, Consts::GPRs_size, "General Purpouse Register Index out of bounds: " + std::to_string((int)ind), "DataSpace", return errorIndicator);
 	return data[ind];
 }
-uint8_t A32u4::DataSpace::getGPReg(uint8_t ind) const {
+MCU_INLINE uint8_t A32u4::DataSpace::getGPReg(uint8_t ind) const {
 	A32U4_ASSERT_INRANGE_M(ind, 0, Consts::GPRs_size, "General Purpouse Register Index out of bounds: " + std::to_string((int)ind), "DataSpace", return 0);
 	return data[ind];
 }
@@ -279,43 +280,43 @@ void A32u4::DataSpace::setRegBit(uint16_t id, uint8_t bit, bool val) {
 	}
 }
 
-uint16_t A32u4::DataSpace::getWordReg(uint8_t id) const {
+MCU_INLINE uint16_t A32u4::DataSpace::getWordReg(uint8_t id) const {
 	A32U4_ASSERT_INRANGE_M(id, 0, Consts::GPRs_size-1, A32U4_ADDR_ERR_STR("getWordReg Index out of bounds",id,2), "DataSpace", return 0);
 	return ((uint16_t)data[id + 1] << 8) | data[id];
 }
-void A32u4::DataSpace::setWordReg(uint8_t id, uint16_t val) {
+MCU_INLINE void A32u4::DataSpace::setWordReg(uint8_t id, uint16_t val) {
 	A32U4_ASSERT_INRANGE_M(id, 0, Consts::GPRs_size-1, A32U4_ADDR_ERR_STR("setWordReg Index out of bounds",id,2), "DataSpace", return);
 	data[id + 1] = val >> 8;
 	data[id] = (uint8_t)val;
 }
-uint16_t A32u4::DataSpace::getWordRegRam(uint16_t id) const {
+MCU_INLINE uint16_t A32u4::DataSpace::getWordRegRam(uint16_t id) const {
 	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size-1, A32U4_ADDR_ERR_STR("getWordRegRam Index out of bounds",id,2), "DataSpace", return 0);
 	return ((uint16_t)data[id + 1] << 8) | data[id];
 }
-void A32u4::DataSpace::setWordRegRam(uint16_t id, uint16_t val) {
+MCU_INLINE void A32u4::DataSpace::setWordRegRam(uint16_t id, uint16_t val) {
 	A32U4_ASSERT_INRANGE_M(id, 0, Consts::data_size-1, A32U4_ADDR_ERR_STR("setWordRegRam Index out of bounds",id,2), "DataSpace", return);
 	data[id + 1] = val >> 8;
 	data[id] = (uint8_t)val;
 }
 
-uint16_t A32u4::DataSpace::getX() const {
+MCU_INLINE uint16_t A32u4::DataSpace::getX() const {
 	return ((uint16_t)data[0x1b] << 8) | data[0x1a];
 }
-uint16_t A32u4::DataSpace::getY() const {
+MCU_INLINE uint16_t A32u4::DataSpace::getY() const {
 	return ((uint16_t)data[0x1d] << 8) | data[0x1c];
 }
-uint16_t A32u4::DataSpace::getZ() const {
+MCU_INLINE uint16_t A32u4::DataSpace::getZ() const {
 	return ((uint16_t)data[0x1f] << 8) | data[0x1e];
 }
-void A32u4::DataSpace::setX(uint16_t word) {
+MCU_INLINE void A32u4::DataSpace::setX(uint16_t word) {
 	data[0x1b] = (word & 0xFF00) >> 8;
 	data[0x1a] = word & 0xFF;
 }
-void A32u4::DataSpace::setY(uint16_t word) {
+MCU_INLINE void A32u4::DataSpace::setY(uint16_t word) {
 	data[0x1d] = (word & 0xFF00) >> 8;
 	data[0x1c] = word & 0xFF;
 }
-void A32u4::DataSpace::setZ(uint16_t word) {
+MCU_INLINE void A32u4::DataSpace::setZ(uint16_t word) {
 	data[0x1f] = (word & 0xFF00) >> 8;
 	data[0x1e] = word & 0xFF;
 }
@@ -327,7 +328,7 @@ void A32u4::DataSpace::setSP(uint16_t val) {
 }
 
 void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
-	if (Addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size && Addr >= Consts::GPRs_size) { //only io needs updates
+	if (Addr >= Consts::GPRs_size && Addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size) { //only io needs updates
 		switch (Addr) {
 			case 0xFFFF: //case for updating everything
 			case Consts::EECR: {
@@ -347,6 +348,20 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			case Consts::TCNT0: {
 				data[Consts::TCNT0] += (uint8_t)((mcu->cpu.totalCycls - mcu->dataspace.timers.lastTimer0Update) / DataSpace::Timers::presc[mcu->dataspace.timers.getTimer0Presc()]);
 				timers.markTimer0Update(false);
+				if (onlyOne) break;
+			}
+
+			case Consts::SREG: {
+				uint8_t val = 0;
+				val |= (sreg[Consts::SREG_C] != 0) << Consts::SREG_C;
+				val |= (sreg[Consts::SREG_Z] != 0) << Consts::SREG_Z;
+				val |= (sreg[Consts::SREG_N] != 0) << Consts::SREG_N;
+				val |= (sreg[Consts::SREG_V] != 0) << Consts::SREG_V;
+				val |= (sreg[Consts::SREG_S] != 0) << Consts::SREG_S;
+				val |= (sreg[Consts::SREG_H] != 0) << Consts::SREG_H;
+				val |= (sreg[Consts::SREG_T] != 0) << Consts::SREG_T;
+				val |= (sreg[Consts::SREG_I] != 0) << Consts::SREG_I;
+				data[Consts::SREG] = val;
 				if (onlyOne) break;
 			}
 		}
@@ -376,8 +391,11 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 				break;
 
 			case Consts::SREG:
+				for (uint8_t i = 0; i < 8; i++) {
+					sreg[i] = val & (1 << i);
+				}
 				if((val & (1<<Consts::SREG_I)) && (data[Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)))
-					mcu->cpu.breakOutOfOptim = true; // we need to break out of Optimisation to check if an interrupt can now occure (Global Interrupt Enable)
+					mcu->cpu.breakOutOfOptim = true; // we need to break out of Optimisation to check if an interrupt can now occur (Global Interrupt Enable)
 				break;
 
 			case Consts::TCNT0:
@@ -392,7 +410,7 @@ void A32u4::DataSpace::setEECR(uint8_t val, uint8_t oldVal){
 	if (val & (1 << Consts::EECR_EERE)) {
 		data[Consts::EEDR] = eeprom[getWordRegRam(Consts::EEARL)];
 		val = val & ~(1 << Consts::EECR_EERE); //idk if this should be done bc its not stated anywhere but its the only logical thing
-		mcu->cpu.addCycles(4);
+		mcu->cpu.totalCycls += 4;
 	}
 
 	if ((val & (1 << Consts::EECR_EEMPE)) && !(oldVal & (1 << Consts::EECR_EEMPE))) {
