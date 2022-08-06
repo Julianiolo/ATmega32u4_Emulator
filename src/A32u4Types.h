@@ -9,4 +9,14 @@ typedef uint16_t addrmcu_t;
 typedef uint16_t pc_t;
 typedef uint16_t sizemcu_t;
 
+#ifdef _MSC_VER
+
+#define MCU_INLINE
+
+#else
+
+#define MCU_INLINE
+
+#endif
+
 #endif

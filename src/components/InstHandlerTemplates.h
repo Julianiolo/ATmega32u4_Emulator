@@ -34,7 +34,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(uint16_t word)
 		mcu->analytics.addData(ind, mcu->cpu.PC);
 	}
 
-	(this->*(instList[ind].func))(word);
+	(this->*(instOnlyList[ind]))(word);
 	//std::invoke(instList[ind].func, this, word);
 
 	return inst_effect_t(cycs,PC_add);
@@ -58,7 +58,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstRawT(uint16_t wo
 		mcu->analytics.addData(ind, mcu->cpu.PC);
 	}
 
-	(this->*(instList[ind].func))(word);
+	(this->*(instOnlyList[ind]))(word);
 	//std::invoke(instList[ind].func, this, word);
 
 	return inst_effect_t(cycs,PC_add);

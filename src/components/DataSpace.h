@@ -70,6 +70,8 @@ namespace A32u4 {
 
 		uint8_t errorIndicator = -1;
 
+		uint8_t sreg[8] = {0,0,0,0,0,0,0,0};
+
 		DataSpace(ATmega32u4* mcu);
 		~DataSpace();
 

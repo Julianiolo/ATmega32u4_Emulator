@@ -51,9 +51,6 @@ private:
 
 		uint64_t cycsToNextTimerInt();
 
-		template <typename T>
-		void addCycles(T amt);
-
 		void setFlags_NZ(uint8_t res);
 		void setFlags_NZ(uint16_t res);
 		void setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t res);

@@ -34,14 +34,14 @@ void A32u4::CPU::execute1(uint64_t amt) {
 			int16_t addToPC;
 			instHandler.handleInst(addToCycs, addToPC);
 			PC += addToPC;
-			addCycles(addToCycs);
+			totalCycls += addToCycs;
 #if printTot
 			std::cout << totalCycls << " " << std::endl;
 #endif
 		}
 		else {
 			addToCycs = 1;
-			addCycles(addToCycs);
+			totalCycls += addToCycs;
 		}
 
 		//addCycles(addToCycs);
@@ -61,12 +61,12 @@ void A32u4::CPU::execute2(uint64_t amt) {
 			switch (mcu->dataspace.timers.timer0_presc_cache) {
 			case 0:
 				instHandler.handleInst(addToCycs, addToPC);
-				addCycles(addToCycs);
+				totalCycls += addToCycs;
 				PC += addToPC;
 				break;
 			case 1:
 				instHandler.handleInst(addToCycs, addToPC);
-				addCycles(addToCycs);
+				totalCycls += addToCycs;
 				PC += addToPC;
 				mcu->dataspace.timers.doTicks(mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0) ,addToCycs);
 				mcu->dataspace.timers.checkForIntr();
@@ -75,7 +75,7 @@ void A32u4::CPU::execute2(uint64_t amt) {
 				for (int i = totalCycls % 8; i <= 8; i += addToCycs) {
 					instHandler.handleInst(addToCycs, addToPC);
 					PC += addToPC;
-					addCycles(addToCycs);
+					totalCycls += addToCycs;
 					if (breakOutOfOptim) {
 						goto skip_doTick_8;
 					}
@@ -89,7 +89,7 @@ void A32u4::CPU::execute2(uint64_t amt) {
 				for (int i = totalCycls % 64; i <= 64; i += addToCycs) {
 					instHandler.handleInst(addToCycs, addToPC);
 					PC += addToPC;
-					addCycles(addToCycs);
+					totalCycls += addToCycs;
 					if (breakOutOfOptim) {
 						goto skip_doTick_64;
 					}
@@ -103,7 +103,7 @@ void A32u4::CPU::execute2(uint64_t amt) {
 				for (int i = totalCycls % 256; i <= 256; i += addToCycs) {
 					instHandler.handleInst(addToCycs, addToPC);
 					PC += addToPC;
-					addCycles(addToCycs);
+					totalCycls += addToCycs;
 					if (breakOutOfOptim) {
 						goto skip_doTick_256;
 					}
@@ -117,7 +117,7 @@ void A32u4::CPU::execute2(uint64_t amt) {
 				for (int i = totalCycls % 1024; i <= 1024; i += addToCycs) {
 					instHandler.handleInst(addToCycs, addToPC);
 					PC += addToPC;
-					addCycles(addToCycs);
+					totalCycls += addToCycs;
 					if (breakOutOfOptim) {
 						goto skip_doTick_1024;
 					}
@@ -143,7 +143,7 @@ void A32u4::CPU::execute2(uint64_t amt) {
 			mcu->dataspace.timers.doTick(mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0));
 			mcu->dataspace.timers.checkForIntr();
 
-			addCycles(cycsLeft);
+			totalCycls += cycsLeft;
 #endif
 		}
 
@@ -164,7 +164,7 @@ void A32u4::CPU::execute3(uint64_t amt) {
 				uint8_t addToCycs;
 				int16_t addToPC;
 				instHandler.handleInst(addToCycs, addToPC);
-				addCycles(addToCycs);
+				totalCycls += addToCycs;
 				PC += addToPC;
 				goto skip_for;
 			}
@@ -172,7 +172,7 @@ void A32u4::CPU::execute3(uint64_t amt) {
 				uint8_t addToCycs;
 				int16_t addToPC;
 				instHandler.handleInst(addToCycs, addToPC);
-				addCycles(addToCycs);
+				totalCycls += addToCycs;
 				PC += addToPC;
 				mcu->dataspace.timers.doTicks(mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0), addToCycs);
 				mcu->dataspace.timers.checkForIntr();
@@ -207,7 +207,7 @@ void A32u4::CPU::execute3(uint64_t amt) {
 					
 					instHandler.handleInst(addToCycs, addToPC);
 					PC += addToPC;
-					addCycles(addToCycs);
+					totalCycls += addToCycs;
 
 					if (breakOutOfOptim) {
 						goto skip_doTick;
@@ -236,7 +236,7 @@ void A32u4::CPU::execute3(uint64_t amt) {
 			mcu->dataspace.timers.doTick(mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0));
 			mcu->dataspace.timers.checkForIntr();
 
-			addCycles(cycsLeft);
+			totalCycls += cycsLeft;
 #endif
 		}
 		//executeInterrupts();
@@ -248,7 +248,7 @@ void A32u4::CPU::queueInterrupt(uint16_t addr) {
 }
 void A32u4::CPU::executeInterrupts() {
 	if (interruptFlags) {
-		if (!(mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG) & (1 << DataSpace::Consts::SREG_I))) { // cancel if global interrupt flag is not set
+		if (!(mcu->dataspace.sreg[DataSpace::Consts::SREG_I])) { // cancel if global interrupt flag is not set
 			return;
 		}
 
@@ -270,7 +270,7 @@ void A32u4::CPU::directExecuteInterrupt(uint8_t num) {
 
 	if (CPU_sleep) {
 		CPU_sleep = false;
-		addCycles((uint8_t)5);
+		totalCycls += 5;
 	}
 
 	mcu->dataspace.pushAddrToStack(mcu->cpu.PC);
@@ -333,6 +333,10 @@ uint64_t A32u4::CPU::cycsToNextTimerInt() {
 */
 
 void A32u4::CPU::setFlags_NZ(uint8_t res) {
+#if FAST_FLAGSET
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = res & 0b10000000;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = res == 0;
+#else
 	bool N = (res & 0b10000000) != 0;
 	bool Z = res == 0;
 	uint8_t val = 0;
@@ -344,8 +348,13 @@ void A32u4::CPU::setFlags_NZ(uint8_t res) {
 	}
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11111001) | val;
+#endif
 }
 void A32u4::CPU::setFlags_NZ(uint16_t res) {
+#if FAST_FLAGSET
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = res & 0b1000000000000000;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = res == 0;
+#else
 	bool N = (res & 0b1000000000000000) != 0;
 	bool Z = res == 0;
 	uint8_t val = 0;
@@ -357,9 +366,29 @@ void A32u4::CPU::setFlags_NZ(uint16_t res) {
 	}
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11111001) | val;
+#endif
 }
 
 void A32u4::CPU::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t res) {
+#if FAST_FLAGSET
+	int8_t sum8 = (int8_t)a + (int8_t)b + c;
+	int16_t sum16 = (int8_t)a + (int8_t)b + c;
+	bool V;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V = sum8 != sum16;
+
+	bool N;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = res == 0;
+
+	uint16_t usum16 = a + b + c;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_C] = isBitSet(usum16, 8);
+
+	uint8_t usum4 = (a & 0b1111) + (b & 0b1111) + c;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_H] = isBitSetNB(usum4, 4);
+#else
 	uint8_t val = 0;
 	int8_t sum8 = (int8_t)a + (int8_t)b + c;
 	int16_t sum16 = (int8_t)a + (int8_t)b + c;
@@ -380,8 +409,28 @@ void A32u4::CPU::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t re
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11000000) | val;
+#endif
 }
 void A32u4::CPU::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint8_t res, bool Incl_Z) {
+#if FAST_FLAGSET
+	int16_t res16 = (int8_t)a - (int8_t)b - c;
+	bool V;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V = (int8_t)res != res16;
+
+	bool N;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	if (!Incl_Z) {
+		mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = res == 0;
+	} else {
+		mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = (res == 0) && mcu->dataspace.sreg[DataSpace::Consts::SREG_Z];
+	}
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_C] = a < (uint16_t)b + c;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_H] = (b & 0b1111) + c > (a & 0b1111);
+#else
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 
 	int16_t res16 = (int8_t)a - (int8_t)b - c;
@@ -406,9 +455,21 @@ void A32u4::CPU::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint8_t re
 	val |= H << DataSpace::Consts::SREG_H;
 
 	reg = (reg & 0b11000000) | val;
+#endif
 }
 
 void A32u4::CPU::setFlags_SVNZ(uint8_t res) {
+#if FAST_FLAGSET
+	bool V;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V = 0;
+
+	bool N;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = res == 0;
+#else
 	bool V = 0;
 	bool N = (res & 0b10000000) != 0;
 	bool Z = res == 0;
@@ -430,8 +491,22 @@ void A32u4::CPU::setFlags_SVNZ(uint8_t res) {
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11100001) | val;
+#endif
 }
 void A32u4::CPU::setFlags_SVNZC(uint8_t res) {
+#if FAST_FLAGSET
+	bool V;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V = 0;
+
+	bool N;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = res == 0;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_C] = 1;
+#else
 	bool V = 0;
 	bool N = (res & 0b10000000) != 0;
 	bool Z = res == 0;
@@ -457,9 +532,28 @@ void A32u4::CPU::setFlags_SVNZC(uint8_t res) {
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11100000) | val;
+#endif
 }
 
 void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
+#if FAST_FLAGSET
+	uint16_t sum16 = a + b;
+	uint32_t sum32 = a + b;
+	bool V;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V = sum16 != sum32;
+
+	bool R15 = isBitSet(res, 15);
+	bool N;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = N = R15;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = res == 0;
+
+	bool ah7 = isBitSet(a, 7 + 8);
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_C] = !R15 && ah7;
+#else
 	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
 	bool R15 = isBitSet(res, 15);
 
@@ -491,8 +585,25 @@ void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11100000) | val;
+#endif
 }
 void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
+#if FAST_FLAGSET
+	int16_t sub16 = (int16_t)a - (int16_t)b;
+	int32_t sub32 = (int16_t)a - (int16_t)b;
+	bool V;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V = sub16 != sub32;
+
+	bool R15 = isBitSet(res, 15);
+	bool N;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = N = R15;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = res == 0;
+
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_C] = b > a;
+#else
 	bool R15 = isBitSet(res, 15);
 
 	int16_t sub16 = (int16_t)a - (int16_t)b;
@@ -515,6 +626,7 @@ void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
 
 	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG);
 	reg = (reg & 0b11100000) | val;
+#endif
 }
 
 pc_t& A32u4::CPU::getPCRef() {
