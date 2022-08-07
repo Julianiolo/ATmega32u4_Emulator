@@ -41,7 +41,7 @@ uint16_t A32u4::Flash::getInst(pc_t pc) const {
 }
 
 uint8_t A32u4::Flash::getInstIndCache(pc_t pc) const {
-	A32U4_ASSERT_INRANGE_M(pc, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getInstIndCache Address to Big: ",pc,4), "Flash", return 0xFF);
+	A32U4_ASSERT_INRANGE_M(pc, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getInstIndCache Address to Big: ",pc,4), "Flash", return 0xEE);
 	return instCache[pc];
 }
 uint8_t A32u4::Flash::getInstInd(pc_t pc) const{
@@ -115,7 +115,7 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 			data[flashInd++] = StringUtils::hexStrToUIntLen<uint8_t>(str + (str_ind+=2), 2);
 		}
 		str_ind += 4; //skip checksum
-		if (str[str_ind] == '\n') {
+		while (str[str_ind] == '\n' || str[str_ind] == '\r') {
 			str_ind++;
 		}
 	}
@@ -130,7 +130,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	{
 		const char* ext = StringUtils::getFileExtension(path);
 		if (std::strcmp(ext, "hex") != 0) {
-			mcu->log(ATmega32u4::LogLevel_Error, StringUtils::format("Wrong Extension for loading Flash contents: %s", ext).get(), __FILE__, __LINE__, "Flash");
+			mcu->log(ATmega32u4::LogLevel_Error, StringUtils::format("Wrong Extension for loading Flash contents: %s", ext), __FILE__, __LINE__, "Flash");
 			return false;
 		}
 	}
@@ -142,7 +142,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	t.open(path);
 	if (!t.is_open()) {
 		t.close();
-		mcu->log(ATmega32u4::LogLevel_Error, StringUtils::format("Cannot open file: %s", path).get(), __FILE__, __LINE__, "Flash");
+		mcu->log(ATmega32u4::LogLevel_Error, StringUtils::format("Cannot open file: %s", path), __FILE__, __LINE__, "Flash");
 		return false;
 	}
 	t.seekg(0, std::ios::end);

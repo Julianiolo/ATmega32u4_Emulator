@@ -168,7 +168,7 @@ void A32u4::Debugger::doHaltActionsLog(){
 
 std::string A32u4::Debugger::regToStr(regind_t ind) const {
 	uint8_t regVal = mcu->dataspace.data[ind];
-	return StringUtils::format("R%2d: 0x%02x > %3d", ind, regVal, regVal).get();
+	return StringUtils::format("R%2d: 0x%02x > %3d", ind, regVal, regVal);
 }
 std::string A32u4::Debugger::AllRegsToStr() const{
 	std::string str = "";
@@ -184,7 +184,7 @@ std::string A32u4::Debugger::AllRegsToStr() const{
 std::string A32u4::Debugger::debugStackToString() const{
 	std::string str = "";
 	for (int i = callStackPtr - 1; i >= 0; i--) {
-		str += StringUtils::format("%04x : at %04x", callStack[i] * 2, callStackFrom[i] * 2).get();
+		str += StringUtils::format("%04x : at %04x", callStack[i] * 2, callStackFrom[i] * 2);
 		if (i > 0) {
 			str += "\n";
 		}

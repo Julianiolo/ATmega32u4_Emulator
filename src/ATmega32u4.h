@@ -82,7 +82,7 @@ namespace A32u4 {
 		void log(LogLevel logLevel, const std::string& msg, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
 		template<typename ... Args>
 		void logf(LogLevel logLevel, const char* msg, Args ... args) {
-			log(logLevel, StringUtils::format(msg, args ...).get());
+			log(logLevel, StringUtils::format(msg, args ...));
 		}
 
 		void setLogCallB(LogCallB newLogCallB);

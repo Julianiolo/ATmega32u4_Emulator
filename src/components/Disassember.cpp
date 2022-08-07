@@ -66,11 +66,11 @@ void A32u4::Disassembler::DisasmFile::generateContent(const AdditionalDisasmInfo
 			if (info.getSymbolNameFromAddr) {
 				std::string name;
 				if (info.getSymbolNameFromAddr(line.addr*2, false, &name, info.symbolUserData)) {
-					content += StringUtils::format("\n%08x <%s>:\n", line.addr*2, name.c_str()).get();
+					content += StringUtils::format("\n%08x <%s>:\n", line.addr*2, name.c_str());
 					goto skip;
 				}
 			}
-			content += StringUtils::format("\n%08x <func@%x>:\n", line.addr*2, line.addr*2).get();
+			content += StringUtils::format("\n%08x <func@%x>:\n", line.addr*2, line.addr*2);
 		skip:
 			;
 		}
@@ -278,12 +278,12 @@ std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
 
 std::string A32u4::Disassembler::disassemble(uint16_t word, uint16_t word2, uint16_t PC) {
 	std::string disasm = disassembleRaw(word, word2);
-	std::string instBytes = StringUtils::format("%02x %02x ", word&0xFF, (word & 0xFF00) >> 8).get();
+	std::string instBytes = StringUtils::format("%02x %02x ", word&0xFF, (word & 0xFF00) >> 8);
 	if (InstHandler::is2WordInst(word))
-		instBytes += StringUtils::format("%02x %02x ", word2 & 0xFF, (word2 & 0xFF00) >> 8).get();
+		instBytes += StringUtils::format("%02x %02x ", word2 & 0xFF, (word2 & 0xFF00) >> 8);
 	else
 		instBytes += "      ";
-	return StringUtils::format("    %4x:\t%s\t%s", PC*2, instBytes.c_str(), disasm.c_str()).get();
+	return StringUtils::format("    %4x:\t%s\t%s", PC*2, instBytes.c_str(), disasm.c_str());
 }
 std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 	uint8_t Inst_ind = InstHandler::getInstInd3(word);
