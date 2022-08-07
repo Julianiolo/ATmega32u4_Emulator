@@ -23,9 +23,9 @@ namespace StringUtils {
 	}
 	template<bool upperCase = false>
 	std::string uIntToHexStr(uint64_t num, uint8_t digits) {
-		std::unique_ptr<char[]> buf = std::make_unique<char[]>(digits);
-		uIntToHexBuf<upperCase>(num, digits, buf.get());
-		return std::string(buf.get(), buf.get() + digits);
+		std::string s(digits, ' ');
+		uIntToHexBuf<upperCase>(num, digits, &s[0]);
+		return s;
 	}
 	void uIntToHexBufCase(uint64_t num, uint8_t digits, char* buf, bool upperCase);
 	
@@ -136,15 +136,14 @@ namespace StringUtils {
 	std::string paddRight(const std::string& s, int paddedLength, char paddWith);
 
 	template<typename ... Args>
-	std::shared_ptr<char[]> format(const char* str, Args ... args) { // https://stackoverflow.com/a/26221725
+	std::string format(const char* str, Args ... args) { // https://stackoverflow.com/a/26221725
 		int size_i = std::snprintf(NULL, 0, str, args ...) + 1;
 		if (size_i <= 0)
 			throw std::runtime_error("error during string formatting");
 
-		size_t bufSize = size_i;
-		std::shared_ptr<char[]> buf(new char[bufSize]); //std::shared_ptr<char[]> buf = std::make_shared<char[]>(bufSize);
-		std::snprintf(buf.get(), bufSize, str, args ...); 
-		return buf;
+		std::string s(size_i, ' ');
+		std::snprintf(&s[0], size_i, str, args ...);
+		return s;
 	}
 
 	std::string loadFileIntoString(const char* path, bool* success = 0);

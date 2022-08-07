@@ -31,9 +31,9 @@ void StringUtils::uIntToNumBaseBuf(uint64_t num, uint8_t digits, char* buf, uint
 }
 
 std::string StringUtils::uIntToNumBaseStr(uint64_t num, uint8_t digits, uint8_t base, bool upperCase) {
-	std::unique_ptr<char[]> buf = std::make_unique<char[]>(digits);
-	uIntToNumBaseBuf(num, digits, buf.get(), base, upperCase);
-	return std::string(buf.get(), buf.get() + digits);
+	std::string s(digits, ' ');
+	uIntToNumBaseBuf(num, digits, &s[0], base, upperCase);
+	return s;
 }
 
 void StringUtils::uIntToBinBuf(uint64_t num, uint8_t digits, char* buf) {
@@ -44,9 +44,9 @@ void StringUtils::uIntToBinBuf(uint64_t num, uint8_t digits, char* buf) {
 	}
 }
 std::string StringUtils::uIntToBinStr(uint64_t num, uint8_t digits) {
-	std::unique_ptr<char[]> buf = std::make_unique<char[]>(digits);
-	uIntToBinBuf(num, digits, buf.get());
-	return std::string(buf.get(), buf.get() + digits);
+	std::string s(digits, ' ');
+	uIntToBinBuf(num, digits, &s[0]);
+	return s;
 }
 
 std::string StringUtils::paddLeft(const std::string& s, int paddedLength, char paddWith) {//https://stackoverflow.com/a/667236
