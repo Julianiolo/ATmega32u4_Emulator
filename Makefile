@@ -15,7 +15,7 @@ ifeq ($(PLATFORM),PLATFORM_WEB)
 endif
 CFLAGS?=-Wall -Wno-narrowing
 CSTD  ?=-std=gnu++17
-RELEASE_OPTIM?= -O2
+RELEASE_OPTIM?= -O3 -flto
 
 SRC_DIR         ?=src/
 BUILD_DIR       ?=build/make/$(PLATFORM)_$(BUILD_MODE)/

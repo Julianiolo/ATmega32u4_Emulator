@@ -11,9 +11,7 @@
 
 
 
-A32u4::DataSpace::Timers::Timers(ATmega32u4* mcu) : mcu(mcu), lastCounter(0), 
-REF_TCCR0B(mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B]), 
-REF_TIFR0(mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0])
+A32u4::DataSpace::Timers::Timers(ATmega32u4* mcu) : mcu(mcu), lastCounter(0)
 {
 
 }
@@ -32,7 +30,7 @@ void A32u4::DataSpace::Timers::update() {
 #if USE_TIM0_CACHE
 	if (timer0_presc_cache == 3) {
 #else
-	if ((REF_TCCR0B & 0b111) == 3) {
+	if ((mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B] & 0b111) == 3) {
 #endif
 		goto fast_goto_64;
 	}
@@ -42,7 +40,7 @@ void A32u4::DataSpace::Timers::update() {
 #if USE_TIM0_CACHE
 	switch (timer0_presc_cache) {
 #else
-	switch (REF_TCCR0B & 0b111) {
+	switch (mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B] & 0b111) {
 #endif
 	case 0:
 		doTick = false; break;
@@ -77,7 +75,7 @@ void A32u4::DataSpace::Timers::update() {
 		abort();
 	}
 
-	//uint8_t& REF_TIFR0 = mcu->dataspace.getByteRefAtAddr(TIFR0);
+	//uint8_t& mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] = mcu->dataspace.getByteRefAtAddr(TIFR0);
 
 	if (doTick) {
 #if 1
@@ -90,17 +88,17 @@ void A32u4::DataSpace::Timers::update() {
 		uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
 		timer0++;
 		if (timer0 == 0) {	
-			REF_TIFR0 |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+			mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
 			goto direct_intr;
 		}
 	}
 
-	if (REF_TIFR0 & (1 << DataSpace::Consts::TIFR0_TOV0)) {
+	if (mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)) {
 		direct_intr:
 		if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TIMSK0) & (1 << DataSpace::Consts::TIMSK0_TOIE0)) {
 			if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG) & (1 << DataSpace::Consts::SREG_I)) {
 				//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
-				REF_TIFR0 &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
+				mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
 				mcu->cpu.directExecuteInterrupt(23);
 			}
 		}
@@ -117,20 +115,17 @@ void A32u4::DataSpace::Timers::doTick(uint8_t& timer) {
 	}
 	timer++;
 	if (timer == 0) {
-		REF_TIFR0 |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+		mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
 		//printf("OVERFLOW at %llu\n", mcu->cpu.totalCycls);
 	}
 
 	markTimer0Update();
 
 
-	static uint64_t last = 0;
-	uint64_t diff = mcu->cpu.totalCycls - last;
+	//static uint64_t last = 0;
+	//uint64_t diff = mcu->cpu.totalCycls - last;
 	//printf("%llu\n", diff);
-	last = mcu->cpu.totalCycls;
-
-	if (diff > 17000)
-		int a = 0;
+	//last = mcu->cpu.totalCycls;
 
 
 }
@@ -147,7 +142,7 @@ void A32u4::DataSpace::Timers::doTicks(uint8_t& timer, uint8_t num) {
 	uint8_t tim_copy = timer0;
 	timer0 += num;
 	if (timer0 < tim_copy) {
-		REF_TIFR0 |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+		mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
 		//printf("OVERFLOW at %llu\n", mcu->cpu.totalCycls);
 	}
 
@@ -155,12 +150,12 @@ void A32u4::DataSpace::Timers::doTicks(uint8_t& timer, uint8_t num) {
 }
 
 void A32u4::DataSpace::Timers::checkForIntr() {
-	if (REF_TIFR0 & (1 << DataSpace::Consts::TIFR0_TOV0)) {
+	if (mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)) {
 		//std::cout << mcu->cpu.totalCycls << std::endl;
 		if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TIMSK0) & (1 << DataSpace::Consts::TIMSK0_TOIE0)) {
 			if (mcu->dataspace.sreg[DataSpace::Consts::SREG_I]) {
 				//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
-				REF_TIFR0 &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
+				mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
 				mcu->cpu.directExecuteInterrupt(23);
 				//printf("int at %llu\n", mcu->cpu.totalCycls);
 			}
@@ -319,6 +314,10 @@ MCU_INLINE void A32u4::DataSpace::setY(uint16_t word) {
 MCU_INLINE void A32u4::DataSpace::setZ(uint16_t word) {
 	data[0x1f] = (word & 0xFF00) >> 8;
 	data[0x1e] = word & 0xFF;
+}
+
+uint32_t A32u4::DataSpace::getExtendedZ() {
+	return ((uint32_t)getByteRefAtAddr(Consts::RAMPZ) << 16) | getZ();
 }
 
 void A32u4::DataSpace::setSP(uint16_t val) {

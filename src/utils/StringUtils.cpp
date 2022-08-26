@@ -9,10 +9,12 @@
 char StringUtils::texBuf[128];
 
 void StringUtils::uIntToHexBufCase(uint64_t num, uint8_t digits, char* buf, bool upperCase) {
-	if(!upperCase)
+	if(!upperCase) {
 		StringUtils::uIntToHexBuf<false>(num, digits, buf);
-	else
+	}
+	else {
 		StringUtils::uIntToHexBuf<true>(num, digits, buf);
+	}	
 }
 
 void StringUtils::uIntToNumBaseBuf(uint64_t num, uint8_t digits, char* buf, uint8_t base, bool upperCase) {

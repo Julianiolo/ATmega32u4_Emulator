@@ -30,8 +30,6 @@ namespace A32u4 {
 		public:
 			ATmega32u4* const mcu;
 
-			uint8_t& REF_TCCR0B;
-			uint8_t& REF_TIFR0;
 			uint8_t timer0_presc_cache = 0;
 			uint64_t lastTimer0Update = 0;
 			uint32_t lastCounter;
@@ -94,7 +92,7 @@ namespace A32u4 {
 		uint16_t getWordRegRam(uint16_t id) const;
 		void setWordRegRam(uint16_t id, uint16_t val);
 
-		
+		uint32_t getExtendedZ();
 
 		void setSP(uint16_t val);
 
