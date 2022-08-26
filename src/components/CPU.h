@@ -15,9 +15,7 @@ namespace A32u4 {
 		friend class InstHandler;
 		friend class DataSpace;
 		friend class Debugger;
-public:
-		InstHandler instHandler;
-private:
+	private:
 		ATmega32u4* const mcu;
 
 		pc_t PC;
@@ -40,8 +38,6 @@ private:
 		void execute3(uint64_t amt);
 		template<bool debug, bool analyse>
 		void execute(uint64_t amt);
-		template<bool debug, bool analyse>
-		void execute3T(uint64_t amt);
 		template<bool debug, bool analyse>
 		void execute4T(uint64_t amt);
 

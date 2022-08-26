@@ -4,7 +4,7 @@
 #include "Disassembler.h"
 
 template<bool debug, bool analyse>
-A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleCurrentInstT() {
+A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleCurrentInstT(ATmega32u4* mcu) noexcept {
 	if (debug) {
 		if (mcu->debugger.checkBreakpoints()) {
 			return inst_effect_t(0,0);
@@ -13,14 +13,11 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleCurrentInstT() {
 
 	uint16_t word = mcu->flash.getInst(mcu->cpu.PC);
 
-	return handleInstT<debug,analyse>(word);
+	return handleInstT<debug,analyse>(mcu,word);
 }
 
 template<bool debug, bool analyse>
-A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(uint16_t word){
-	cycs = 0;
-	PC_add = 0;
-
+A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mcu, uint16_t word) noexcept {
 	if (debug) {
 		if (mcu->debugger.printDisassembly) {
 			uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
@@ -34,17 +31,11 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(uint16_t word)
 		mcu->analytics.addData(ind, mcu->cpu.PC);
 	}
 
-	(this->*(instOnlyList[ind]))(word);
-	//std::invoke(instList[ind].func, this, word);
-
-	return inst_effect_t(cycs,PC_add);
+	return instOnlyList[ind](mcu,word);
 }
 
 template<bool debug, bool analyse>
-A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstRawT(uint16_t word){
-	cycs = 0;
-	PC_add = 0;
-
+A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstRawT(ATmega32u4* mcu, uint16_t word) noexcept {
 	if (debug) {
 		if (mcu->debugger.printDisassembly) {
 			uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
@@ -58,10 +49,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstRawT(uint16_t wo
 		mcu->analytics.addData(ind, mcu->cpu.PC);
 	}
 
-	(this->*(instOnlyList[ind]))(word);
-	//std::invoke(instList[ind].func, this, word);
-
-	return inst_effect_t(cycs,PC_add);
+	return instOnlyList[ind](mcu,word);
 }
 
 #endif
