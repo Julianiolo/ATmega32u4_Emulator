@@ -141,9 +141,9 @@ namespace StringUtils {
 		if (size_i <= 0)
 			throw std::runtime_error("error during string formatting");
 
-		std::string s(size_i, ' ');
-		std::snprintf(&s[0], size_i, str, args ...);
-		return s;
+		char* buf = new char[size_i];
+		std::snprintf(buf, size_i, str, args ...);
+		return std::string(buf, buf+size_i-1);
 	}
 
 	std::string loadFileIntoString(const char* path, bool* success = 0);
