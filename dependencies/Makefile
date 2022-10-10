@@ -63,7 +63,7 @@ CPP_UTILS_DEPS:=$(shell find $(CPP_UTILS_SRC_DIR) -name '*.*') $(shell find $(CP
 
 all: $(CPP_UTILS_OUTPATH)
 	mkdir -p $(BUILD_DIR)
-	touch $(BUILD_DIR)ATmega32u4_EmulatordepFile.dep
+	touch $(BUILD_DIR)ATmega32u4_Emulator_depFile.dep
 
 $(CPP_UTILS_OUTPATH):$(CPP_UTILS_DEPS)
 	mkdir -p $(CPP_UTILS_BUILD_DIR)
