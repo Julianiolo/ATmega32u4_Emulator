@@ -9,7 +9,7 @@
 
 #include "components/config.h"
 
-#include "utils/StringUtils.h"
+#include "StringUtils.h"
 
 #if RANGE_CHECK
 #if RANGE_CHECK_ERROR

@@ -1,7 +1,7 @@
 #include "Debugger.h"
 #include "../ATmega32u4.h"
 #include "Disassembler.h"
-#include "../utils/StringUtils.h"
+#include "StringUtils.h"
 
 #include <iostream>
 #include <stdint.h>

@@ -6,7 +6,7 @@
 #include "InstInds.h"
 #include "Disassembler.h"
 
-#include "../utils/StringUtils.h"
+#include "StringUtils.h"
 #include "../utils/bitMacros.h"
 
 uint8_t A32u4::InstHandler::getInstInd(uint16_t word) noexcept {

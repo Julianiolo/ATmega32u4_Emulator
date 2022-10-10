@@ -5,7 +5,7 @@
 #include "components/InstHandlerTemplates.h"
 #include "components/CPUTemplates.h"
 
-#include "utils/StringUtils.h"
+#include "StringUtils.h"
 
 A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this), debugger(this) {
 

@@ -1,6 +1,6 @@
 #include "Disassembler.h"
 #include "InstInds.h"
-#include "../utils/StringUtils.h"
+#include "StringUtils.h"
 #include "InstHandler.h"
 #include <algorithm>
 #include <fstream>
