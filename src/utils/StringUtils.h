@@ -169,6 +169,8 @@ namespace StringUtils {
 	const char* getFileName(const char* path, const char* path_end = NULL);
 
 	std::vector<size_t> generateLineIndexArr(const char* str);
+
+	std::string addThousandsSeperator(const char* str, const char* str_end = 0, const char* seperator = ",");
 }
 #endif
 

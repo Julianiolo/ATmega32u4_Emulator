@@ -16,6 +16,8 @@ void A32u4::ATmega32u4::reset() { //add: reason
 	debugger.reset();
 	analytics.reset();
 	resetHardware();
+
+	wasReset = true;
 }
 void A32u4::ATmega32u4::resetHardware() {
 	dataspace.resetIO();
@@ -27,6 +29,9 @@ void A32u4::ATmega32u4::powerOn() {
 }
 
 void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
+	if (!wasReset)
+		abort();
+
 	currentExecFlags = flags;
 	if(!flash.isProgramLoaded())
 		return;

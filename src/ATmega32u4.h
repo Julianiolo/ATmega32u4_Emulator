@@ -59,6 +59,8 @@ namespace A32u4 {
 		LogCallB logCallB = nullptr;
 		LogCallBSimple logCallBSimple = nullptr;
 		uint8_t currentExecFlags = -1;
+
+		bool wasReset = false;
 	public:
 		ATmega32u4();
 

@@ -612,7 +612,31 @@ std::vector<size_t> StringUtils::generateLineIndexArr(const char* str) {
 
 
 
+std::string StringUtils::addThousandsSeperator(const char* str, const char* str_end, const char* seperator) {
+	if (str_end == nullptr)
+		str_end = str + std::strlen(str);
 
+	size_t len = str_end - str;
+	if (len == 0) return "";
+
+	size_t sep_len = std::strlen(seperator);
+	if (sep_len == 0) return str;
+
+	size_t num_seps = (len-1) / 3;
+	std::string out(len + num_seps * sep_len , 'A');
+
+	for (size_t i = 0; ; i++) {
+		size_t sub_l = std::min((size_t)3, len - i * 3);
+		std::memcpy(&out[0]+(out.size()-(i * (3 + sep_len))-sub_l), str_end - (i*3 + sub_l), sub_l); // copy over 3 chars of str
+
+		if (i >= num_seps)
+			break;
+
+		std::memcpy(&out[0]+(out.size()-(i * (3 + sep_len))-3-1), seperator, sep_len); // copy over seperator
+	}
+
+	return out;
+}
 
 /*
 
