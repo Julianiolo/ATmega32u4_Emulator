@@ -196,6 +196,9 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 				continue; // kinda weird that that is neccessary
 			}
 
+			size_t branchRootInd = branchRoots.size();
+			branchRootInds[i] = branchRootInd;
+
 			branchRoots.push_back(BranchRoot());
 			BranchRoot& branchRoot = branchRoots.back();
 			branchRoot.start = addr;
@@ -203,21 +206,34 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 			branchRoot.startLine = i;
 			branchRoot.destLine = destLine;
 
-			size_t branchRootInd = branchRoots.size();
-			branchRootInds[i] = branchRootInd;
+			
 
 			size_t from = std::min(i, destLine);
 			size_t to = std::max(i, destLine);
-			size_t maxDepth = 0;
-			for (size_t l = from; l <= to; l++) {
-				auto& passing = passingBranches[l];
-				if (passing.size() > maxDepth)
-					maxDepth = passing.size();
 
-				passing.push_back(branchRootInd);
+			bool isLongBranch = to - from >= distOfLongBranch;
+			branchRoot.displayFully = !isLongBranch;
+			
+			if (!isLongBranch) {
+				uint16_t maxDepth = 0;
+				for (size_t l = from; l <= to; l++) {
+					auto& passing = passingBranches[l];
+					if (passing.size() > maxDepth)
+						maxDepth = passing.size();
+
+					passing.push_back(branchRootInd);
+				}
+
+				branchRoot.displayDepth = maxDepth;
+				maxBranchDisplayDepth = std::max(maxBranchDisplayDepth, maxDepth);
 			}
+			else {
+				passingBranches[from].push_back(branchRootInd);
+				passingBranches[to].push_back(branchRootInd);
+			}
+			
 
-			branchRoot.displayDepth = maxDepth;
+			
 		}
 	}
 }
