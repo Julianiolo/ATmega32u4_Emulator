@@ -164,6 +164,64 @@ void A32u4::Disassembler::DisasmFile::addAddrToList(const char* start, const cha
 	}
 }
 
+void A32u4::Disassembler::DisasmFile::processBranches() {
+	branchRootInds.resize(lines.size(), -1);
+	passingBranches.resize(lines.size());
+
+	for (size_t i = 0; i < lines.size(); i++) {
+		addrmcu_t addr = addrs[i];
+		if (addr != Addrs_notAnAddr && addr != Addrs_symbolLabel) {
+			addrmcu_t dest;
+			{
+				const char* lineStart = content.c_str() + lines[i];
+				const char* line_end = content.c_str() + ((i + 1 < lines.size()) ? lines[i] : content.size());
+
+				uint16_t word = ( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart,   2)) |
+					( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3, 2) << 8);
+				uint16_t word2 = 0;
+				if(*(lineStart+FileConsts::instBytesStart+3+3) != ' ') {
+					word2 =		( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3+3,   2)) |
+						( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3+3+3, 2) << 8);
+				}
+
+				pc_t destPC = Disassembler::getJumpDests(word,word2,addr/2);
+				if (destPC == (pc_t)-1)
+					continue; // instruction doesn't jump anywhere
+				dest = destPC * 2;
+			}
+			
+			size_t destLine = getLineIndFromAddr(dest);
+
+			if (addrs[destLine] != dest) {
+				continue; // kinda weird that that is neccessary
+			}
+
+			branchRoots.push_back(BranchRoot());
+			BranchRoot& branchRoot = branchRoots.back();
+			branchRoot.start = addr;
+			branchRoot.dest = dest;
+			branchRoot.startLine = i;
+			branchRoot.destLine = destLine;
+
+			size_t branchRootInd = branchRoots.size();
+			branchRootInds[i] = branchRootInd;
+
+			size_t from = std::min(i, destLine);
+			size_t to = std::max(i, destLine);
+			size_t maxDepth = 0;
+			for (size_t l = from; l <= to; l++) {
+				auto& passing = passingBranches[l];
+				if (passing.size() > maxDepth)
+					maxDepth = passing.size();
+
+				passing.push_back(branchRootInd);
+			}
+
+			branchRoot.displayDepth = maxDepth;
+		}
+	}
+}
+
 void A32u4::Disassembler::DisasmFile::processContent() {
 	size_t lineInd = 1;
 	lines.clear();
@@ -186,6 +244,8 @@ void A32u4::Disassembler::DisasmFile::processContent() {
 
 	lines.resize(lineInd);
 	addrs.resize(lineInd);
+
+	processBranches();
 
 	for (size_t i = 0; i < lines.size(); i++) {
 		addrmcu_t addr = addrs[i];
@@ -288,7 +348,7 @@ std::string A32u4::Disassembler::disassemble(uint16_t word, uint16_t word2, uint
 std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 	uint8_t Inst_ind = InstHandler::getInstInd3(word);
 	if (Inst_ind >= IND_COUNT_)
-		return "";
+		return StringUtils::format(".word 0x%04x", word);
 	InstHandler::Inst_ELEM inst = InstHandler::instList[Inst_ind];
 
 	std::string out = inst.name;
@@ -403,6 +463,49 @@ std::string A32u4::Disassembler::getSignInt(int32_t val) {
 	else {
 		return std::to_string(val);
 	}
+}
+pc_t A32u4::Disassembler::getJumpDests(uint16_t word, uint16_t word2, pc_t pc) {
+	uint8_t Inst_ind = InstHandler::getInstInd3(word);
+	switch (Inst_ind) {
+		case IND_JMP:
+		{
+			uint32_t k = InstHandler::getLongAddr(word,word2);
+			return k;
+		}
+		case IND_RJMP:
+		{
+			int16_t k = InstHandler::getk12_c_sin(word);
+			return pc + k + 1;
+		}
+
+		case IND_SBRC:
+		case IND_SBRS:
+		case IND_SBIC:
+		case IND_SBIS:
+		{
+			return pc + 2;
+		}
+
+		case IND_BRBC:
+		case IND_BRBS:
+		{
+			int8_t k = (int8_t)InstHandler::getk7_c_sin(word);
+			return pc + k + 1;
+		}
+
+
+		case IND_CALL:
+		{
+			uint32_t k = InstHandler::getLongAddr(word, word2);
+			return k;
+		}
+		case IND_RCALL:
+		{
+			int16_t k = InstHandler::getk12_c_sin(word);
+			return pc + k + 1;
+		}
+	}
+	return -1;
 }
 
 void A32u4::Disassembler::disasmRecurse(pc_t start, const Flash* data, DisasmFile::DisasmData* disasmData){

@@ -16,22 +16,31 @@ namespace A32u4 {
 	public:
 		class DisasmFile{
 		public:
-			std::string content;
-			std::vector<size_t> lines; // [linenumber] = start index of line
-			std::vector<uint16_t> addrs; // [linenumber] = PC address
-			std::map<uint16_t, size_t> labels;
-
-
-			/*
-			struct BranchRoot {
-				uint8_t displayDepth;
-				addrmcu_t dest;
+			struct FileConsts {
+				static constexpr size_t instBytesStart = 10;
+				static constexpr size_t instBytesEnd = 21;
 			};
 
-			std::vector<std::unique_ptr<BranchRoot>> branchRoots; // [linenumber] = pointer to branch root object of this line (null if line is not a branchroot)
-			std::vector<std::vector<addrmcu_t>> passingBranches;  // [linenumber] = root addresses of all branches passing this address/line
 
-			*/
+			std::string content;
+			std::vector<size_t> lines; // [linenumber] = start index of line
+			std::vector<addrmcu_t> addrs; // [linenumber] = PC address
+			std::map<uint16_t, size_t> labels; // [symbAddress] = linenumber
+
+
+
+			struct BranchRoot {
+				addrmcu_t start;
+				addrmcu_t dest;
+				size_t startLine;
+				size_t destLine;
+				uint16_t displayDepth;
+			};
+
+			std::vector<BranchRoot> branchRoots; // list of all branch roots
+			std::vector<size_t> branchRootInds; // [linenumber] = ind to branch root object of this line (-1 if line is not a branchroot)
+			std::vector<std::vector<size_t>> passingBranches;  // [linenumber] = branchRootInd of all branches passing this address/line
+
 			
 			struct DisasmData { // data for disasm process
 				BitArray disasmed;
@@ -76,6 +85,8 @@ namespace A32u4 {
 			static uint16_t generateAddrFromLine(const char* start, const char* end);
 			static bool isValidHexAddr(const char* start, const char* end);
 			void addAddrToList(const char* start, const char* end, size_t lineInd);
+
+			void processBranches();
 			void processContent();
 		public:
 			
@@ -89,7 +100,7 @@ namespace A32u4 {
 			void disassembleBinFile(const Flash* data, const AdditionalDisasmInfo& info = AdditionalDisasmInfo());
 
 			// helpers/utility
-			size_t getLineIndFromAddr(uint16_t Addr) const;
+			size_t getLineIndFromAddr(uint16_t Addr) const; // if addr not present, returns the index of the pos to insert at
 			bool isEmpty() const;
 			size_t getNumLines() const;
 			bool isSelfDisassembled() const;
@@ -101,6 +112,8 @@ namespace A32u4 {
 	private:
 		static std::string getParamStr(uint16_t val, uint8_t type);
 		static std::string getSignInt(int32_t val);
+
+		static pc_t getJumpDests(uint16_t word, uint16_t word2, pc_t pc); // get jump dests of inst, return -1 if not a jump/branch
 
 		static void disasmRecurse(pc_t start, const Flash* data, DisasmFile::DisasmData* disasmData);
 	};
