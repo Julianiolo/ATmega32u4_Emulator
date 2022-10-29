@@ -53,7 +53,7 @@ namespace A32u4 {
 
 		void loadFromMemory(const uint8_t* data, size_t dataLen);
 		bool loadFromHexFile(const char* path);
-		void loadFromHexString(const char* str);
+		bool loadFromHexString(const char* str, const char* str_end = 0);
 		void clear();
 
 		sizemcu_t size() const;

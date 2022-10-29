@@ -165,6 +165,10 @@ void A32u4::Disassembler::DisasmFile::addAddrToList(const char* start, const cha
 }
 
 void A32u4::Disassembler::DisasmFile::processBranches() {
+	branchRoots.clear();
+	branchRootInds.clear();
+	branchRootInds.clear();
+
 	branchRootInds.resize(lines.size(), -1);
 	passingBranches.resize(lines.size());
 

@@ -42,4 +42,9 @@ typedef uint16_t sizemcu_t;
 
 #endif
 
+
+#ifdef _DEBUG
+    #define MCU_ASSERT(x) if(!x) abort();
+#endif
+    #define MCU_ASSERT(x) 
 #endif

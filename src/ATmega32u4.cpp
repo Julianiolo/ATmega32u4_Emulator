@@ -20,7 +20,7 @@ void A32u4::ATmega32u4::reset() { //add: reason
 	wasReset = true;
 }
 void A32u4::ATmega32u4::resetHardware() {
-	dataspace.resetIO();
+	dataspace.reset();
 	cpu.reset();
 }
 void A32u4::ATmega32u4::powerOn() {

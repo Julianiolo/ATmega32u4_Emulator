@@ -95,5 +95,8 @@
     <ClInclude Include="..\..\..\..\src\utils\bitArray.h">
       <Filter>Source Files\utils</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\src\A32u4Types.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

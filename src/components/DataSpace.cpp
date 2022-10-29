@@ -206,7 +206,8 @@ void A32u4::DataSpace::reset() {
 	timers.reset();
 	lastEECR_EEMPE_set = 0;
 	lastPLLCSR_PLLE_set = 0;
-	std::memset(sreg, 0, 8);
+
+	std::memset(sreg, 0, 8); // reset sreg cache
 }
 void A32u4::DataSpace::resetIO() {
 	//add: set all IO Registers to initial Values

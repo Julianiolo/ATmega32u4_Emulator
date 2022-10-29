@@ -88,10 +88,13 @@ void A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 #endif
 }
 
-void A32u4::Flash::loadFromHexString(const char* str) {
+bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 	clear();
 
-	size_t strl = std::strlen(str);
+	if (str_end == nullptr){
+		str_end = str + std::strlen(str);
+	}
+	size_t strl = str_end-str;
 
 	size_t str_ind = 0;
 	uint16_t flashInd = 0;
@@ -125,6 +128,7 @@ void A32u4::Flash::loadFromHexString(const char* str) {
 #if FLASH_USE_INSTIND_CACHE
 	populateInstIndCache();
 #endif
+	return true;
 }
 bool A32u4::Flash::loadFromHexFile(const char* path) {
 	{

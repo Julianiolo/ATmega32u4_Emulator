@@ -30,6 +30,7 @@
     <ClCompile Include="..\..\..\..\src\utils\bitArray.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\src\A32u4Types.h" />
     <ClInclude Include="..\..\..\..\src\ATmega32u4.h" />
     <ClInclude Include="..\..\..\..\src\components\Analytics.h" />
     <ClInclude Include="..\..\..\..\src\components\config.h" />
