@@ -96,6 +96,15 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 	}
 	size_t strl = str_end-str;
 
+	// sanity check (check for non ascii characters)
+	for (size_t i = 0; i < strl; i++) {
+		char c = str[i];
+		if (c == 0 || c > 127) {
+			mcu->logf(ATmega32u4::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character ('%c'(0x%02x) at %" MCU_PRIuSIZE ")", c, c, i);
+			return false;
+		}
+	}
+
 	size_t str_ind = 0;
 	uint16_t flashInd = 0;
 	while (str_ind < strl) {

@@ -13,9 +13,9 @@ typedef uint16_t sizemcu_t;
 
 // Print size_t macros
 #if SIZE_MAX == 0xffffull
-    #define MCU_PRIdSIZE PRId64
-    #define MCU_PRIuSIZE PRIu64
-    #define MCU_PRIxSIZE PRIx64
+    #define MCU_PRIdSIZE PRId16
+    #define MCU_PRIuSIZE PRIu16
+    #define MCU_PRIxSIZE PRIx16
 #elif SIZE_MAX == 0xffffffffull
     #define MCU_PRIdSIZE PRId32
     #define MCU_PRIuSIZE PRIu32
@@ -33,18 +33,16 @@ typedef uint16_t sizemcu_t;
 
 
 #ifdef _MSC_VER
-
-#define MCU_INLINE
-
+    #define MCU_INLINE
 #else
-
-#define MCU_INLINE
-
+    #define MCU_INLINE
 #endif
 
 
 #ifdef _DEBUG
-    #define MCU_ASSERT(x) if(!x) abort();
-#endif
+    #define MCU_ASSERT(x) if(!(x)) abort();
+#else
     #define MCU_ASSERT(x) 
+#endif
+
 #endif
