@@ -191,7 +191,10 @@ data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
 #endif
 timers(mcu)
 {
-
+#if 1
+	std::memset(data, 0, Consts::data_size);
+	std::memset(eeprom, 0, Consts::eeprom_size);
+#endif
 }
 
 A32u4::DataSpace::~DataSpace() {

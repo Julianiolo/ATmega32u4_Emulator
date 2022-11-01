@@ -98,7 +98,7 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 
 	size_t str_ind = 0;
 	uint16_t flashInd = 0;
-	while ((str[str_ind] != 0) && (str_ind < strl)) {
+	while (str_ind < strl) {
 		if (str_ind >= strl) {
 			abort();
 		}
@@ -118,7 +118,7 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 			data[flashInd++] = StringUtils::hexStrToUIntLen<uint8_t>(str + (str_ind+=2), 2);
 		}
 		str_ind += 4; //skip checksum
-		while (str[str_ind] == '\n' || str[str_ind] == '\r') {
+		while (str_ind<strl && (str[str_ind] == '\n' || str[str_ind] == '\r')) {
 			str_ind++;
 		}
 	}
@@ -155,7 +155,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	char* buffer = new char[len];
 	t.read(buffer, len);
 	t.close();
-	loadFromHexString(buffer);
+	loadFromHexString(buffer, buffer+len);
 	delete[] buffer;
 	return true;
 }
