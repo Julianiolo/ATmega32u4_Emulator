@@ -43,11 +43,11 @@ namespace A32u4 {
 
 			void update();
 			void doTick(uint8_t& timer);
-			void doTicks(uint8_t& timer,uint8_t num);
+			void doTicks(uint8_t num);
 			void checkForIntr();
 			uint8_t getTimer0Presc() const;
 			uint16_t getTimer0PrescDiv() const;
-			void markTimer0Update(bool print = true);
+			void markTimer0Update();
 		};
 
 		ATmega32u4* mcu;

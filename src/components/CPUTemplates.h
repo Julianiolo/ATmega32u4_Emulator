@@ -31,7 +31,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 					InstHandler::inst_effect_t res = InstHandler::handleCurrentInstT<debug, analyse>(mcu);
 					totalCycls += res.addToCycs;
 					PC += res.addToPC;
-					mcu->dataspace.timers.doTicks(mcu->dataspace.data[DataSpace::Consts::TCNT0], res.addToCycs);
+					mcu->dataspace.timers.doTicks(res.addToCycs);
 					mcu->dataspace.timers.checkForIntr();
 				}
 			}

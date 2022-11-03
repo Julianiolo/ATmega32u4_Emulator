@@ -178,7 +178,7 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 			addrmcu_t dest;
 			{
 				const char* lineStart = content.c_str() + lines[i];
-				const char* line_end = content.c_str() + ((i + 1 < lines.size()) ? lines[i] : content.size());
+				//const char* line_end = content.c_str() + ((i + 1 < lines.size()) ? lines[i] : content.size());
 
 				uint16_t word = ( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart,   2)) |
 					( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3, 2) << 8);

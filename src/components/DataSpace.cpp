@@ -129,7 +129,7 @@ void A32u4::DataSpace::Timers::doTick(uint8_t& timer) {
 
 
 }
-void A32u4::DataSpace::Timers::doTicks(uint8_t& timer, uint8_t num) {
+void A32u4::DataSpace::Timers::doTicks(uint8_t num) {
 #if 1
 	if (isBitSetNB(mcu->dataspace.data[DataSpace::Consts::PRR0], 5)) {
 #else
@@ -168,7 +168,7 @@ uint8_t A32u4::DataSpace::Timers::getTimer0Presc() const {
 uint16_t A32u4::DataSpace::Timers::getTimer0PrescDiv() const {
 	return DataSpace::Timers::presc[getTimer0Presc()];
 }
-void A32u4::DataSpace::Timers::markTimer0Update(bool print) { 
+void A32u4::DataSpace::Timers::markTimer0Update() { 
 	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
 	uint64_t diff = mcu->cpu.totalCycls - lastTimer0Update;
 	diff = (diff / getTimer0PrescDiv()) * getTimer0PrescDiv();
@@ -339,6 +339,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 					data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
 				}
 				if (onlyOne) break;
+				else MCU_FALLTHROUGH;
 			}
 
 			case Consts::PLLCSR: {
@@ -346,12 +347,14 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 					data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
 				}
 				if (onlyOne) break;
+				else MCU_FALLTHROUGH;
 			}
 
 			case Consts::TCNT0: {
 				data[Consts::TCNT0] += (uint8_t)((mcu->cpu.totalCycls - mcu->dataspace.timers.lastTimer0Update) / DataSpace::Timers::presc[mcu->dataspace.timers.getTimer0Presc()]);
-				timers.markTimer0Update(false);
+				timers.markTimer0Update();
 				if (onlyOne) break;
+				else MCU_FALLTHROUGH;
 			}
 
 			case Consts::SREG: {
@@ -366,6 +369,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				val |= (sreg[Consts::SREG_I] != 0) << Consts::SREG_I;
 				data[Consts::SREG] = val;
 				if (onlyOne) break;
+				else MCU_FALLTHROUGH;
 			}
 		}
 	}

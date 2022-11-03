@@ -45,4 +45,7 @@ typedef uint16_t sizemcu_t;
     #define MCU_ASSERT(x) 
 #endif
 
+#define MCU_FALLTHROUGH [[fallthrough]]
+#define MCU_UNUSED(x) do { (void)(x); } while(0)
+
 #endif

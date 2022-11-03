@@ -98,9 +98,9 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 
 	// sanity check (check for non ascii characters)
 	for (size_t i = 0; i < strl; i++) {
-		char c = str[i];
+		unsigned char c = (unsigned char)str[i];
 		if (c == 0 || c > 127) {
-			mcu->logf(ATmega32u4::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character ('%c'(0x%02x) at %" MCU_PRIuSIZE ")", c, c, i);
+			mcu->logf(ATmega32u4::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character (0x%02x at %" MCU_PRIuSIZE ")", c, i);
 			return false;
 		}
 	}
@@ -114,9 +114,9 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 		str_ind += 1;
 		uint8_t ByteCount = StringUtils::hexStrToUIntLen<uint8_t>(str + str_ind, 2);
 		str_ind += 2;
-		uint32_t Addr = ((StringUtils::hexStrToUIntLen<uint32_t>(str + str_ind, 2)<<8) | StringUtils::hexStrToUIntLen<uint32_t>(str + str_ind + 2, 2));
+		//uint32_t Addr = ((StringUtils::hexStrToUIntLen<uint32_t>(str + str_ind, 2)<<8) | StringUtils::hexStrToUIntLen<uint32_t>(str + str_ind + 2, 2));
 		str_ind += 4;
-		uint8_t type = StringUtils::hexStrToUIntLen<uint8_t>(str + str_ind, 2);
+		//uint8_t type = StringUtils::hexStrToUIntLen<uint8_t>(str + str_ind, 2);
 		//str_ind += 7;
 		for (uint8_t i = 0; i < ByteCount; i++) {
 #if RANGE_CHECK
@@ -148,11 +148,9 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 		}
 	}
 	
-		
-
 	std::ifstream t;
 	size_t len;
-	t.open(path);
+	t.open(path, std::ios::binary);
 	if (!t.is_open()) {
 		t.close();
 		mcu->log(ATmega32u4::LogLevel_Error, StringUtils::format("Cannot open file: %s", path), __FILE__, __LINE__, "Flash");
