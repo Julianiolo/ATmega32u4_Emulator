@@ -51,7 +51,7 @@ else
 	BUILD_MODE_FLAGS +=$(RELEASE_OPTIM)
 endif
 
-MAKE_CMD:=make
+MAKE_CMD?=make
 
 DEP_FLAGS=-MMD -MF ${@:.o=.d}
 
