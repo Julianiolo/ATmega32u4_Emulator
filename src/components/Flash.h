@@ -24,9 +24,9 @@ namespace A32u4 {
 		ATmega32u4* mcu;
 
 #if !USE_HEAP
-		uint8_t data[size];
+		uint8_t data[sizeMax];
 #if FLASH_USE_INSTIND_CACHE
-		uint8_t instCache[size/2];
+		uint8_t instCache[sizeMax/2];
 #endif
 #else
 		uint8_t* data;

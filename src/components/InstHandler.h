@@ -29,6 +29,8 @@ namespace A32u4 {
 		template<bool debug,bool analyse>
 		static inst_effect_t handleInstT(ATmega32u4* mcu, uint16_t word) noexcept;
 
+		static inst_effect_t callInstSwitch(uint8_t ind,ATmega32u4* mcu, uint16_t word);
+
 		static constexpr uint8_t startIndArr2[] = { 73, 94, 109, 107, 99, 0, 71, 87 };
 		
 		static uint8_t getInstInd3(uint16_t word) noexcept;

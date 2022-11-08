@@ -116,11 +116,15 @@ namespace A32u4 {
 		void setSPDR();
 		void setTCCR0B(uint8_t val);
 
+
+		uint8_t getGPReg_(uint8_t ind) const;
+		void setGPReg_(uint8_t ind, reg_t val);
 	public:
 		void setSPIByteCallB(SPIByteCallB func);
 
 		uint8_t& getGPRegRef(uint8_t ind);
 		uint8_t getGPReg(uint8_t ind) const;
+		void setGPReg(uint8_t ind, reg_t val);
 
 		uint16_t getX() const;
 		uint16_t getY() const;

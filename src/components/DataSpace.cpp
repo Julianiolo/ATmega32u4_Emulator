@@ -239,6 +239,17 @@ MCU_INLINE uint8_t A32u4::DataSpace::getGPReg(uint8_t ind) const {
 	A32U4_ASSERT_INRANGE_M(ind, 0, Consts::GPRs_size, "General Purpouse Register Index out of bounds: " + std::to_string((int)ind), "DataSpace", return 0);
 	return data[ind];
 }
+MCU_INLINE void A32u4::DataSpace::setGPReg(uint8_t ind, reg_t val) {
+	A32U4_ASSERT_INRANGE_M(ind, 0, Consts::GPRs_size, "General Purpouse Register Index out of bounds: " + std::to_string((int)ind), "DataSpace", return);
+	data[ind] = val;
+}
+
+MCU_INLINE uint8_t A32u4::DataSpace::getGPReg_(uint8_t ind) const {
+	return data[ind];
+}
+MCU_INLINE void A32u4::DataSpace::setGPReg_(uint8_t ind, reg_t val) {
+	data[ind] = val;
+}
 
 uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
 	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds: ",addr,4), "DataSpace", return 0);

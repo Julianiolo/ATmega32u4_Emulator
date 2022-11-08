@@ -30,8 +30,11 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mc
 	if (analyse) {
 		mcu->analytics.addData(ind, mcu->cpu.PC);
 	}
-
+#if 0
 	return instOnlyList[ind](mcu,word);
+#else
+	return callInstSwitch(ind, mcu, word);
+#endif
 }
 
 template<bool debug, bool analyse>
