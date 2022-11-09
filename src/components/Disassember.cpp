@@ -374,102 +374,100 @@ std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 	std::string out = inst.name;
 	out += "\t";
 
-	switch (Inst_ind)
-	{
-	case IND_EOR:
-		if (inst.par1(word) == inst.par2(word)) {
-			out = "CLR R" + std::to_string(inst.par1(word));
-			goto end_params;
+	switch (Inst_ind) {
+		case IND_EOR:
+			if (inst.par1(word) == inst.par2(word)) {
+				out = "CLR R" + std::to_string(inst.par1(word));
+				goto end_params;
+			}
+			else {
+				goto sw1_def;
+			}
+
+		case IND_JMP:
+		case IND_CALL:
+			out += std::string("0x") + StringUtils::uIntToHexStr(word2 * 2, 4);
+			break;
+
+		case IND_RJMP:
+		case IND_RCALL:
+			out += std::string(".") + std::to_string(InstHandler::getk12_c_sin(word) * 2);
+			break;
+
+		case IND_LPM_0:
+			out += " R0, Z"; break;
+
+		default:
+		sw1_def:
+		{
+			if (inst.par1 == NULL) {
+				goto end_params;
+			}
+			out += getParamStr(inst.par1(word), inst.parTypes & 0xF);
 		}
-		else {
-			goto sw1_def;
-		}
-
-	case IND_JMP:
-	case IND_CALL:
-		out += std::string("0x") + StringUtils::uIntToHexStr(word2 * 2, 4);
-		break;
-
-	case IND_RJMP:
-	case IND_RCALL:
-		out += std::string(".") + std::to_string(InstHandler::getk12_c_sin(word) * 2);
-		break;
-
-	case IND_LPM_0:
-		out += " R0, Z"; break;
-
-	default:
-	sw1_def:
-	{
-		if (inst.par1 == NULL) {
-			goto end_params;
-		}
-		out += getParamStr(inst.par1(word), inst.parTypes & 0xF);
 	}
-	}
 
-	switch (Inst_ind)
-	{
-	case IND_LDS:
-	case IND_STS:
-		out += ", 0x" + StringUtils::uIntToHexStr(word2, 4);
-		break;
+	switch (Inst_ind) {
+		case IND_LDS:
+		case IND_STS:
+			out += ", 0x" + StringUtils::uIntToHexStr(word2, 4);
+			break;
 
-	case IND_LD_X:
-	case IND_ST_X:
-		out += ", X"; break;
-	case IND_LD_XpostInc:
-	case IND_ST_XpostInc:
-		out += ", X+"; break;
-	case IND_LD_XpreDec:
-	case IND_ST_XpreDec:
-		out += ", -X"; break;
+		case IND_LD_X:
+		case IND_ST_X:
+			out += ", X"; break;
+		case IND_LD_XpostInc:
+		case IND_ST_XpostInc:
+			out += ", X+"; break;
+		case IND_LD_XpreDec:
+		case IND_ST_XpreDec:
+			out += ", -X"; break;
 
-	case IND_LD_Y:
-	case IND_ST_Y:
-		out += ", Y"; break;
-	case IND_LD_YpostInc:
-	case IND_ST_YpostInc:
-		out += ", Y+"; break;
-	case IND_LD_YpreDec:
-	case IND_ST_YpreDec:
-		out += ", -Y"; break;
+		case IND_LD_Y:
+		case IND_ST_Y:
+			out += ", Y"; break;
+		case IND_LD_YpostInc:
+		case IND_ST_YpostInc:
+			out += ", Y+"; break;
+		case IND_LD_YpreDec:
+		case IND_ST_YpreDec:
+			out += ", -Y"; break;
 
-	case IND_LDD_Y:
-	case IND_STD_Y:
-		out += ", Y" + getParamStr(inst.par2(word), INST_PAR_TYPE_REG_OFFSET);
-		break;
+		case IND_LDD_Y:
+		case IND_STD_Y:
+			out += ", Y" + getParamStr(inst.par2(word), INST_PAR_TYPE_REG_OFFSET);
+			break;
 
-	case IND_LD_Z:
-	case IND_ST_Z:
-		out += ", Z"; break;
-	case IND_LD_ZpostInc:
-	case IND_ST_ZpostInc:
-		out += ", Z+"; break;
-	case IND_LD_ZpreDec:
-	case IND_ST_ZpreDec:
-		out += ", -Z"; break;
+		case IND_LD_Z:
+		case IND_ST_Z:
+			out += ", Z"; break;
+		case IND_LD_ZpostInc:
+		case IND_ST_ZpostInc:
+			out += ", Z+"; break;
+		case IND_LD_ZpreDec:
+		case IND_ST_ZpreDec:
+			out += ", -Z"; break;
 
-	case IND_LPM_d:
-		out += ", Z"; break;
-	case IND_LPM_dpostInc:
-		out += ", Z+"; break;
+		case IND_LPM_d:
+			out += ", Z"; break;
+		case IND_LPM_dpostInc:
+			out += ", Z+"; break;
 
-	case IND_LDD_Z:
-	case IND_STD_Z:
-		out += ", Z" + getParamStr(inst.par2(word), INST_PAR_TYPE_REG_OFFSET);
-		break;
+		case IND_LDD_Z:
+		case IND_STD_Z:
+			out += ", Z" + getParamStr(inst.par2(word), INST_PAR_TYPE_REG_OFFSET);
+			break;
 
 
-	default:
-	{
-		if (inst.par2 == NULL) {
-			goto end_params;
+		default:
+		{
+			if (inst.par2 == NULL) {
+				goto end_params;
+			}
+			out += ", ";
+
+			out += getParamStr(inst.par2(word), (inst.parTypes & 0xF0) >> 4);
 		}
-		out += ", ";
-
-		out += getParamStr(inst.par2(word), (inst.parTypes & 0xF0) >> 4);
-	}
 	}
 end_params:
 

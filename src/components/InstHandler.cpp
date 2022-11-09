@@ -261,7 +261,7 @@ int16_t convTo16BitInt(uint16_t word, uint8_t bitLen) noexcept { // convert a si
 }
 //Parameters
 uint8_t A32u4::InstHandler::getRd2_c_arr(uint16_t word) noexcept {//Rd 2Bit continous use as arr index
-	const uint8_t arr[] = { 24,26,28,30 };
+	constexpr uint8_t arr[] = { 24,26,28,30 };
 	return arr[((word & 0x0030) >> 4)];
 }
 uint8_t A32u4::InstHandler::getRd3_c_a16(uint16_t word) noexcept {//Rd 3Bit continous add 16
@@ -1152,6 +1152,23 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLH(ATmega32u4* mcu, 
 	MCU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_H] = 0;
+	return inst_effect_t(1,1);
+}
+
+A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SE_(ATmega32u4* mcu, uint16_t word) noexcept {
+	MCU_UNUSED(word);
+
+	const uint8_t s = gets3_c(word);
+
+	mcu->dataspace.sreg[s] = 1;
+	return inst_effect_t(1,1);
+}
+A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CL_(ATmega32u4* mcu, uint16_t word) noexcept {
+	MCU_UNUSED(word);
+
+	const uint8_t s = gets3_c(word);
+
+	mcu->dataspace.sreg[s] = 0;
 	return inst_effect_t(1,1);
 }
 

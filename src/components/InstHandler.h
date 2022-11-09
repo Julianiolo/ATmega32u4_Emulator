@@ -149,6 +149,9 @@ namespace A32u4 {
 		static inst_effect_t INST_SEH(ATmega32u4* mcu, uint16_t word) noexcept;
 		static inst_effect_t INST_CLH(ATmega32u4* mcu, uint16_t word) noexcept;
 
+		static inst_effect_t INST_SE_(ATmega32u4* mcu, uint16_t word) noexcept;
+		static inst_effect_t INST_CL_(ATmega32u4* mcu, uint16_t word) noexcept;
+
 		//############## Data Tranfer Instructions ##############
 		static inst_effect_t INST_MOV(ATmega32u4* mcu, uint16_t word) noexcept;
 		static inst_effect_t INST_MOVW(ATmega32u4* mcu, uint16_t word) noexcept;
