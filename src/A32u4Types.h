@@ -40,9 +40,14 @@ typedef uint16_t sizemcu_t;
 
 
 #ifdef _DEBUG
-    #define MCU_ASSERT(x) if(!(x)) abort();
+    #define MCU_ASSERT(x) do {\
+        if(!(x)){\
+            printf("Assertion Failed! %s, %d\n", __FILE__, __LINE__);\
+            abort();\
+        }\
+    } while(0)
 #else
-    #define MCU_ASSERT(x) 
+    #define MCU_ASSERT(x)
 #endif
 
 #define MCU_FALLTHROUGH [[fallthrough]]

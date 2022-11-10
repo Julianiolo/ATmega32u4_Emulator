@@ -198,9 +198,7 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 			
 			size_t destLine = getLineIndFromAddr(dest);
 
-			if (addrs[destLine] != dest) {
-				continue; // kinda weird that that is neccessary
-			}
+			MCU_ASSERT(addrs[destLine] == dest);
 
 			size_t branchRootInd = branchRoots.size();
 			branchRootInds[i] = branchRootInd;
@@ -220,8 +218,6 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 			for (size_t l = from; l <= to; l++) {
 				auto& passing = passingBranches[l];
 				passing.push_back(branchRootInd);
-				if(passing.size() > maxBranchDisplayDepth)
-					maxBranchDisplayDepth = passing.size();
 			}
 
 			branchRoot.displayDepth = -1;
@@ -232,34 +228,10 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 		processBranchesRecurse(i);
 	}
 
-	//bool* used = new bool[maxBranchDisplayDepth];
-
-	// for(size_t i = 0; i<branchRoots.size(); i++) {
-	// 	auto& branchRoot = branchRoots[i];
-
-	// 	uint16_t maxDepth = 0;
-	// 	for (size_t l = branchRoot.startLine; l <= branchRoot.destLine; l++) {
-	// 		auto& passing = passingBranches[l];
-			
-			
-	// 		// for(size_t e = 0; e<passing.size(); i++) {
-	// 		// 	used[]
-	// 		// }
-
-	// 		size_t passingInd = DataUtils::findVal(passing.begin(), passing.end(), i);
-
-	// 		if(passingInd == (size_t)-1)
-	// 			abort();
-
-	// 		uint16_t displayDepth = passing.size() - 1 - passingInd;
-
-	// 		if (displayDepth > maxDepth)
-	// 			maxDepth = displayDepth;
-	// 	}
-
-	// 	branchRoot.displayDepth = maxDepth;
-		
-	// }
+	for(size_t i = 0; i<branchRoots.size(); i++) {
+		if (maxBranchDisplayDepth < branchRoots[i].displayDepth)
+			maxBranchDisplayDepth = branchRoots[i].displayDepth;
+	}
 }
 
 size_t A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_t depth) {
@@ -278,6 +250,10 @@ size_t A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_
 		auto& passing = passingBranches[l];
 
 		for(size_t i = 0; i< passing.size(); i++) {
+			if (branchRoots[passing[i]].destLine == branchRoot.destLine) {
+				continue;
+			}
+
 			size_t d = processBranchesRecurse(passing[i], depth+1);
 
 			if(d == (size_t)-2)
@@ -355,23 +331,37 @@ size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(uint16_t Addr) const{
 
 	while(from != to){
 		size_t mid = from + ((to-from)/2);
+		const size_t mid_orig = mid;
 
 		uint16_t lineAddr;
-		while((lineAddr = addrs[mid]) == Addrs_notAnAddr || lineAddr == Addrs_symbolLabel)
-			mid++;
+		//while((lineAddr = addrs[mid]) == Addrs_notAnAddr || lineAddr == Addrs_symbolLabel)
+		//	mid++;
+
+		int32_t cnt = 1;
+		do {
+			mid = mid_orig + ((cnt % 2) ? -cnt / 2 : cnt / 2);
+			lineAddr = addrs[mid];
+			cnt++;
+		} while (cnt / 2 < to - from && (lineAddr == Addrs_notAnAddr || lineAddr == Addrs_symbolLabel));
 
 		if(lineAddr == Addr){
 			return mid;
 		}
 		else {
 			if (lineAddr < Addr) {
-				if(mid == from)
-					break;
+				if (mid == from)
+					return to;
 				from = mid;
 			}else{
-				if(mid == to)
-					break;
-				to = mid;
+				if (mid == to) {
+					if (mid_orig == to)
+						return from;
+					else
+						to = mid_orig;
+				}
+				else {
+					to = mid;
+				}
 			}
 		}
 	}

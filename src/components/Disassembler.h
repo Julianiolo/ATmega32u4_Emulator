@@ -40,7 +40,7 @@ namespace A32u4 {
 			std::vector<BranchRoot> branchRoots; // list of all branch roots
 			std::vector<size_t> branchRootInds; // [linenumber] = ind to branch root object of this line (-1 if line is not a branchroot)
 			std::vector<std::vector<size_t>> passingBranches;  // [linenumber] = branchRootInd of all branches passing this address/line
-			uint16_t maxBranchDisplayDepth = 0;
+			size_t maxBranchDisplayDepth = 0;
 			
 			struct DisasmData { // data for disasm process
 				BitArray disasmed;
