@@ -1,6 +1,7 @@
 #include "Disassembler.h"
 #include "InstInds.h"
 #include "StringUtils.h"
+#include "DataUtils.h"
 #include "InstHandler.h"
 #include <algorithm>
 #include <fstream>
@@ -215,32 +216,97 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 
 			size_t from = std::min(i, destLine);
 			size_t to = std::max(i, destLine);
-
-			bool isLongBranch = to - from >= distOfLongBranch;
-			branchRoot.displayFully = !isLongBranch;
 			
-			if (!isLongBranch) {
-				uint16_t maxDepth = 0;
-				for (size_t l = from; l <= to; l++) {
-					auto& passing = passingBranches[l];
-					if (passing.size() > maxDepth)
-						maxDepth = passing.size();
-
-					passing.push_back(branchRootInd);
-				}
-
-				branchRoot.displayDepth = maxDepth;
-				maxBranchDisplayDepth = std::max(maxBranchDisplayDepth, maxDepth);
+			for (size_t l = from; l <= to; l++) {
+				auto& passing = passingBranches[l];
+				passing.push_back(branchRootInd);
+				if(passing.size() > maxBranchDisplayDepth)
+					maxBranchDisplayDepth = passing.size();
 			}
-			else {
-				passingBranches[from].push_back(branchRootInd);
-				passingBranches[to].push_back(branchRootInd);
-			}
-			
 
-			
+			branchRoot.displayDepth = -1;
 		}
 	}
+
+	for(size_t i = 0; i<branchRoots.size(); i++) {
+		processBranchesRecurse(i);
+	}
+
+	//bool* used = new bool[maxBranchDisplayDepth];
+
+	// for(size_t i = 0; i<branchRoots.size(); i++) {
+	// 	auto& branchRoot = branchRoots[i];
+
+	// 	uint16_t maxDepth = 0;
+	// 	for (size_t l = branchRoot.startLine; l <= branchRoot.destLine; l++) {
+	// 		auto& passing = passingBranches[l];
+			
+			
+	// 		// for(size_t e = 0; e<passing.size(); i++) {
+	// 		// 	used[]
+	// 		// }
+
+	// 		size_t passingInd = DataUtils::findVal(passing.begin(), passing.end(), i);
+
+	// 		if(passingInd == (size_t)-1)
+	// 			abort();
+
+	// 		uint16_t displayDepth = passing.size() - 1 - passingInd;
+
+	// 		if (displayDepth > maxDepth)
+	// 			maxDepth = displayDepth;
+	// 	}
+
+	// 	branchRoot.displayDepth = maxDepth;
+		
+	// }
+}
+
+size_t A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_t depth) {
+	auto& branchRoot = branchRoots[ind];
+	if(branchRoot.displayDepth == (size_t)-2)
+		return -2;
+	if(branchRoot.displayDepth != (size_t)-1)
+		return branchRoot.displayDepth;
+
+	bool used[512];
+	branchRoot.displayDepth = -2;
+
+	std::memset(used, 0, sizeof(used));
+
+	for (size_t l = std::min(branchRoot.startLine,branchRoot.destLine); l <= std::max(branchRoot.startLine,branchRoot.destLine); l++) {
+		auto& passing = passingBranches[l];
+
+		for(size_t i = 0; i< passing.size(); i++) {
+			size_t d = processBranchesRecurse(passing[i], depth+1);
+
+			if(d == (size_t)-2)
+				continue;
+
+			if(depth == 0)
+				int a = 0;
+
+			if(d >= sizeof(used))
+				abort();
+
+			used[d] = true;
+		}
+	}
+
+	if(depth == 0)
+		int a = 0;
+
+	size_t min = -1;
+	for(size_t i = 0; i<sizeof(used); i++) {
+		if(!used[i]) {
+			min = i;
+			break;
+		}
+	}
+
+	branchRoot.displayDepth = min;
+
+	return branchRoot.displayDepth;
 }
 
 void A32u4::Disassembler::DisasmFile::processContent() {
