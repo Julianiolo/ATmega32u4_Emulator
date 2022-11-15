@@ -318,7 +318,7 @@ void A32u4::Disassembler::DisasmFile::processContent() {
 	}
 }
 
-size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(uint16_t Addr) const{
+size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(addrmcu_t Addr) const{
 	if(isEmpty())
 		return -1;
 

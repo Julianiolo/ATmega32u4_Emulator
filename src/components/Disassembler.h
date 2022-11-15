@@ -101,7 +101,7 @@ namespace A32u4 {
 			void disassembleBinFile(const Flash* data, const AdditionalDisasmInfo& info = AdditionalDisasmInfo());
 
 			// helpers/utility
-			size_t getLineIndFromAddr(uint16_t Addr) const; // if addr not present, returns the index of the pos to insert at
+			size_t getLineIndFromAddr(addrmcu_t Addr) const; // if addr not present, returns the index of the pos to insert at
 			bool isEmpty() const;
 			size_t getNumLines() const;
 			bool isSelfDisassembled() const;
