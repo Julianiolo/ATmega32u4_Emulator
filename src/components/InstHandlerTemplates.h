@@ -1,7 +1,7 @@
 #ifndef _A32u4_INSTHANDLERTEMPLATES
 #define _A32u4_INSTHANDLERTEMPLATES
 
-#include "Disassembler.h"
+#include "../extras/Disassembler.h"
 
 template<bool debug, bool analyse>
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleCurrentInstT(ATmega32u4* mcu) noexcept {

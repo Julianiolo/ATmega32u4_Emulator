@@ -1,11 +1,12 @@
 #ifndef _A32u4_FLASH
 #define _A32u4_FLASH
 
-#include "config.h"
+#include <cstring>
 
+
+#include "../config.h"
 #include "../A32u4Types.h"
 
-#include <cstring>
 
 #define FLASH_USE_INSTIND_CACHE 1
 

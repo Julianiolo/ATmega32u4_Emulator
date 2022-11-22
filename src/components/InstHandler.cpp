@@ -1,10 +1,10 @@
 #include "InstHandler.h"
 #include "../ATmega32u4.h"
 
-#include "config.h"
+#include "../config.h"
 
 #include "InstInds.h"
-#include "Disassembler.h"
+#include "../extras/Disassembler.h"
 
 #include "StringUtils.h"
 #include "../utils/bitMacros.h"

@@ -1,12 +1,15 @@
 #include "Disassembler.h"
-#include "InstInds.h"
-#include "StringUtils.h"
-#include "DataUtils.h"
-#include "InstHandler.h"
+
 #include <algorithm>
 #include <fstream>
 #include <streambuf>
 #include <iostream>
+
+#include "../components/InstInds.h"
+#include "../components/InstHandler.h"
+
+#include "StringUtils.h"
+#include "DataUtils.h"
 
 #define INST_PAR_TYPE_RAWVAL 0
 #define INST_PAR_TYPE_RAWVALDEC 1

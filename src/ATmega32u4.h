@@ -4,10 +4,11 @@
 #include "components/CPU.h"
 #include "components/DataSpace.h"
 #include "components/Flash.h"
-#include "components/Debugger.h"
-#include "components/Analytics.h"
+#include "extras/Debugger.h"
+#include "extras/Analytics.h"
+#include "extras/SymbolTable.h"
 
-#include "components/config.h"
+#include "config.h"
 
 #include "StringUtils.h"
 
@@ -70,6 +71,7 @@ namespace A32u4 {
 
 		A32u4::Debugger debugger;
 		A32u4::Analytics analytics;
+		A32u4::SymbolTable symbolTable;
 
 		void reset();
 

@@ -3,9 +3,9 @@
 
 #include "../A32u4Types.h"
 
-#include "config.h"
-#include "InstHandler.h"
-#include "Flash.h"
+#include "../config.h"
+#include "../components/InstHandler.h"
+#include "../components/Flash.h"
 
 namespace A32u4 {
 	class Analytics {

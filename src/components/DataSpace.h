@@ -7,7 +7,7 @@
 #include <string.h> //for NULL
 #include "../A32u4Types.h"
 
-#include "config.h"
+#include "../config.h"
 #include "CPU.h"
 
 namespace A32u4 {

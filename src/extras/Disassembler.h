@@ -7,8 +7,10 @@
 #include <map>
 #include <memory>
 #include <stdint.h>
+
 #include "../utils/bitArray.h"
-#include "Flash.h"
+#include "../components/Flash.h"
+
 #include "Analytics.h"
 
 namespace A32u4 {

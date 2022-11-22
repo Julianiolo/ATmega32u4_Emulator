@@ -6,9 +6,9 @@
 
 #include "../A32u4Types.h"
 
-#include "config.h"
-#include "Flash.h"
-#include "DataSpace.h"
+#include "../config.h"
+#include "../components/Flash.h"
+#include "../components/DataSpace.h"
 
 namespace A32u4 {
 	class ATmega32u4;
