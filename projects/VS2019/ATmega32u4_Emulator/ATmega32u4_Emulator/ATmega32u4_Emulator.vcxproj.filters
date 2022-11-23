@@ -19,6 +19,9 @@
     <Filter Include="Source Files\utils">
       <UniqueIdentifier>{8c71854d-1da1-4a71-b046-6946a080a040}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\extras">
+      <UniqueIdentifier>{949db6ab-fda0-449c-ac84-09b134052225}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\src\ATmega32u4.cpp">
@@ -27,19 +30,10 @@
     <ClCompile Include="..\..\..\..\src\components\DataSpace.cpp">
       <Filter>Source Files\components</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\src\components\Debugger.cpp">
-      <Filter>Source Files\components</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\src\components\Disassember.cpp">
-      <Filter>Source Files\components</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\src\components\Flash.cpp">
       <Filter>Source Files\components</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\src\components\InstHandler.cpp">
-      <Filter>Source Files\components</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\src\components\Analytics.cpp">
       <Filter>Source Files\components</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\src\components\CPU.cpp">
@@ -47,6 +41,21 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\src\utils\bitArray.cpp">
       <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\extras\Analytics.cpp">
+      <Filter>Source Files\extras</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\extras\Debugger.cpp">
+      <Filter>Source Files\extras</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\extras\Disassember.cpp">
+      <Filter>Source Files\extras</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\extras\ElfReader.cpp">
+      <Filter>Source Files\extras</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\src\extras\SymbolTable.cpp">
+      <Filter>Source Files\extras</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -59,12 +68,6 @@
     <ClInclude Include="..\..\..\..\src\components\DataspaceConstants.h">
       <Filter>Source Files\components</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\src\components\Debugger.h">
-      <Filter>Source Files\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\components\Disassembler.h">
-      <Filter>Source Files\components</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\src\components\Flash.h">
       <Filter>Source Files\components</Filter>
     </ClInclude>
@@ -75,12 +78,6 @@
       <Filter>Source Files\components</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\components\InstInds.h">
-      <Filter>Source Files\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\components\Analytics.h">
-      <Filter>Source Files\components</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\components\config.h">
       <Filter>Source Files\components</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\components\CPU.h">
@@ -97,6 +94,21 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\A32u4Types.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\extras\Analytics.h">
+      <Filter>Source Files\extras</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\extras\Debugger.h">
+      <Filter>Source Files\extras</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\extras\Disassembler.h">
+      <Filter>Source Files\extras</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\extras\ElfReader.h">
+      <Filter>Source Files\extras</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\extras\SymbolTable.h">
+      <Filter>Source Files\extras</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -64,6 +64,8 @@ namespace A32u4 {
 			symb_size_t size;
 			Section* section;
 
+			uint32_t id;
+
 			bool isHidden;
 
 			void* extraData = nullptr;
@@ -86,6 +88,7 @@ namespace A32u4 {
 		std::vector<Symbol> symbolStorage;
 		std::map<std::string, const Symbol*> symbsNameMap;
 		std::map<std::string, Symbol::Section> sections;
+		std::map<uint32_t, const Symbol*> symbsIdMap;
 
 		std::vector<const Symbol*> symbolsRam;
 		std::vector<const Symbol*> symbolsRamExp;
@@ -120,6 +123,7 @@ namespace A32u4 {
 		const Symbol::Section* getSection(const std::string& name) const;
 		const Symbol* getSymbolByName(const std::string& name) const;
 		static const Symbol* getSymbolByValue(const symb_size_t value, SymbolListPtr list);
+		const Symbol* getSymbolById(uint32_t id) const;
 
 		const std::vector<Symbol>& getSymbols() const;
 		SymbolListPtr getSymbolsRam() const;

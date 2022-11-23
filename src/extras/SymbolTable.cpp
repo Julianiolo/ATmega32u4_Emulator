@@ -218,10 +218,12 @@ void A32u4::SymbolTable::parseList(std::vector<Symbol>* vec, const char* str, si
 }
 
 void A32u4::SymbolTable::setupConnections() {
-	if(symbolsPostProcFunc)
+	if(symbolsPostProcFunc && symbolStorage.size() > 0)
 		symbolsPostProcFunc(&symbolStorage[0], symbolStorage.size(), symbolsPostProcFuncUserData);
 
 	std::sort(symbolStorage.begin(), symbolStorage.end());
+
+
 
 	{
 		const Symbol::Section* bssSection = getSection(".bss");
@@ -229,6 +231,10 @@ void A32u4::SymbolTable::setupConnections() {
 		const Symbol::Section* textSection = getSection(".text");
 		const Symbol::Section* dataSection = getSection(".data");
 		for (auto& s : symbolStorage) {
+			uint32_t id = rand();
+			s.id = id;
+			symbsIdMap[id] = &s;
+
 			symbsNameMap[s.name] = &s;
 
 			if (s.section == bssSection || s.section == dataSection)
@@ -344,8 +350,8 @@ bool A32u4::SymbolTable::loadDeviceSymbolDump(const char* str, const char* str_e
 			maxRamAddrEnd = s->addrEnd();
 	}
 
-	if(symbolsPostProcFunc)
-		symbolsPostProcFunc(&symbolStorage[0], symbolStorage.size(), symbolsPostProcFuncUserData);
+	if(symbolsPostProcFunc && deviceSpecSymbolStorage.size() > 0)
+		symbolsPostProcFunc(&deviceSpecSymbolStorage[0], deviceSpecSymbolStorage.size(), symbolsPostProcFuncUserData);
 
 	return true;
 }
@@ -367,6 +373,7 @@ void A32u4::SymbolTable::resetAll() {
 
 	symbolStorage.clear();
 	symbsNameMap.clear();
+	symbsIdMap.clear();
 	sections.clear();
 
 	symbolsRam.clear();
@@ -424,6 +431,14 @@ const A32u4::SymbolTable::Symbol* A32u4::SymbolTable::getSymbolByValue(const sym
 	if (value >= s->value && value <= s->value + s->size)
 		return s;
 	return nullptr;
+}
+
+const A32u4::SymbolTable::Symbol* A32u4::SymbolTable::getSymbolById(uint32_t id) const {
+	const auto& res = symbsIdMap.find(id);
+	if (res == symbsIdMap.end()) {
+		return nullptr;
+	}
+	return res->second;
 }
 
 const std::vector<A32u4::SymbolTable::Symbol>& A32u4::SymbolTable::getSymbols() const {
