@@ -31,6 +31,22 @@ void A32u4::SymbolTable::setSymbolsPostProcFunc(SymbolsPostProcFuncPtr func, voi
 	symbolsPostProcFuncUserData = userData;
 }
 
+void A32u4::SymbolTable::addSymbol(Symbol&& symbol){
+	if(symbol.id == (decltype(symbol.id))-1)
+		symbol.id = genSymbolId();
+
+	symbsIdMap[symbol.id] = symbolStorage.size();
+
+	symbolStorage.push_back(symbol);
+
+	setupConnections(1);
+}
+
+uint32_t A32u4::SymbolTable::genSymbolId(){
+	static uint32_t cnt = 0;
+	return cnt++;
+}
+
 A32u4::SymbolTable::Symbol::Flags A32u4::SymbolTable::generateSymbolFlags(const char* str) {
 	Symbol::Flags flags;
 	switch (str[0]) {
@@ -133,26 +149,25 @@ A32u4::SymbolTable::Symbol::Flags A32u4::SymbolTable::generateSymbolFlags(const 
 
 	return flags;
 }
-A32u4::SymbolTable::Symbol::Section* A32u4::SymbolTable::generateSymbolSection(const char* str, const char* strEnd, size_t* sectStrLen) {
+std::string A32u4::SymbolTable::generateSymbolSection(const char* str, const char* strEnd, size_t* sectStrLen) {
 	if (!strEnd)
 		strEnd = str + std::strlen(str);
 
-	size_t sectLen;
-	{
-		const char* strPtr = str;
-		while (*strPtr != '\t' && strPtr != strEnd)
-			strPtr++;
-		sectLen = strPtr - str;
-		if (sectStrLen)
-			*sectStrLen = sectLen;
-	}
+	while(str<strEnd && *str==' ')
+		str++;
+
+	const char* strPtr = str;
+	while (*strPtr != '\t' && strPtr != strEnd)
+		strPtr++;
+	if (sectStrLen)
+		*sectStrLen = strPtr - str;
 	
-	std::string sectStr = std::string(str, str + sectLen);
+	std::string sectStr = std::string(str, strPtr);
 	if (sections.find(sectStr) == sections.end()) {
 		sections[sectStr] = Symbol::Section(sectStr);
 	}
 	
-	return &sections[sectStr];
+	return sectStr;
 }
 
 A32u4::SymbolTable::Symbol A32u4::SymbolTable::parseLine(const char* start, const char* end) {
@@ -193,12 +208,12 @@ A32u4::SymbolTable::Symbol A32u4::SymbolTable::parseLine(const char* start, cons
 		while ((nlPos = symbol.note.find("\\n")) != std::string::npos)
 			symbol.note.replace(nlPos, 2, "\n");
 	}
-	symbol.hasDemangledName = symbol.name != symbol.demangled;
+	symbol.hasDemangledName = false;
 
 	return symbol;
 }
 
-void A32u4::SymbolTable::parseList(std::vector<Symbol>* vec, const char* str, size_t size) {
+size_t A32u4::SymbolTable::parseList(std::vector<Symbol>* vec, const char* str, size_t size) {
 	constexpr char startStr[] = "SYMBOL TABLE:";
 	const char* startStrOff = std::strstr(str, startStr);
 
@@ -207,47 +222,50 @@ void A32u4::SymbolTable::parseList(std::vector<Symbol>* vec, const char* str, si
 	if (size == (size_t)-1)
 		size = std::strlen(str);
 
+	size_t cnt = 0;
+
 	size_t lastLineStart = strOff;
 	for (size_t i = strOff; i < size; i++) {
 		if (str[i] == '\n') {
-			if ((str + i) - (str + lastLineStart) >= (8 + 1 + 7 + 1 + 0 + 1 + 8 + 1))
+			if ((str + i) - (str + lastLineStart) >= (8 + 1 + 7 + 1 + 0 + 1 + 8 + 1)){
 				vec->push_back(parseLine(str + lastLineStart, str + i));
+				cnt++;
+			}
 			lastLineStart = i + 1;
 		}
 	}
+	return cnt;
 }
 
-void A32u4::SymbolTable::setupConnections() {
+void A32u4::SymbolTable::setupConnections(size_t cnt) {
 	if(symbolsPostProcFunc && symbolStorage.size() > 0)
-		symbolsPostProcFunc(&symbolStorage[0], symbolStorage.size(), symbolsPostProcFuncUserData);
+		symbolsPostProcFunc(&symbolStorage[0]+(symbolStorage.size()-cnt), cnt, symbolsPostProcFuncUserData);
 
 	std::sort(symbolStorage.begin(), symbolStorage.end());
 
+	symbolsRam.clear();
+	symbolsRom.clear();
+	for (size_t i = 0; i<symbolStorage.size(); i++) {
+		auto& s = symbolStorage[i];
 
+		const uint32_t id = genSymbolId();
+		s.id = id;
+		symbsIdMap[id] = i;
 
-	{
-		const Symbol::Section* bssSection = getSection(".bss");
+		symbsNameMap[s.name] = id;
 
-		const Symbol::Section* textSection = getSection(".text");
-		const Symbol::Section* dataSection = getSection(".data");
-		for (auto& s : symbolStorage) {
-			uint32_t id = rand();
-			s.id = id;
-			symbsIdMap[id] = &s;
+		if (s.section == ".bss" || s.section == ".data")
+			symbolsRam.push_back(id);
 
-			symbsNameMap[s.name] = &s;
+		if (s.section == ".text")
+			symbolsRom.push_back(id);
+	}
 
-			if (s.section == bssSection || s.section == dataSection)
-				symbolsRam.push_back(&s);
-
-			if (s.section == textSection)
-				symbolsRom.push_back(&s);
-		}
-
-		for(auto& s : symbolsRam){
-			if(s->addrEnd() > maxRamAddrEnd)
-				maxRamAddrEnd = s->addrEnd();
-		}
+	maxRamAddrEnd = 0;
+	for(auto& sId : symbolsRam){
+		auto addrEnd = getSymbolById(sId)->addrEnd();
+		if(addrEnd > maxRamAddrEnd)
+			maxRamAddrEnd = addrEnd;
 	}
 }
 
@@ -257,9 +275,9 @@ bool A32u4::SymbolTable::loadFromDump(const char* str, const char* str_end) {
 	if(!str_end)
 		str_end = str + std::strlen(str);
 
-	parseList(&symbolStorage,str,str_end-str);
+	size_t cnt = parseList(&symbolStorage,str,str_end-str);
 
-	setupConnections();
+	setupConnections(cnt);
 
 	doesHaveSymbols = true;
 	return true;
@@ -277,7 +295,7 @@ bool A32u4::SymbolTable::loadFromDumpFile(const char* path) {
 
 bool A32u4::SymbolTable::loadFromELF(const ELF::ELFFile& elf) {
 	//resetAll();
-
+	size_t cnt = 0;
 	for (size_t i = 0; i < elf.symbolTableEntrys.size(); i++) {
 		auto& symb = elf.symbolTableEntrys[i];
 		Symbol symbol;
@@ -328,9 +346,10 @@ bool A32u4::SymbolTable::loadFromELF(const ELF::ELFFile& elf) {
 		symbol.flagStr = "";
 
 		symbolStorage.push_back(symbol);
+		cnt++;
 	}
 
-	setupConnections();
+	setupConnections(cnt);
 
 	doesHaveSymbols = true;
 
@@ -338,20 +357,9 @@ bool A32u4::SymbolTable::loadFromELF(const ELF::ELFFile& elf) {
 }
 
 bool A32u4::SymbolTable::loadDeviceSymbolDump(const char* str, const char* str_end) {
-	deviceSpecSymbolStorage.clear();
-	parseList(&deviceSpecSymbolStorage,str,str_end-str);
-	
-	for (size_t i = 0; i < deviceSpecSymbolStorage.size(); i++) {
-		symbolsRam.push_back(&deviceSpecSymbolStorage[i]);
-	}
+	size_t cnt = parseList(&symbolStorage,str,str_end-str);
 
-	for(auto& s : symbolsRam){
-		if(s->addrEnd() > maxRamAddrEnd)
-			maxRamAddrEnd = s->addrEnd();
-	}
-
-	if(symbolsPostProcFunc && deviceSpecSymbolStorage.size() > 0)
-		symbolsPostProcFunc(&deviceSpecSymbolStorage[0], deviceSpecSymbolStorage.size(), symbolsPostProcFuncUserData);
+	setupConnections(cnt);
 
 	return true;
 }
@@ -369,15 +377,12 @@ bool A32u4::SymbolTable::loadDeviceSymbolDumpFile(const char* path) {
 }
 
 void A32u4::SymbolTable::resetAll() {
-	deviceSpecSymbolStorage.clear();
-
 	symbolStorage.clear();
 	symbsNameMap.clear();
 	symbsIdMap.clear();
 	sections.clear();
 
 	symbolsRam.clear();
-	symbolsRamExp.clear();
 	symbolsRom.clear();
 
 	maxRamAddrEnd = 0;
@@ -391,27 +396,32 @@ bool A32u4::SymbolTable::hasSymbols() const {
 }
 
 const A32u4::SymbolTable::Symbol::Section* A32u4::SymbolTable::getSection(const std::string& name) const {
-	return &sections.at(name);
+	const auto& res = sections.find(name);
+	if(res==sections.end()){
+		return nullptr;
+	}
+	return &res->second;
 }
 
 const A32u4::SymbolTable::Symbol* A32u4::SymbolTable::getSymbolByName(const std::string& name) const {
-	if (symbsNameMap.find(name) == symbsNameMap.end())
+	const auto& res = symbsNameMap.find(name);
+	if (res == symbsNameMap.end())
 		return nullptr;
 
-	return symbsNameMap.at(name);
+	return getSymbolById(res->second);
 }
 
-const A32u4::SymbolTable::Symbol* A32u4::SymbolTable::getSymbolByValue(const symb_size_t value, SymbolListPtr list) {
-	if (list->size() == 0)
+const A32u4::SymbolTable::Symbol* A32u4::SymbolTable::getSymbolByValue(const symb_size_t value, const SymbolList& list) const {
+	if (list.size() == 0)
 		return nullptr;
 
 	size_t from = 0;
-	size_t to = list->size() - 1;
+	size_t to = list.size() - 1;
 	while (from != to) {
 		size_t mid = from + (to - from) / 2;
-		symb_size_t val = (*list)[mid]->value;
+		symb_size_t val = getSymbol(list,mid)->value;
 		if (val == value) {
-			return (*list)[mid];
+			return getSymbol(list,mid);
 		}
 		else {
 			if (val > value) {
@@ -427,7 +437,7 @@ const A32u4::SymbolTable::Symbol* A32u4::SymbolTable::getSymbolByValue(const sym
 				
 		}
 	}
-	const Symbol* s = (*list)[from];
+	const Symbol* s = getSymbol(list,from);
 	if (value >= s->value && value <= s->value + s->size)
 		return s;
 	return nullptr;
@@ -438,21 +448,24 @@ const A32u4::SymbolTable::Symbol* A32u4::SymbolTable::getSymbolById(uint32_t id)
 	if (res == symbsIdMap.end()) {
 		return nullptr;
 	}
-	return res->second;
+	return &symbolStorage[res->second];
 }
 
 const std::vector<A32u4::SymbolTable::Symbol>& A32u4::SymbolTable::getSymbols() const {
 	return symbolStorage;
 }
+const std::map<std::string, A32u4::SymbolTable::Symbol::Section>& A32u4::SymbolTable::getSections() const{
+	return sections;
+}
 
-A32u4::SymbolTable::SymbolListPtr A32u4::SymbolTable::getSymbolsRam() const {
-	return (SymbolTable::SymbolListPtr)&symbolsRam;
+const A32u4::SymbolTable::Symbol* A32u4::SymbolTable::getSymbol(const SymbolList& symbs, size_t ind) const {
+	return getSymbolById(symbs[ind]);
 }
-A32u4::SymbolTable::SymbolListPtr A32u4::SymbolTable::getSymbolsRamExp() const {
-	return (SymbolTable::SymbolListPtr)&symbolsRamExp;
+const A32u4::SymbolTable::SymbolList& A32u4::SymbolTable::getSymbolsRam() const {
+	return symbolsRam;
 }
-A32u4::SymbolTable::SymbolListPtr A32u4::SymbolTable::getSymbolsRom() const {
-	return (SymbolTable::SymbolListPtr)&symbolsRom;
+const A32u4::SymbolTable::SymbolList& A32u4::SymbolTable::getSymbolsRom() const {
+	return symbolsRom;
 }
 
 A32u4::SymbolTable::symb_size_t A32u4::SymbolTable::getMaxRamAddrEnd() const {

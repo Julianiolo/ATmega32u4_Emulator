@@ -62,7 +62,7 @@ namespace A32u4 {
 			std::string note;
 			bool hasDemangledName;
 			symb_size_t size;
-			Section* section;
+			std::string section;
 
 			uint32_t id;
 
@@ -74,36 +74,34 @@ namespace A32u4 {
 			symb_size_t addrEnd() const;
 		};
 
-		typedef std::vector<const Symbol*>* SymbolListPtr;
-
 		typedef void (*SymbolsPostProcFuncPtr)(Symbol* symbs, size_t len, void* userData);
+		typedef std::vector<uint32_t> SymbolList;
 	private:
 		ATmega32u4* mcu;
 
 		SymbolsPostProcFuncPtr symbolsPostProcFunc = nullptr;
 		void* symbolsPostProcFuncUserData = nullptr;
 
-		std::vector<Symbol> deviceSpecSymbolStorage;
-
 		std::vector<Symbol> symbolStorage;
-		std::map<std::string, const Symbol*> symbsNameMap;
+		std::map<uint32_t, size_t> symbsIdMap;
 		std::map<std::string, Symbol::Section> sections;
-		std::map<uint32_t, const Symbol*> symbsIdMap;
+		std::map<std::string, uint32_t> symbsNameMap;
 
-		std::vector<const Symbol*> symbolsRam;
-		std::vector<const Symbol*> symbolsRamExp;
-		std::vector<const Symbol*> symbolsRom;
+		std::vector<uint32_t> symbolsRam;
+		std::vector<uint32_t> symbolsRom;
 
 		symb_size_t maxRamAddrEnd = 0;
 
 		bool doesHaveSymbols = false;
 
-		Symbol::Flags generateSymbolFlags(const char* str);
-		Symbol::Section* generateSymbolSection(const char* str, const char* strEnd = 0, size_t* sectStrLen = nullptr);
-		Symbol parseLine(const char* start, const char* end);
-		void parseList(std::vector<Symbol>* vec,const char* str, size_t size = -1);
+		uint32_t genSymbolId();
 
-		void setupConnections(); 
+		Symbol::Flags generateSymbolFlags(const char* str);
+		std::string generateSymbolSection(const char* str, const char* strEnd = 0, size_t* sectStrLen = nullptr);
+		Symbol parseLine(const char* start, const char* end);
+		size_t parseList(std::vector<Symbol>* vec,const char* str, size_t size = -1);
+
+		void setupConnections(size_t cnt); 
 
 		void resetAll();
 	public:
@@ -111,6 +109,8 @@ namespace A32u4 {
 		SymbolTable(ATmega32u4* mcu);
 
 		void setSymbolsPostProcFunc(SymbolsPostProcFuncPtr func, void* userData);
+
+		void addSymbol(Symbol&& symbol); // sets id if id==-1
 
 		bool hasSymbols() const;
 
@@ -122,13 +122,15 @@ namespace A32u4 {
 
 		const Symbol::Section* getSection(const std::string& name) const;
 		const Symbol* getSymbolByName(const std::string& name) const;
-		static const Symbol* getSymbolByValue(const symb_size_t value, SymbolListPtr list);
+		const Symbol* getSymbolByValue(const symb_size_t value, const SymbolList& list) const;
 		const Symbol* getSymbolById(uint32_t id) const;
 
 		const std::vector<Symbol>& getSymbols() const;
-		SymbolListPtr getSymbolsRam() const;
-		SymbolListPtr getSymbolsRamExp() const;
-		SymbolListPtr getSymbolsRom() const;
+		const std::map<std::string, Symbol::Section>& getSections() const;
+
+		const Symbol* getSymbol(const SymbolList& symbs, size_t ind) const;
+		const SymbolList& getSymbolsRam() const;
+		const SymbolList& getSymbolsRom() const;
 
 		symb_size_t getMaxRamAddrEnd() const;
 	};
