@@ -52,7 +52,7 @@ uint8_t A32u4::Flash::getInstInd(pc_t pc) const{
 #endif
 }
 
-uint8_t* A32u4::Flash::getData() {
+const uint8_t* A32u4::Flash::getData() {
 	return data;
 }
 

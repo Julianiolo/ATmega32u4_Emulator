@@ -248,11 +248,17 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 	for (size_t i = 0; i<symbolStorage.size(); i++) {
 		auto& s = symbolStorage[i];
 
-		const uint32_t id = genSymbolId();
-		s.id = id;
-		symbsIdMap[id] = i;
+		uint32_t id;
+		if(s.id == (decltype(s.id))-1){
+			id = genSymbolId();
+			s.id = id;
+			symbsIdMap[id] = i;
 
-		symbsNameMap[s.name] = id;
+			symbsNameMap[s.name] = id;
+		}else{
+			id = s.id;
+		}
+		
 
 		if (s.section == ".bss" || s.section == ".data")
 			symbolsRam.push_back(id);
@@ -344,6 +350,8 @@ bool A32u4::SymbolTable::loadFromELF(const ELF::ELFFile& elf) {
 		
 		symbol.isHidden = false; // idk how to read that???
 		symbol.flagStr = "";
+
+		symbol.hasDemangledName = false;
 
 		symbolStorage.push_back(symbol);
 		cnt++;

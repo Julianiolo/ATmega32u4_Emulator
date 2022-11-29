@@ -60,13 +60,13 @@ namespace A32u4 {
 			std::string name;
 			std::string demangled;
 			std::string note;
-			bool hasDemangledName;
+			bool hasDemangledName = false;
 			symb_size_t size;
 			std::string section;
 
-			uint32_t id;
+			uint32_t id = -1;
 
-			bool isHidden;
+			bool isHidden = false;
 
 			void* extraData = nullptr;
 

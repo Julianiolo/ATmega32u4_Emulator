@@ -50,7 +50,7 @@ namespace A32u4 {
 		uint16_t getInst(pc_t pc) const;
 		uint8_t getInstInd(pc_t pc) const;
 
-		uint8_t* getData();
+		const uint8_t* getData();
 
 		void loadFromMemory(const uint8_t* data, size_t dataLen);
 		bool loadFromHexFile(const char* path);
