@@ -382,6 +382,35 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				if (onlyOne) break;
 				else MCU_FALLTHROUGH;
 			}
+			
+			case Consts::ADCSRA: {
+				if (mcu->cpu.totalCycls - lastADCSRA_ADSC_set >= 0) { // clear bit if conversion is done
+					data[Consts::ADCSRA] &= ~(1<<Consts::ADCSRA_ADSC);
+				}
+			}
+			
+			case Consts::ADCH: {
+				//TODO: maybe unlock changing of ADC value
+				if (mcu->cpu.totalCycls - lastADCSRA_ADSC_set >= 0) {
+					if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
+						data[Consts::ADCH] = getADCVal()>>8;
+					}
+					else { // left adjusted
+						data[Consts::ADCH] = getADCVal()>>2;
+					}
+				}
+			}
+			case Consts::ADCL: {
+				//TODO: maybe lock changing of ADC value
+				if (mcu->cpu.totalCycls - lastADCSRA_ADSC_set >= 0) {
+					if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
+						data[Consts::ADCL] = (uint8_t)getADCVal();
+					}
+					else { // left adjusted
+						data[Consts::ADCL] = getADCVal() << 6;
+					}
+				}
+			}
 		}
 	}
 }
@@ -418,9 +447,26 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 
 			case Consts::TCNT0:
 				printf("TIMER!\n");
+				abort();
+				break;
+
+			case Consts::ADCSRA:
+				if (oldVal & (1 << Consts::ADCSRA_ADSC) && !(val & (1 << Consts::ADCSRA_ADSC))) { // ADCSRA_ADSC has been set to 0
+					data[Consts::ADCSRA] &= ~(1 << 1 << Consts::ADCSRA_ADSC); // clear again => should have no effect
+				}
+				if (!(oldVal & (1 << Consts::ADCSRA_ADSC)) && (val & (1 << Consts::ADCSRA_ADSC))) { // ADCSRA_ADSC has been set to 1 => start conversion
+					if (val & (1 << Consts::ADCSRA_ADEN)) { // check if adc is enabled
+						lastADCSRA_ADSC_set = mcu->cpu.totalCycls;
+					}
+				}
 				break;
 		}
 	}
+}
+
+
+uint16_t A32u4::DataSpace::getADCVal() {
+	return 0;
 }
 
 

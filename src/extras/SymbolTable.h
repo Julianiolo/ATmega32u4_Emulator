@@ -16,13 +16,13 @@ namespace A32u4 {
 
 		struct Symbol {
 			struct Flags {
-				uint8_t scope;
-				bool isWeak;
-				bool isConstuctor;
-				bool isWarning;
-				uint8_t indirectFlags;
-				uint8_t debugDynamicFlags;
-				uint8_t funcFileObjectFlags;
+				uint8_t scope = Flags_Scope_None;
+				bool isWeak = false;
+				bool isConstuctor = false;
+				bool isWarning = false;
+				uint8_t indirectFlags = Flags_Indirect_Normal;
+				uint8_t debugDynamicFlags = Flags_DebDyn_Normal;
+				uint8_t funcFileObjectFlags = Flags_FuncFileObj_Normal;
 			};
 			enum Flags_Scope {
 				Flags_Scope_None = 0,
@@ -111,6 +111,9 @@ namespace A32u4 {
 		void setSymbolsPostProcFunc(SymbolsPostProcFuncPtr func, void* userData);
 
 		void addSymbol(Symbol&& symbol); // sets id if id==-1
+
+		void generateFlagStrForSymbol(Symbol* symbol);
+
 
 		bool hasSymbols() const;
 

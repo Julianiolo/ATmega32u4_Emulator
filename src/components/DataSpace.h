@@ -108,6 +108,8 @@ namespace A32u4 {
 		void (*SCK_Callback)() = NULL;
 		SPIByteCallB SPI_Byte_Callback = NULL;
 
+		uint64_t lastADCSRA_ADSC_set = 0;
+
 		void update_Get(uint16_t Addr, bool onlyOne);
 
 		void update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal);
@@ -119,6 +121,8 @@ namespace A32u4 {
 
 		uint8_t getGPReg_(uint8_t ind) const;
 		void setGPReg_(uint8_t ind, reg_t val);
+
+		uint16_t getADCVal();
 	public:
 		void setSPIByteCallB(SPIByteCallB func);
 

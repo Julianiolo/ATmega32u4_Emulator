@@ -276,6 +276,55 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 }
 
 
+void A32u4::SymbolTable::generateFlagStrForSymbol(Symbol* symbol) {
+	symbol->flagStr = "       ";
+
+	// the static asserts are there to make sure the arrays (scopeStrs,...) are correct/up to date
+
+	{
+		MCU_STATIC_ASSERT(Symbol::Flags_Scope_None == 0);
+		MCU_STATIC_ASSERT(Symbol::Flags_Scope_Local == 1);
+		MCU_STATIC_ASSERT(Symbol::Flags_Scope_Global == 2);
+		MCU_STATIC_ASSERT(Symbol::Flags_Scope_Global | Symbol::Flags_Scope_Local == 3);
+		MCU_STATIC_ASSERT(Symbol::Flags_Scope_Global | Symbol::Flags_Scope_Unique == 6);
+	}
+	constexpr const char scopeStrs[] = {' ','l','g','!','?','?','u'};
+	symbol->flagStr[0] = symbol->flags.scope <= 6 ? scopeStrs[symbol->flags.scope] : '?';
+
+	symbol->flagStr[1] = symbol->flags.isWeak ? 'w' : ' ';
+
+	symbol->flagStr[2] = symbol->flags.isConstuctor ? 'C' : ' ';
+
+	symbol->flagStr[3] = symbol->flags.isWarning ? 'W' : ' ';
+
+	{
+		MCU_STATIC_ASSERT(Symbol::Flags_Indirect_Normal == 0);
+		MCU_STATIC_ASSERT(Symbol::Flags_Indirect_RefrenceToSymbol == 1);
+		MCU_STATIC_ASSERT(Symbol::Flags_Indirect_evalWhileReloc == 2);
+	}
+	constexpr const char indirectStrs[] = {' ','I','i'};
+	symbol->flagStr[4] = symbol->flags.indirectFlags <= 2 ? indirectStrs[symbol->flags.indirectFlags] : '?';
+
+	{
+		MCU_STATIC_ASSERT(Symbol::Flags_DebDyn_Normal == 0);
+		MCU_STATIC_ASSERT(Symbol::Flags_DebDyn_DebugSymbol == 1);
+		MCU_STATIC_ASSERT(Symbol::Flags_DebDyn_DynamicSymbol == 2);
+	}
+	constexpr const char debugStrs[] = {' ','d','D'};
+	symbol->flagStr[5] = symbol->flags.debugDynamicFlags <= 2 ? debugStrs[symbol->flags.debugDynamicFlags] : '?';
+
+	// TODO: there should be a 4th letter for section, but I cant find any resouces about what it is
+	{
+		MCU_STATIC_ASSERT(Symbol::Flags_FuncFileObj_Normal == 0);
+		MCU_STATIC_ASSERT(Symbol::Flags_FuncFileObj_Function == 1);
+		MCU_STATIC_ASSERT(Symbol::Flags_FuncFileObj_File == 2);
+		MCU_STATIC_ASSERT(Symbol::Flags_FuncFileObj_Obj == 3);
+	}
+	constexpr const char ffoStrs[] = {' ','F','f','O'};
+	symbol->flagStr[6] = symbol->flags.funcFileObjectFlags <= 3 ? ffoStrs[symbol->flags.funcFileObjectFlags] : '?';
+}
+
+
 bool A32u4::SymbolTable::loadFromDump(const char* str, const char* str_end) {
 	//resetAll();
 	if(!str_end)
@@ -349,7 +398,7 @@ bool A32u4::SymbolTable::loadFromELF(const ELF::ELFFile& elf) {
 		symbol.flags.isWarning = false;
 		
 		symbol.isHidden = false; // idk how to read that???
-		symbol.flagStr = "";
+		generateFlagStrForSymbol(&symbol);
 
 		symbol.hasDemangledName = false;
 

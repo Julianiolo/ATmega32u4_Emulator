@@ -13,7 +13,11 @@
 
 #include "Analytics.h"
 
+
+
 namespace A32u4 {
+	class ATmega32u4;
+
 	class Disassembler {
 	public:
 		class DisasmFile{
@@ -27,6 +31,7 @@ namespace A32u4 {
 			std::string content;
 			std::vector<size_t> lines; // [linenumber] = start index of line
 			std::vector<addrmcu_t> addrs; // [linenumber] = PC address
+			std::vector<bool> isLineProgram; // [linenumber] = true if line is part of the program, false if not (like data, empty...)
 			std::map<uint16_t, size_t> labels; // [symbAddress] = linenumber
 
 
@@ -41,7 +46,12 @@ namespace A32u4 {
 
 			std::vector<BranchRoot> branchRoots; // list of all branch roots
 			std::vector<size_t> branchRootInds; // [linenumber] = ind to branch root object of this line (-1 if line is not a branchroot)
-			std::vector<std::vector<size_t>> passingBranches;  // [linenumber] = branchRootInd of all branches passing this address/line
+			struct PassingBranchs {
+				std::vector<size_t> passing;
+				size_t startLine;
+			};
+			std::vector<PassingBranchs> passingBranchesVec;
+			std::vector<size_t> passingBranchesInds;  // [linenumber] = ind to pass to passingBranchesVec to get: branchRootInd of all branches passing this address/line
 			size_t maxBranchDisplayDepth = 0;
 			
 			struct DisasmData { // data for disasm process

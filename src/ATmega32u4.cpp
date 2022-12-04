@@ -7,8 +7,10 @@
 
 #include "StringUtils.h"
 
-A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this), debugger(this), symbolTable(this) {
+A32u4::ATmega32u4* A32u4::ATmega32u4::currLogTarget = nullptr;
 
+A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this), debugger(this), symbolTable(this) {
+	activateLog();
 }
 
 void A32u4::ATmega32u4::reset() { //add: reason
@@ -95,6 +97,18 @@ void A32u4::ATmega32u4::log(LogLevel logLevel, const char* msg, const char* file
 }
 void A32u4::ATmega32u4::log(LogLevel logLevel, const std::string& msg, const char* fileName, size_t lineNum, const char* Module) {
 	log(logLevel, msg.c_str(), fileName, lineNum, Module);
+}
+
+void A32u4::ATmega32u4::activateLog() {
+	currLogTarget = this;
+}
+void A32u4::ATmega32u4::log_(LogLevel logLevel, const char* msg, const char* fileName, size_t lineNum, const char* Module) {
+	if (currLogTarget)
+		currLogTarget->log(logLevel, msg, fileName, lineNum, Module);
+}
+void A32u4::ATmega32u4::log_(LogLevel logLevel, const std::string& msg, const char* fileName, size_t lineNum, const char* Module){
+	if (currLogTarget)
+		currLogTarget->log(logLevel, msg, fileName, lineNum, Module);
 }
 
 void A32u4::ATmega32u4::setLogCallB(LogCallB newLogCallB){

@@ -12,6 +12,9 @@
 
 #include "StringUtils.h"
 
+#define MCU_LOG(level, msg) ATmega32u4::log_(level,msg,__FILE__,__LINE__);
+#define MCU_LOG_M(level, msg, module_) ATmega32u4::log_(level,msg,__FILE__,__LINE__,module_);
+
 #if RANGE_CHECK
 #if RANGE_CHECK_ERROR
 #define A32U4_ASSERT_INRANGE(val,from,to,msg,action) if((val) < (from) || (val) >= (to)) { mcu->log(ATmega32u4::LogLevel_Error, (msg), __FILE__, __LINE__); action;}
@@ -59,6 +62,7 @@ namespace A32u4 {
 	private:
 		LogCallB logCallB = nullptr;
 		LogCallBSimple logCallBSimple = nullptr;
+		static ATmega32u4* currLogTarget;
 		uint8_t currentExecFlags = -1;
 
 		bool wasReset = false;
@@ -87,6 +91,14 @@ namespace A32u4 {
 		template<typename ... Args>
 		void logf(LogLevel logLevel, const char* msg, Args ... args) {
 			log(logLevel, StringUtils::format(msg, args ...));
+		}
+
+		void activateLog();
+		static void log_(LogLevel logLevel, const char* msg, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
+		static void log_(LogLevel logLevel, const std::string& msg, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
+		template<typename ... Args>
+		static void logf_(LogLevel logLevel, const char* msg, Args ... args) {
+			log_(logLevel, StringUtils::format(msg, args ...));
 		}
 
 		void setLogCallB(LogCallB newLogCallB);

@@ -49,6 +49,12 @@ typedef uint16_t sizemcu_t;
 #else
     #define MCU_ASSERT(x)
 #endif
+#ifdef _MSC_VER
+    #define MCU_STATIC_ASSERT(x) static_assert(x,"")
+#else
+    #define MCU_STATIC_ASSERT(x) static_assert(x)
+#endif
+    #define MCU_STATIC_ASSERT_MSG(x,msg) static_assert(x,msg)
 
 #define MCU_FALLTHROUGH [[fallthrough]]
 #define MCU_UNUSED(x) do { (void)(x); } while(0)

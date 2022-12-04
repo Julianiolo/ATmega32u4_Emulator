@@ -4,6 +4,9 @@
 #include <fstream>
 #include <streambuf>
 #include <iostream>
+#include <chrono>
+
+#include "../ATmega32u4.h"
 
 #include "../components/InstInds.h"
 #include "../components/InstHandler.h"
@@ -155,13 +158,17 @@ bool A32u4::Disassembler::DisasmFile::isValidHexAddr(const char* start, const ch
 	return true;
 }
 void A32u4::Disassembler::DisasmFile::addAddrToList(const char* start, const char* end, size_t lineInd) {
-	uint16_t Addr = generateAddrFromLine(start, end);
+	bool isProgramLine = end - start > 22 && start[22] == '\t';
+	isLineProgram.push_back(isProgramLine);
+
+	uint16_t addr = generateAddrFromLine(start, end);
+	MCU_ASSERT(!isProgramLine || (addr % 2 == 0 || addr == Addrs_notAnAddr || addr == Addrs_symbolLabel)); // addresses should always be round, since they refer to 2*PC
 	if(lineInd >= addrs.size()){
 		addrs.resize(lineInd);
 	}
-	addrs[lineInd-1] = Addr;
+	addrs[lineInd-1] = addr;
 
-	if (Addr == Addrs_symbolLabel) {
+	if (addr == Addrs_symbolLabel) {
 		// should never be bigger than 2 bytes
 		addrmcu_t symbAddr = (addrmcu_t)StringUtils::hexStrToUIntLen<uint64_t>(start, 8);
 		labels[symbAddr] = lineInd-1;
@@ -172,63 +179,120 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 	maxBranchDisplayDepth = 0;
 	branchRoots.clear();
 	branchRootInds.clear();
-	passingBranches.clear();
 
 	branchRootInds.resize(lines.size(), -1);
-	passingBranches.resize(lines.size());
+	
+	{
+		auto start0 = std::chrono::high_resolution_clock::now();
+		std::vector<std::vector<size_t>> passingBranches(lines.size()); // raw representation, that later gets compressed into passingBranchesInds and passingBranchesVec; [lineno] = vector of inds of passing branches
+		for (size_t i = 0; i < lines.size(); i++) {
+			if (!isLineProgram[i])
+				continue;
 
-	for (size_t i = 0; i < lines.size(); i++) {
-		addrmcu_t addr = addrs[i];
-		if (addr != Addrs_notAnAddr && addr != Addrs_symbolLabel) {
-			addrmcu_t dest;
-			{
-				const char* lineStart = content.c_str() + lines[i];
-				//const char* line_end = content.c_str() + ((i + 1 < lines.size()) ? lines[i] : content.size());
+			addrmcu_t addr = addrs[i];
+			if (addr != Addrs_notAnAddr && addr != Addrs_symbolLabel) {
+				addrmcu_t dest;
+				// get dest address
+				{
+					const char* lineStart = content.c_str() + lines[i];
+					//const char* line_end = content.c_str() + ((i + 1 < lines.size()) ? lines[i] : content.size());
 
-				uint16_t word = ( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart,   2)) |
-					( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3, 2) << 8);
-				uint16_t word2 = 0;
-				if(*(lineStart+FileConsts::instBytesStart+3+3) != ' ') {
-					word2 =		( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3+3,   2)) |
-						( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3+3+3, 2) << 8);
+					uint16_t word = ( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart,   2)) |
+						( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3, 2) << 8);
+					uint16_t word2 = 0;
+					if(*(lineStart+FileConsts::instBytesStart+3+3) != ' ') {
+						word2 =		( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3+3,   2)) |
+							( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3+3+3, 2) << 8);
+					}
+
+					pc_t destPC = Disassembler::getJumpDests(word,word2,addr/2);
+					if (destPC == (pc_t)-1)
+						continue; // instruction doesn't jump anywhere
+					dest = destPC * 2;
 				}
 
-				pc_t destPC = Disassembler::getJumpDests(word,word2,addr/2);
-				if (destPC == (pc_t)-1)
-					continue; // instruction doesn't jump anywhere
-				dest = destPC * 2;
+				size_t destLine = getLineIndFromAddr(dest);
+
+				if (destLine == (decltype(destLine))-1 || addrs[destLine]%2 == 1) // for whatever reason, sometimes programs have illegal jumps like negative addresses or odd addresses
+					continue;
+
+				MCU_ASSERT(addrs[destLine] == dest);
+
+				size_t branchRootInd = branchRoots.size();
+				branchRootInds[i] = branchRootInd;
+
+				branchRoots.push_back(BranchRoot());
+				BranchRoot& branchRoot = branchRoots.back();
+				branchRoot.start = addr;
+				branchRoot.dest = dest;
+				branchRoot.startLine = i;
+				branchRoot.destLine = destLine;
+
+
+
+				size_t from = std::min(i, destLine);
+				size_t to = std::max(i, destLine);
+
+				for (size_t l = from; l <= to; l++) {
+					auto& passing = passingBranches[l];
+					passing.push_back(branchRootInd);
+				}
+
+				branchRoot.displayDepth = -1;
 			}
-			
-			size_t destLine = getLineIndFromAddr(dest);
+		}
+		auto end0 = std::chrono::high_resolution_clock::now();
+		
+		{
+			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end0 - start0).count()/1000.0;
+			MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, StringUtils::format("branch init took: %f ms", ms), "Disassembler");
+		}
 
-			MCU_ASSERT(addrs[destLine] == dest);
 
-			size_t branchRootInd = branchRoots.size();
-			branchRootInds[i] = branchRootInd;
+		// now we compress passingBranches into passingBranchesInds and passingBranchesVec
 
-			branchRoots.push_back(BranchRoot());
-			BranchRoot& branchRoot = branchRoots.back();
-			branchRoot.start = addr;
-			branchRoot.dest = dest;
-			branchRoot.startLine = i;
-			branchRoot.destLine = destLine;
+		auto start1 = std::chrono::high_resolution_clock::now();
 
-			
+		passingBranchesInds.clear();
+		passingBranchesVec.clear();
+		passingBranchesInds.resize(lines.size(), -1);
 
-			size_t from = std::min(i, destLine);
-			size_t to = std::max(i, destLine);
-			
-			for (size_t l = from; l <= to; l++) {
-				auto& passing = passingBranches[l];
-				passing.push_back(branchRootInd);
+		std::vector<size_t>* last = nullptr;
+		for (size_t i = 0; i < passingBranches.size(); i++) {
+			if (!last || passingBranches[i].size() != last->size() || passingBranches[i] != *last) {
+				PassingBranchs pb;
+				pb.passing = passingBranches[i];
+				pb.startLine = i;
+				passingBranchesVec.push_back(pb);
+				last = &passingBranches[i];
 			}
+			passingBranchesInds[i] = passingBranchesVec.size() - 1;
+		}
 
-			branchRoot.displayDepth = -1;
+		auto end1 = std::chrono::high_resolution_clock::now();
+		{
+			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start1).count()/1000.0;
+			MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, 
+				StringUtils::format("branch comp took: %f ms; %" MCU_PRIuSIZE "=>%" MCU_PRIuSIZE " [%" MCU_PRIuSIZE " bs,%" MCU_PRIuSIZE " lines]", 
+					ms, 
+					passingBranches.size(), passingBranchesVec.size(),
+					branchRoots.size(), lines.size()
+				), 
+				"Disassembler"
+			);
 		}
 	}
-
-	for(size_t i = 0; i<branchRoots.size(); i++) {
-		processBranchesRecurse(i);
+	
+	{
+		auto start = std::chrono::high_resolution_clock::now();
+		for(size_t i = 0; i<branchRoots.size(); i++) {
+			processBranchesRecurse(i);
+		}
+		auto end = std::chrono::high_resolution_clock::now();
+		{
+			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0;
+			MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, StringUtils::format("branch recursion took: %f ms", ms), "Disassembler");
+		}
 	}
 
 	for(size_t i = 0; i<branchRoots.size(); i++) {
@@ -239,27 +303,36 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 
 size_t A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_t depth) {
 	auto& branchRoot = branchRoots[ind];
-	if(branchRoot.displayDepth == (size_t)-2)
+	if(branchRoot.displayDepth == (size_t)-2) // currently being calculated
 		return -2;
-	if(branchRoot.displayDepth != (size_t)-1)
+	if(branchRoot.displayDepth != (size_t)-1) // already calculated
 		return branchRoot.displayDepth;
 
-	bool used[512];
+	bool used[256];
 	branchRoot.displayDepth = -2;
 
 	std::memset(used, 0, sizeof(used));
 
-	for (size_t l = std::min(branchRoot.startLine,branchRoot.destLine); l <= std::max(branchRoot.startLine,branchRoot.destLine); l++) {
-		auto& passing = passingBranches[l];
+	const size_t from = std::min(branchRoot.startLine, branchRoot.destLine);
+	const size_t to = std::max(branchRoot.startLine, branchRoot.destLine);
 
-		for(size_t i = 0; i< passing.size(); i++) {
-			if (branchRoots[passing[i]].destLine == branchRoot.destLine) {
+	size_t fromInd = passingBranchesInds[from];
+
+	for (size_t c = fromInd; c < passingBranchesVec.size(); c++) {
+		auto& pb = passingBranchesVec[c];
+
+		if (pb.startLine > to)
+			break;
+
+		for(size_t i = 0; i< pb.passing.size(); i++) {
+			auto& nextBranchRoot = branchRoots[pb.passing[i]];
+			if (nextBranchRoot.destLine == branchRoot.destLine || nextBranchRoot.displayDepth == (size_t)-2) {
 				continue;
 			}
 
-			size_t d = processBranchesRecurse(passing[i], depth+1);
+			size_t d = processBranchesRecurse(pb.passing[i], depth+1);
 
-			if(d == (size_t)-2)
+			if(d == (size_t)-2) // currently being calculated, so we skip it
 				continue;
 
 			if(depth == 0)
@@ -293,6 +366,7 @@ void A32u4::Disassembler::DisasmFile::processContent() {
 	lines.clear();
 	lines.push_back(0);
 	addrs.clear();
+	isLineProgram.clear();
 
 	const char* str = content.c_str();
 	size_t i = 0;
@@ -327,10 +401,10 @@ size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(addrmcu_t Addr) const
 
 	size_t from = 0;
 	size_t to = lines.size()-1;
-	while ((addrs[to] == Addrs_notAnAddr || addrs[to] == Addrs_symbolLabel) && to > 0)
+	while ((addrs[to] == Addrs_notAnAddr || addrs[to] == Addrs_symbolLabel) && to >= 0)
 		to--;
-	if (addrs[to] < Addr || to == 0)
-		return 0;
+	if (addrs[to] < Addr || to == (decltype(to))-1)
+		return -1;
 
 	while(from != to){
 		size_t mid = from + ((to-from)/2);
@@ -352,8 +426,15 @@ size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(addrmcu_t Addr) const
 		}
 		else {
 			if (lineAddr < Addr) {
-				if (mid == from)
-					return to;
+				if (mid == from) {
+					if (addrs[to] == Addr) {
+						return to;
+					}
+					else {
+						return -1;
+					}
+				}
+					
 				from = mid;
 			}else{
 				if (mid == to) {

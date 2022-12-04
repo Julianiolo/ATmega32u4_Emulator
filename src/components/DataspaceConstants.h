@@ -40,3 +40,14 @@ static constexpr uint8_t TIFR0_TOV0 = 0;
 static constexpr uint8_t TIMSK0_TOIE0 = 0;
 
 static constexpr addrmcu_t SMCR = 0x53;
+
+static constexpr addrmcu_t ADCSRA = 0x7A;
+static constexpr uint8_t ADCSRA_ADEN = 7, ADCSRA_ADSC = 6, ADCSRA_ADATE = 5, ADCSRA_ADIF = 4, ADCSRA_ADIE = 3, ADCSRA_ADPS2 = 2, ADCSRA_ADPS1 = 1, ADCSRA_ADPS0 = 0;
+
+static constexpr addrmcu_t ADCSRB = 0x7B;
+
+static constexpr addrmcu_t ADMUX = 0x7C;
+static constexpr uint8_t ADMUX_REFS1 = 7, ADMUX_REFS0 = 6, ADMUX_ADLAR = 5, ADMUX_MUX4 = 4, ADMUX_MUX3 = 3, ADMUX_MUX2 = 2, ADMUX_MUX1 = 1, ADMUX_MUX0 = 0;
+
+static constexpr addrmcu_t ADCH = 0x79;
+static constexpr addrmcu_t ADCL = 0x78;
