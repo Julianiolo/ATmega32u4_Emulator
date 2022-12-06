@@ -303,62 +303,66 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 
 size_t A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_t depth) {
 	auto& branchRoot = branchRoots[ind];
-	if(branchRoot.displayDepth == (size_t)-2) // currently being calculated
-		return -2;
+	//if(branchRoot.displayDepth == (size_t)-2) // currently being calculated [we dont need to check that bc the if bolow already does]
+	//	return -2;
 	if(branchRoot.displayDepth != (size_t)-1) // already calculated
 		return branchRoot.displayDepth;
 
-	bool used[256];
-	branchRoot.displayDepth = -2;
+	{
+		bool used[256];
+		branchRoot.displayDepth = -2;
 
-	std::memset(used, 0, sizeof(used));
+		std::memset(used, 0, sizeof(used));
 
-	const size_t from = std::min(branchRoot.startLine, branchRoot.destLine);
-	const size_t to = std::max(branchRoot.startLine, branchRoot.destLine);
+		const size_t from = std::min(branchRoot.startLine, branchRoot.destLine);
+		const size_t to = std::max(branchRoot.startLine, branchRoot.destLine);
 
-	size_t fromInd = passingBranchesInds[from];
+		size_t fromInd = passingBranchesInds[from];
 
-	for (size_t c = fromInd; c < passingBranchesVec.size(); c++) {
-		auto& pb = passingBranchesVec[c];
+		for (size_t c = fromInd; c < passingBranchesVec.size(); c++) {
+			auto& pb = passingBranchesVec[c];
 
-		if (pb.startLine > to)
-			break;
+			if (pb.startLine > to)
+				break;
 
-		for(size_t i = 0; i< pb.passing.size(); i++) {
-			auto& nextBranchRoot = branchRoots[pb.passing[i]];
-			if (nextBranchRoot.destLine == branchRoot.destLine || nextBranchRoot.displayDepth == (size_t)-2) {
-				continue;
+			for(size_t i = 0; i< pb.passing.size(); i++) {
+				auto& nextBranchRoot = branchRoots[pb.passing[i]];
+				if (nextBranchRoot.destLine == branchRoot.destLine || nextBranchRoot.displayDepth == (size_t)-2) {
+					continue;
+				}
+
+				size_t d;
+				if(nextBranchRoot.displayDepth == (size_t)-1){
+					d = processBranchesRecurse(pb.passing[i], depth+1);
+				}else{
+					d = nextBranchRoot.displayDepth;
+				}
+
+				if(d == (size_t)-2) // currently being calculated, so we skip it
+					continue;
+
+				if(d >= sizeof(used))
+					abort();
+
+				used[d] = true;
 			}
-
-			size_t d = processBranchesRecurse(pb.passing[i], depth+1);
-
-			if(d == (size_t)-2) // currently being calculated, so we skip it
-				continue;
-
-			if(depth == 0)
-				int a = 0;
-
-			if(d >= sizeof(used))
-				abort();
-
-			used[d] = true;
 		}
-	}
 
-	if(depth == 0)
-		int a = 0;
+		if(depth == 0)
+			int a = 0;
 
-	size_t min = -1;
-	for(size_t i = 0; i<sizeof(used); i++) {
-		if(!used[i]) {
-			min = i;
-			break;
+		size_t min = -1;
+		for(size_t i = 0; i<sizeof(used); i++) {
+			if(!used[i]) {
+				min = i;
+				break;
+			}
 		}
+
+		branchRoot.displayDepth = min;
+
+		return branchRoot.displayDepth;
 	}
-
-	branchRoot.displayDepth = min;
-
-	return branchRoot.displayDepth;
 }
 
 void A32u4::Disassembler::DisasmFile::processContent() {
@@ -401,7 +405,7 @@ size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(addrmcu_t Addr) const
 
 	size_t from = 0;
 	size_t to = lines.size()-1;
-	while ((addrs[to] == Addrs_notAnAddr || addrs[to] == Addrs_symbolLabel) && to >= 0)
+	while (to > 0 && (addrs[to] == Addrs_notAnAddr || addrs[to] == Addrs_symbolLabel))
 		to--;
 	if (addrs[to] < Addr || to == (decltype(to))-1)
 		return -1;
@@ -414,9 +418,9 @@ size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(addrmcu_t Addr) const
 		//while((lineAddr = addrs[mid]) == Addrs_notAnAddr || lineAddr == Addrs_symbolLabel)
 		//	mid++;
 
-		int32_t cnt = 1;
+		size_t cnt = 1;
 		do {
-			mid = mid_orig + ((cnt % 2) ? -cnt / 2 : cnt / 2);
+			mid = mid_orig + ((cnt % 2) ? -(ptrdiff_t)cnt / 2 : cnt / 2);
 			lineAddr = addrs[mid];
 			cnt++;
 		} while (cnt / 2 < to - from && (lineAddr == Addrs_notAnAddr || lineAddr == Addrs_symbolLabel));

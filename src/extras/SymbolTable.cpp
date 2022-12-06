@@ -227,8 +227,11 @@ size_t A32u4::SymbolTable::parseList(std::vector<Symbol>* vec, const char* str, 
 	size_t lastLineStart = strOff;
 	for (size_t i = strOff; i < size; i++) {
 		if (str[i] == '\n') {
-			if ((str + i) - (str + lastLineStart) >= (8 + 1 + 7 + 1 + 0 + 1 + 8 + 1)){
-				vec->push_back(parseLine(str + lastLineStart, str + i));
+			size_t off = i;
+			while(off > lastLineStart && (str[off-1] == '\r' || str[off-1] == '\n'))
+				off--;
+			if ((str + off) - (str + lastLineStart) >= (8 + 1 + 7 + 1 + 0 + 1 + 8 + 1)){
+				vec->push_back(parseLine(str + lastLineStart, str + off));
 				cnt++;
 			}
 			lastLineStart = i + 1;
@@ -245,6 +248,8 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 
 	symbolsRam.clear();
 	symbolsRom.clear();
+	symbsIdMap.clear();
+	symbsNameMap.clear();
 	for (size_t i = 0; i<symbolStorage.size(); i++) {
 		auto& s = symbolStorage[i];
 
@@ -252,13 +257,15 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 		if(s.id == (decltype(s.id))-1){
 			id = genSymbolId();
 			s.id = id;
-			symbsIdMap[id] = i;
-
-			symbsNameMap[s.name] = id;
 		}else{
 			id = s.id;
 		}
+
+		symbsIdMap[id] = i;
+		symbsNameMap[s.name] = id;
 		
+		if(s.name == "__vectors")
+			int a = 0;
 
 		if (s.section == ".bss" || s.section == ".data")
 			symbolsRam.push_back(id);
@@ -266,6 +273,9 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 		if (s.section == ".text")
 			symbolsRom.push_back(id);
 	}
+
+	MCU_ASSERT(symbsIdMap.size() == symbolStorage.size());
+	MCU_ASSERT(symbsNameMap.size() == symbolStorage.size());
 
 	maxRamAddrEnd = 0;
 	for(auto& sId : symbolsRam){
@@ -313,7 +323,7 @@ void A32u4::SymbolTable::generateFlagStrForSymbol(Symbol* symbol) {
 	constexpr const char debugStrs[] = {' ','d','D'};
 	symbol->flagStr[5] = symbol->flags.debugDynamicFlags <= 2 ? debugStrs[symbol->flags.debugDynamicFlags] : '?';
 
-	// TODO: there should be a 4th letter for section, but I cant find any resouces about what it is
+	// TODO: there should be a 4th letter for section, but I cant find any resources about what it is
 	{
 		MCU_STATIC_ASSERT(Symbol::Flags_FuncFileObj_Normal == 0);
 		MCU_STATIC_ASSERT(Symbol::Flags_FuncFileObj_Function == 1);

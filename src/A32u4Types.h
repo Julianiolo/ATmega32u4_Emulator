@@ -42,12 +42,13 @@ typedef uint16_t sizemcu_t;
 #ifdef _DEBUG
     #define MCU_ASSERT(x) do {\
         if(!(x)){\
-            printf("Assertion Failed! %s, %d\n", __FILE__, __LINE__);\
+            printf("Assertion Failed! %s:%d\n", __FILE__, __LINE__);\
             abort();\
         }\
     } while(0)
 #else
     #define MCU_ASSERT(x)
+    #error
 #endif
 #ifdef _MSC_VER
     #define MCU_STATIC_ASSERT(x) static_assert(x,"")
