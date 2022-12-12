@@ -250,6 +250,7 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 	symbolsRom.clear();
 	symbsIdMap.clear();
 	symbsNameMap.clear();
+
 	for (size_t i = 0; i<symbolStorage.size(); i++) {
 		auto& s = symbolStorage[i];
 
@@ -262,6 +263,8 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 		}
 
 		symbsIdMap[id] = i;
+		// check that there are no duplicate symbolnames (exept "")
+		MCU_ASSERT(s.name.size() == 0 || symbsNameMap.find(s.name) == symbsNameMap.end());
 		symbsNameMap[s.name] = id;
 		
 		if(s.name == "__vectors")
@@ -275,7 +278,6 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 	}
 
 	MCU_ASSERT(symbsIdMap.size() == symbolStorage.size());
-	MCU_ASSERT(symbsNameMap.size() == symbolStorage.size());
 
 	maxRamAddrEnd = 0;
 	for(auto& sId : symbolsRam){
