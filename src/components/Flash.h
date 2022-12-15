@@ -42,6 +42,9 @@ namespace A32u4 {
 		Flash(ATmega32u4* mcu);
 		~Flash();
 
+		Flash(const Flash& src);
+		Flash& operator=(const Flash& src);
+
 		uint8_t getInstIndCache(pc_t pc) const;
 		void populateInstIndCache();
 	public:

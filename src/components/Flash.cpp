@@ -11,7 +11,10 @@
 A32u4::Flash::Flash(ATmega32u4* mcu):
 	mcu(mcu)
 #if USE_HEAP
-	,data(new uint8_t[sizeMax]), instCache(new uint8_t[sizeMax / 2])
+	,data(new uint8_t[sizeMax])
+#if USE_INSTCACHE
+	, instCache(new uint8_t[sizeMax / 2])
+#endif
 #endif
 {
 	
@@ -22,6 +25,26 @@ A32u4::Flash::~Flash() {
 	delete[] data;
 	delete[] instCache;
 #endif
+}
+
+A32u4::Flash::Flash(const Flash& src):
+	mcu(src.mcu)
+#if USE_HEAP
+	,data(new uint8_t[sizeMax])
+#if USE_INSTCACHE
+	, instCache(new uint8_t[sizeMax / 2])
+#endif
+#endif
+{
+	operator=(src);
+}
+A32u4::Flash& A32u4::Flash::operator=(const Flash& src){
+	std::memcpy(data, src.data, sizeMax);
+#if USE_INSTCACHE
+	std::memcpy(instCache, src.instCache, sizeMax/2);
+#endif
+	size_ = src.size_;
+	hasProgram = src.hasProgram;
 }
 
 uint8_t A32u4::Flash::getByte(addrmcu_t addr) const {

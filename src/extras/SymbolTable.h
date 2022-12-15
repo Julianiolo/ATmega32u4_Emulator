@@ -11,6 +11,7 @@ namespace A32u4 {
 	class ATmega32u4;
 
 	class SymbolTable {
+		friend class ATmega32u4;
 	public:
 		typedef uint64_t symb_size_t;
 

@@ -68,6 +68,8 @@ namespace A32u4 {
 		bool wasReset = false;
 	public:
 		ATmega32u4();
+		ATmega32u4(const ATmega32u4& src);
+		ATmega32u4& operator=(const ATmega32u4& src);
 
 		A32u4::CPU cpu;
 		A32u4::DataSpace dataspace;
@@ -103,6 +105,9 @@ namespace A32u4 {
 
 		void setLogCallB(LogCallB newLogCallB);
 		void setLogCallBSimple(LogCallBSimple newLogCallBSimple);
+
+	private:
+		void setMcu();
 	};
 }
 

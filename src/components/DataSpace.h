@@ -4,7 +4,7 @@
 #define _A32u4_DATASPACE
 
 #include <stdint.h>
-#include <string.h> //for NULL
+#include <cstring> //for NULL
 #include "../A32u4Types.h"
 
 #include "../config.h"
@@ -72,6 +72,9 @@ namespace A32u4 {
 
 		DataSpace(ATmega32u4* mcu);
 		~DataSpace();
+
+		DataSpace(const DataSpace& src);
+		DataSpace& operator=(const DataSpace& src);
 
 		void reset();
 		void resetIO();

@@ -16,6 +16,18 @@ A32u4::Analytics::~Analytics() {
 #endif
 }
 
+A32u4::Analytics::Analytics(const Analytics& src)
+#if USE_HEAP
+	: pcCounter(new uint64_t[A32u4::Flash::sizeMax / 2]),
+	instCounter(new uint64_t[InstHandler::instListLen])
+#endif
+{
+
+}
+A32u4::Analytics& A32u4::Analytics::operator=(const Analytics& src){
+	
+}
+
 void A32u4::Analytics::reset() {
 	for (int i = 0; i < InstHandler::instListLen; i++) {
 		instCounter[i] = 0;

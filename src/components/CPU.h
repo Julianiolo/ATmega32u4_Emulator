@@ -16,7 +16,7 @@ namespace A32u4 {
 		friend class DataSpace;
 		friend class Debugger;
 	private:
-		ATmega32u4* const mcu;
+		ATmega32u4* mcu;
 
 		pc_t PC;
 		uint64_t totalCycls, targetCycs;
@@ -25,8 +25,6 @@ namespace A32u4 {
 		bool insideInterrupt;
 
 		bool breakOutOfOptim = false;
-
-		uint8_t& REF_SREG;
 
 		bool CPU_sleep = false;
 		uint64_t sleepCycsLeft = 0;

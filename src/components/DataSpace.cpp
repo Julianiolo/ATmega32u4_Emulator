@@ -204,6 +204,23 @@ A32u4::DataSpace::~DataSpace() {
 #endif
 }
 
+A32u4::DataSpace::DataSpace(const DataSpace& src): 
+#if USE_HEAP
+data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
+#endif
+timers(src.timers)
+{
+	operator=(src);
+}
+A32u4::DataSpace& A32u4::DataSpace::operator=(const DataSpace& src){
+	std::memcpy(data, src.data, Consts::data_size);
+	std::memcpy(eeprom, src.eeprom, Consts::eeprom_size);
+
+	std::memcpy(sreg, src.sreg, 8);
+
+	abort();
+}
+
 void A32u4::DataSpace::reset() {
 	resetIO();
 	timers.reset();

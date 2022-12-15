@@ -27,6 +27,8 @@ namespace A32u4 {
 
 		Analytics();
 		~Analytics();
+		Analytics(const Analytics& src);
+		Analytics& operator=(const Analytics& src);
 
 		void reset();
 		void addData(uint8_t instInd,uint16_t PC);

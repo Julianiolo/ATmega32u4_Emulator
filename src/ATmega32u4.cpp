@@ -12,6 +12,34 @@ A32u4::ATmega32u4* A32u4::ATmega32u4::currLogTarget = nullptr;
 A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this), debugger(this), symbolTable(this) {
 	activateLog();
 }
+A32u4::ATmega32u4::ATmega32u4(const ATmega32u4& src): 
+logCallB(src.logCallB), logCallBSimple(src.logCallBSimple), currentExecFlags(src.currentExecFlags), wasReset(src.wasReset),
+cpu(src.cpu), dataspace(src.dataspace), flash(src.flash), debugger(src.debugger), symbolTable(src.symbolTable)
+{
+	setMcu();
+}
+A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
+	logCallB = src.logCallB;
+	logCallBSimple = src.logCallBSimple;
+	currentExecFlags = src.currentExecFlags;
+	wasReset = src.wasReset;
+
+	cpu = src.cpu;
+	dataspace = src.dataspace;
+	flash = src.flash;
+	debugger = src.debugger;
+	analytics = src.analytics;
+	symbolTable = src.symbolTable;
+	setMcu();
+}
+
+void A32u4::ATmega32u4::setMcu() {
+	cpu.mcu = this;
+	dataspace.mcu = this;
+	flash.mcu = this;
+	debugger.mcu = this;
+	symbolTable.mcu = this;
+}
 
 void A32u4::ATmega32u4::reset() { //add: reason
 	log(LogLevel_Output, "Reset", __FILE__, __LINE__, "ATmega32u4");
