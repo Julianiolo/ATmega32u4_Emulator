@@ -348,9 +348,6 @@ size_t A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_
 			}
 		}
 
-		if(depth == 0)
-			int a = 0;
-
 		size_t min = -1;
 		for(size_t i = 0; i<sizeof(used); i++) {
 			if(!used[i]) {

@@ -266,9 +266,6 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 		// check that there are no duplicate symbolnames (exept "")
 		MCU_ASSERT(s.name.size() == 0 || symbsNameMap.find(s.name) == symbsNameMap.end());
 		symbsNameMap[s.name] = id;
-		
-		if(s.name == "__vectors")
-			int a = 0;
 
 		if (s.section == ".bss" || s.section == ".data")
 			symbolsRam.push_back(id);
@@ -297,8 +294,8 @@ void A32u4::SymbolTable::generateFlagStrForSymbol(Symbol* symbol) {
 		MCU_STATIC_ASSERT(Symbol::Flags_Scope_None == 0);
 		MCU_STATIC_ASSERT(Symbol::Flags_Scope_Local == 1);
 		MCU_STATIC_ASSERT(Symbol::Flags_Scope_Global == 2);
-		MCU_STATIC_ASSERT(Symbol::Flags_Scope_Global | Symbol::Flags_Scope_Local == 3);
-		MCU_STATIC_ASSERT(Symbol::Flags_Scope_Global | Symbol::Flags_Scope_Unique == 6);
+		MCU_STATIC_ASSERT((Symbol::Flags_Scope_Global | Symbol::Flags_Scope_Local) == 3);
+		MCU_STATIC_ASSERT((Symbol::Flags_Scope_Global | Symbol::Flags_Scope_Unique) == 6);
 	}
 	constexpr const char scopeStrs[] = {' ','l','g','!','?','?','u'};
 	symbol->flagStr[0] = symbol->flags.scope <= 6 ? scopeStrs[symbol->flags.scope] : '?';
@@ -393,14 +390,14 @@ bool A32u4::SymbolTable::loadFromELF(const ELF::ELFFile& elf) {
 			auto bind = symb.getInfoBinding();
 			//                                       LOCAL                      GLOBAL                      WEAK
 			constexpr uint8_t infoToBindFlagLUT[] = {Symbol::Flags_Scope_Local, Symbol::Flags_Scope_Global, Symbol::Flags_Scope_Global};
-			symbol.flags.scope = bind <= 2 ? infoToBindFlagLUT[bind] : Symbol::Flags_Scope_None;
+			symbol.flags.scope = bind <= 2 ? infoToBindFlagLUT[bind] : (uint8_t)Symbol::Flags_Scope_None;
 
 			symbol.flags.isWeak = bind == ELF::ELFFile::SymbolTableEntry::SymbolInfoBinding_Weak;
 		}
 		{
 			auto type = symb.getInfoType();
 			constexpr uint8_t infoToTypeFlagLUT[] = {Symbol::Flags_FuncFileObj_Normal, Symbol::Flags_FuncFileObj_Obj, Symbol::Flags_FuncFileObj_Function, Symbol::Flags_FuncFileObj_File, Symbol::Flags_FuncFileObj_Section};
-			symbol.flags.funcFileObjectFlags = type <= 4 ? infoToTypeFlagLUT[type] : Symbol::Flags_FuncFileObj_Normal;
+			symbol.flags.funcFileObjectFlags = type <= 4 ? infoToTypeFlagLUT[type] : (uint8_t)Symbol::Flags_FuncFileObj_Normal;
 		}
 
 		symbol.flags.debugDynamicFlags = Symbol::Flags_DebDyn_Normal;

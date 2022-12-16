@@ -21,6 +21,10 @@ namespace A32u4 {
 		static constexpr sizemcu_t breakPointArrMaxSize = Flash::sizeMax / 2;
 		static constexpr sizemcu_t addressStackIndicatorsSize = DataSpace::Consts::ISRAM_size;
 
+		struct CallData{
+			pc_t to;
+			pc_t from;
+		};
 	private:
 		friend class ATmega32u4;
 		friend class DataSpace;
@@ -38,13 +42,11 @@ namespace A32u4 {
 		std::set<pc_t> breakpointList;
 #if !USE_HEAP
 		Breakpoint breakpoints[breakPointArrMaxSize];
-		uint16_t callStack[addressStackMaxSize];
-		uint16_t callStackFrom[addressStackMaxSize];
-		uint8_t addressStackIndicators[DataSpace::Consts::ISRAM_size];
+		CallData callStack[addressStackMaxSize];
+		uint8_t addressStackIndicators[addressStackIndicatorsSize];
 #else
 		Breakpoint* breakpoints;
-		pc_t* callStack;
-		pc_t* callStackFrom;
+		CallData* callStack;
 		uint8_t* addressStackIndicators;
 #endif
 
@@ -92,8 +94,7 @@ namespace A32u4 {
 		const std::set<uint16_t>& getBreakpointList() const;
 
 		const Breakpoint* getBreakpoints() const;
-		const pc_t* getCallStack() const;
-		const pc_t* getCallStackFrom() const;
+		const CallData* getCallStack() const;
 		uint16_t getCallStackPointer() const;
 		uint16_t getPCAt(uint16_t stackInd) const;
 		uint16_t getFromPCAt(uint16_t stackInd) const;

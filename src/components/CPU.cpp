@@ -8,8 +8,7 @@
 
 A32u4::CPU::CPU(ATmega32u4* mcu_) : mcu(mcu_), 
 PC(0), totalCycls(0), targetCycs(0),
-interruptFlags(0), insideInterrupt(false),
-REF_SREG(mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG)) {
+interruptFlags(0), insideInterrupt(false) {
 
 }
 

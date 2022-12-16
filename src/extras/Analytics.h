@@ -3,6 +3,9 @@
 
 #include "../A32u4Types.h"
 
+#include <array>
+#include <vector>
+
 #include "../config.h"
 #include "../components/InstHandler.h"
 #include "../components/Flash.h"
@@ -16,19 +19,16 @@ namespace A32u4 {
 		friend class ATmega32u4;
 		friend class InstHandler;
 #if !USE_HEAP
-		uint64_t pcCounter[PCHeatArrSize];
-		uint64_t instCounter[InstHeatArrSize];
+		std::array<uint64_t,PCHeatArrSize> pcCounter;
+		std::array<uint64_t,InstHeatArrSize> instCounter;
 #else
-		uint64_t* pcCounter;
-		uint64_t* instCounter;
+		std::vector<uint64_t> pcCounter;
+		std::vector<uint64_t> instCounter;
 #endif
 
 		uint64_t instTotalCnt = 0;
 
 		Analytics();
-		~Analytics();
-		Analytics(const Analytics& src);
-		Analytics& operator=(const Analytics& src);
 
 		void reset();
 		void addData(uint8_t instInd,uint16_t PC);

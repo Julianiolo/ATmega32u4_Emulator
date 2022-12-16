@@ -2,30 +2,11 @@
 
 A32u4::Analytics::Analytics()
 #if USE_HEAP
-	: pcCounter(new uint64_t[A32u4::Flash::sizeMax / 2]),
-	instCounter(new uint64_t[InstHandler::instListLen])
+	: pcCounter(PCHeatArrSize),
+	instCounter(InstHeatArrSize)
 #endif
 {
 
-}
-
-A32u4::Analytics::~Analytics() {
-#if USE_HEAP
-	delete[] pcCounter;
-	delete[] instCounter;
-#endif
-}
-
-A32u4::Analytics::Analytics(const Analytics& src)
-#if USE_HEAP
-	: pcCounter(new uint64_t[A32u4::Flash::sizeMax / 2]),
-	instCounter(new uint64_t[InstHandler::instListLen])
-#endif
-{
-
-}
-A32u4::Analytics& A32u4::Analytics::operator=(const Analytics& src){
-	
 }
 
 void A32u4::Analytics::reset() {
@@ -63,10 +44,10 @@ uint16_t A32u4::Analytics::findMostUsedPCCnt() {
 }
 
 const uint64_t* A32u4::Analytics::getPCHeat() const{
-	return pcCounter;
+	return &pcCounter[0];
 }
 const uint64_t* A32u4::Analytics::getInstHeat() const{
-	return instCounter;
+	return &instCounter[0];
 }
 
 uint64_t A32u4::Analytics::getTotalInstCnt() const {

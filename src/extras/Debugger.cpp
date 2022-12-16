@@ -10,8 +10,7 @@ A32u4::Debugger::Debugger(ATmega32u4* mcu):
 	mcu(mcu)
 #if USE_HEAP
 	, breakpoints(new Breakpoint[breakPointArrMaxSize]),
-	callStack(new pc_t[addressStackMaxSize]),
-	callStackFrom(new pc_t[addressStackMaxSize]),
+	callStack(new CallData[addressStackMaxSize]),
 	addressStackIndicators(new uint8_t[DataSpace::Consts::ISRAM_size])
 #endif
 {
@@ -22,7 +21,6 @@ A32u4::Debugger::~Debugger() {
 #if USE_HEAP
 	delete[] breakpoints;
 	delete[] callStack;
-	delete[] callStackFrom;
 	delete[] addressStackIndicators;
 #endif
 }
@@ -48,16 +46,14 @@ void A32u4::Debugger::resetBreakpoints(){
 void A32u4::Debugger::pushPCOnCallStack(pc_t pc, pc_t fromPC) {
 	//return;
 	A32U4_ASSERT_INRANGE_M(callStackPtr+1, 0, addressStackMaxSize, A32U4_ADDR_ERR_STR("Debug Address Stack overflow: ",callStackPtr,4), "Debugger", return);
-	callStack[callStackPtr] = pc;
-	callStackFrom[callStackPtr++] = fromPC;
+	callStack[callStackPtr++] = CallData{pc, fromPC};
 }
 void A32u4::Debugger::popPCFromCallStack() {
 	//return;
 	A32U4_ASSERT_INRANGE_M(callStackPtr, 1, addressStackMaxSize, A32U4_ADDR_ERR_STR("Debug Address Stack underflow: ",callStackPtr,4), "Debugger", return);
 
 	callStackPtr--;
-	callStack[callStackPtr] = 0;
-	callStackFrom[callStackPtr] = 0;
+	callStack[callStackPtr] = CallData{0,0};
 }
 
 void A32u4::Debugger::registerAddressBytes(addrmcu_t addr) {
@@ -184,7 +180,8 @@ std::string A32u4::Debugger::AllRegsToStr() const{
 std::string A32u4::Debugger::debugStackToString() const{
 	std::string str = "";
 	for (int i = callStackPtr - 1; i >= 0; i--) {
-		str += StringUtils::format("%04x : at %04x", callStack[i] * 2, callStackFrom[i] * 2);
+		const CallData& call = callStack[i];
+		str += StringUtils::format("%04x : at %04x", call.to * 2, call.from * 2);
 		if (i > 0) {
 			str += "\n";
 		}
@@ -246,20 +243,17 @@ const std::set<uint16_t>& A32u4::Debugger::getBreakpointList() const {
 const A32u4::Debugger::Breakpoint* A32u4::Debugger::getBreakpoints() const {
 	return breakpoints;
 }
-const pc_t* A32u4::Debugger::getCallStack() const {
+const A32u4::Debugger::CallData* A32u4::Debugger::getCallStack() const {
 	return callStack;
-}
-const pc_t* A32u4::Debugger::getCallStackFrom() const {
-	return callStackFrom;
 }
 uint16_t A32u4::Debugger::getCallStackPointer() const {
 	return callStackPtr;
 }
 uint16_t A32u4::Debugger::getPCAt(uint16_t stackInd) const {
-	return callStack[stackInd];
+	return callStack[stackInd].to;
 }
 uint16_t A32u4::Debugger::getFromPCAt(uint16_t stackInd) const {
-	return callStackFrom[stackInd];
+	return callStack[stackInd].from;
 }
 const uint8_t* A32u4::Debugger::getAddressStackIndicators() const {
 	return addressStackIndicators;
