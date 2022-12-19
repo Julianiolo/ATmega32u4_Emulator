@@ -8,24 +8,37 @@
 
 A32u4::Debugger::Debugger(ATmega32u4* mcu):
 	mcu(mcu)
+#if !DEBUGGER_STD
 #if USE_HEAP
 	, breakpoints(new Breakpoint[breakPointArrMaxSize]),
 	callStack(new CallData[addressStackMaxSize]),
 	addressStackIndicators(new uint8_t[DataSpace::Consts::ISRAM_size])
+#endif
+#else
+#if USE_HEAP
+	, breakpoints(breakPointArrMaxSize),
+	callStack(addressStackMaxSize),
+	addressStackIndicators(DataSpace::Consts::ISRAM_size)
+#endif
 #endif
 {
 	resetBreakpoints();
 }
 
 A32u4::Debugger::~Debugger() {
+#if !DEBUGGER_STD
 #if USE_HEAP
 	delete[] breakpoints;
 	delete[] callStack;
 	delete[] addressStackIndicators;
 #endif
+#else
+
+#endif
 }
 
 uint8_t A32u4::Debugger::debugOutputMode = OutputMode_Log;
+bool A32u4::Debugger::printDisassembly = false;
 
 void A32u4::Debugger::reset() {
 	halted = false;

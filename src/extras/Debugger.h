@@ -40,6 +40,8 @@ namespace A32u4 {
 		uint64_t skipCycs = -1;
 
 		std::set<pc_t> breakpointList;
+#define DEBUGGER_STD 1
+#if !DEBUGGER_STD
 #if !USE_HEAP
 		Breakpoint breakpoints[breakPointArrMaxSize];
 		CallData callStack[addressStackMaxSize];
@@ -49,12 +51,25 @@ namespace A32u4 {
 		CallData* callStack;
 		uint8_t* addressStackIndicators;
 #endif
+#else
+#if !USE_HEAP
+		std::array<Breakpoint,breakPointArrMaxSize> breakpoints;
+		std::array<CallData,addressStackMaxSize> callStack;
+		std::array<uint8_t,addressStackIndicatorsSize> addressStackIndicators;
+#else
+		std::vector<Breakpoint> breakpoints;
+		std::vector<CallData> callStack;
+		std::vector<uint8_t> addressStackIndicators;
+#endif
+#endif
 
 		// last recived SP (relative to ISRAM_start)
 		addrmcu_t lastSPRecived = DataSpace::Consts::SP_initaddr - DataSpace::Consts::ISRAM_start;
 
 		Debugger(ATmega32u4* mcu);
 		~Debugger();
+		Debugger(const Debugger& src);
+		Debugger& operator=(const Debugger& src);
 
 		void reset();
 		void resetBreakpoints();
@@ -77,7 +92,7 @@ namespace A32u4 {
 		};
 		static uint8_t debugOutputMode;
 
-		bool printDisassembly = false;
+		static bool printDisassembly;
 
 		std::string regToStr(regind_t ind) const;
 		std::string AllRegsToStr() const;
