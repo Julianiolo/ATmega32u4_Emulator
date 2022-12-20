@@ -88,6 +88,8 @@ namespace A32u4 {
 		std::map<std::string, Symbol::Section> sections;
 		std::map<std::string, uint32_t> symbsNameMap;
 
+		std::map<std::string, std::vector<uint32_t>> symbolsBySections;
+
 		std::vector<uint32_t> symbolsRam;
 		std::vector<uint32_t> symbolsRom;
 
@@ -135,6 +137,7 @@ namespace A32u4 {
 		const Symbol* getSymbol(const SymbolList& symbs, size_t ind) const;
 		const SymbolList& getSymbolsRam() const;
 		const SymbolList& getSymbolsRom() const;
+		const SymbolList& getSymbolsBySection(const std::string& section);
 
 		symb_size_t getMaxRamAddrEnd() const;
 	};

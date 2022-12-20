@@ -55,12 +55,17 @@ bool A32u4::Disassembler::DisasmFile::loadSrcFile(const char* path) {
 	return true;
 }
 
-void A32u4::Disassembler::DisasmFile::generateContent(const AdditionalDisasmInfo& info){
+void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const AdditionalDisasmInfo& info){
 	content.clear();
 	if(!disasmData)
 		throw std::runtime_error("has no disasmData");
 	
 	std::sort(disasmData->lines.begin(),disasmData->lines.end(),compareLine);
+
+	addrmcu_t nextDataAddr = -1;
+	size_t dataSymbInd = 0;
+	if(info.numOfDataSymbols > 0)
+		nextDataAddr = info.dataSymbol(0).value;
 
 	addrmcu_t lastAddr = 0;
 	for (size_t i = 0; i < disasmData->lines.size(); i++){
@@ -69,10 +74,46 @@ void A32u4::Disassembler::DisasmFile::generateContent(const AdditionalDisasmInfo
 		if (line.addr - lastAddr > 512) // make big gaps in code stand out
 			content += "\n     ...\n\n";
 
+		while(nextDataAddr != (addrmcu_t)-1 && line.addr*2 > nextDataAddr){
+			auto dataSymb = info.dataSymbol(dataSymbInd);
+			content += StringUtils::format("\n%08x <%s>:\n", dataSymb.value, dataSymb.name.c_str()); //symbol label
+
+			for(size_t i = 0; i<dataSymb.size; i+=16){
+				std::string bytes;
+				for(size_t j = 0; j<std::min((size_t)16,dataSymb.size-i); j++){
+					uint8_t byte = data->getByte(dataSymb.value+i+j);
+					bytes += StringUtils::uIntToHexStr(byte, 2);
+					bytes += ' ';
+				}
+
+				std::string ascii;
+				for(size_t j = 0; j<std::min((size_t)16,dataSymb.size-i); j++){
+					char byte = data->getByte(dataSymb.value+i+j);
+					if(!isprint(byte)) byte = '.';
+					ascii += byte;
+				}
+
+				// bytes padd amt = (2+1)*16=48
+				content += StringUtils::format(
+					"%8x:\t%-48s    %s\n",
+					dataSymb.value+i, bytes.c_str(), ascii.c_str()
+				);
+			}
+
+			dataSymbInd++;
+			if(dataSymbInd >= info.numOfDataSymbols) {
+				nextDataAddr = -1;
+			}else{
+				nextDataAddr = info.dataSymbol(dataSymbInd).value;
+			}
+			content += "\n";
+		}
+
 		if (disasmData.get()->funcCalls.find(line.addr) != disasmData.get()->funcCalls.end()) {
+			// has a function
 			if (info.getSymbolNameFromAddr) {
 				std::string name;
-				if (info.getSymbolNameFromAddr(line.addr*2, false, &name, info.symbolUserData)) {
+				if (info.getSymbolNameFromAddr(line.addr*2, false, &name)) {
 					content += StringUtils::format("\n%08x <%s>:\n", line.addr*2, name.c_str());
 					goto skip;
 				}
@@ -85,7 +126,7 @@ void A32u4::Disassembler::DisasmFile::generateContent(const AdditionalDisasmInfo
 
 		if (info.getLineInfoFromAddr != nullptr) {
 			std::string add;
-			if (info.getLineInfoFromAddr(line.addr * 2, &add, info.lineUserData))
+			if (info.getLineInfoFromAddr(line.addr * 2, &add))
 				content += add + "\n";
 		}
 
@@ -93,6 +134,7 @@ void A32u4::Disassembler::DisasmFile::generateContent(const AdditionalDisasmInfo
 
 		switch(line.inst_ind){
 			case IND_RET:
+				MCU_FALLTHROUGH
 			case IND_RETI:
 				content += "\n";
 				break;
@@ -110,19 +152,34 @@ void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data, cons
 		return;
 	}
 
+	auto start = std::chrono::high_resolution_clock::now();
+
 	if(!disasmData)
 		addDisasmData(data->sizeWords());
-	for(uint16_t i = 0; i <= 0xa8;i+=4)
+	for(addrmcu_t i = 0; i <= 0xa8;i+=4)
 		disasmRecurse(i/2,data, disasmData.get());
 
 	if (info.analytics) {
 		for(size_t i = 0; i < std::min(data->sizeWords(), Analytics::PCHeatArrSize); i++){
 			if(info.analytics->getPCHeat()[i] > 0 && !disasmData.get()->disasmed.get(i))
-				disasmRecurse((uint16_t)i, data, disasmData.get());
+				disasmRecurse((pc_t)i, data, disasmData.get());
 		}
 	}
 
-	generateContent(info);
+	for(size_t i = 0; i<info.additionalDisasmSeeds.size(); i++) {
+		disasmRecurse(info.additionalDisasmSeeds[i], data, disasmData.get());
+	}
+
+	generateContent(data,info);
+
+	{
+		auto end = std::chrono::high_resolution_clock::now();
+		double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0;
+		MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, 
+			StringUtils::format("disassembly took %f ms",ms), 
+			"Disassembler"
+		);
+	}
 }
 
 uint16_t A32u4::Disassembler::DisasmFile::generateAddrFromLine(const char* start, const char* end) {

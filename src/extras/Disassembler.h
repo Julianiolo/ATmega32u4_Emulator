@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <stdint.h>
+#include <functional>
 
 #include "../utils/bitArray.h"
 #include "../components/Flash.h"
@@ -77,12 +78,20 @@ namespace A32u4 {
 				const Analytics* analytics = NULL;
 
 				// source line info (debug_line)
-				bool (*getLineInfoFromAddr)(addrmcu_t addr, std::string* out, void* userData) = NULL;
-				void* lineUserData = NULL;
+				std::function<bool(addrmcu_t addr, std::string* out)> getLineInfoFromAddr = NULL;
 
 				// symbol info (symboltable)
-				bool (*getSymbolNameFromAddr)(addrmcu_t addr, bool ramNotRom, std::string* out, void* userData) = NULL;
-				void* symbolUserData = NULL;
+				std::function<bool(addrmcu_t addr, bool ramNotRom, std::string* out)> getSymbolNameFromAddr = NULL;
+
+				struct Symbol {
+					size_t value;
+					size_t size;
+					std::string name;
+				};
+				std::function<Symbol(size_t ind)> dataSymbol;
+				size_t numOfDataSymbols = -1;
+
+				std::vector<pc_t> additionalDisasmSeeds;
 
 				inline AdditionalDisasmInfo(){} // needed, bc else clang throws error??
 			};
@@ -90,7 +99,7 @@ namespace A32u4 {
 			std::shared_ptr<DisasmData> disasmData;
 
 			// turn DisasmData into actual String
-			void generateContent(const AdditionalDisasmInfo& info = AdditionalDisasmInfo());
+			void generateContent(const Flash* data,const AdditionalDisasmInfo& info = AdditionalDisasmInfo());
 
 			// setup stuff like line indexes etc
 			

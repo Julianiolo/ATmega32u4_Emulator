@@ -3,6 +3,8 @@
 
 #include <string>
 #include <set>
+#include <vector>
+#include <array>
 
 #include "../A32u4Types.h"
 
@@ -68,8 +70,6 @@ namespace A32u4 {
 
 		Debugger(ATmega32u4* mcu);
 		~Debugger();
-		Debugger(const Debugger& src);
-		Debugger& operator=(const Debugger& src);
 
 		void reset();
 		void resetBreakpoints();

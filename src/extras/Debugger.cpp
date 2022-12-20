@@ -254,10 +254,10 @@ const std::set<uint16_t>& A32u4::Debugger::getBreakpointList() const {
 }
 
 const A32u4::Debugger::Breakpoint* A32u4::Debugger::getBreakpoints() const {
-	return breakpoints;
+	return &breakpoints[0];
 }
 const A32u4::Debugger::CallData* A32u4::Debugger::getCallStack() const {
-	return callStack;
+	return &callStack[0];
 }
 uint16_t A32u4::Debugger::getCallStackPointer() const {
 	return callStackPtr;
@@ -269,7 +269,7 @@ uint16_t A32u4::Debugger::getFromPCAt(uint16_t stackInd) const {
 	return callStack[stackInd].from;
 }
 const uint8_t* A32u4::Debugger::getAddressStackIndicators() const {
-	return addressStackIndicators;
+	return &addressStackIndicators[0];
 }
 
 

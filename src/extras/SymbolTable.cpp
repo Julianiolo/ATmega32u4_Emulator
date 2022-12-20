@@ -250,6 +250,7 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 	symbolsRom.clear();
 	symbsIdMap.clear();
 	symbsNameMap.clear();
+	symbolsBySections.clear();
 
 	for (size_t i = 0; i<symbolStorage.size(); i++) {
 		auto& s = symbolStorage[i];
@@ -266,6 +267,8 @@ void A32u4::SymbolTable::setupConnections(size_t cnt) {
 		// check that there are no duplicate symbolnames (exept "")
 		MCU_ASSERT(s.name.size() == 0 || symbsNameMap.find(s.name) == symbsNameMap.end());
 		symbsNameMap[s.name] = id;
+
+		symbolsBySections[s.section].push_back(id);
 
 		if (s.section == ".bss" || s.section == ".data")
 			symbolsRam.push_back(id);
@@ -532,6 +535,10 @@ const A32u4::SymbolTable::SymbolList& A32u4::SymbolTable::getSymbolsRam() const 
 }
 const A32u4::SymbolTable::SymbolList& A32u4::SymbolTable::getSymbolsRom() const {
 	return symbolsRom;
+}
+
+const A32u4::SymbolTable::SymbolList& A32u4::SymbolTable::getSymbolsBySection(const std::string& section){
+	return symbolsBySections[section];
 }
 
 A32u4::SymbolTable::symb_size_t A32u4::SymbolTable::getMaxRamAddrEnd() const {

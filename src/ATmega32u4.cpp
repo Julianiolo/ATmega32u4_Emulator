@@ -31,6 +31,8 @@ A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
 	analytics = src.analytics;
 	symbolTable = src.symbolTable;
 	setMcu();
+
+	return *this;
 }
 
 void A32u4::ATmega32u4::setMcu() {
