@@ -9,7 +9,8 @@
 #include <stdint.h>
 #include <functional>
 
-#include "../utils/bitArray.h"
+#include "bitVector.h"
+#include "bitArray.h"
 #include "../components/Flash.h"
 
 #include "Analytics.h"
@@ -43,6 +44,8 @@ namespace A32u4 {
 				size_t startLine;
 				size_t destLine;
 				size_t displayDepth;
+
+				size_t addrDist() const;
 			};
 
 			std::vector<BranchRoot> branchRoots; // list of all branch roots
@@ -50,13 +53,15 @@ namespace A32u4 {
 			struct PassingBranchs {
 				std::vector<size_t> passing;
 				size_t startLine;
+				static constexpr size_t bitArrSize = 2048;
+				BitArray<bitArrSize> occupied;
 			};
 			std::vector<PassingBranchs> passingBranchesVec;
 			std::vector<size_t> passingBranchesInds;  // [linenumber] = ind to pass to passingBranchesVec to get: branchRootInd of all branches passing this address/line
 			size_t maxBranchDisplayDepth = 0;
 			
 			struct DisasmData { // data for disasm process
-				BitArray disasmed;
+				BitVector disasmed;
 				struct Line{
 					pc_t addr;
 					std::string str;
@@ -108,7 +113,7 @@ namespace A32u4 {
 			void addAddrToList(const char* start, const char* end, size_t lineInd);
 
 			void processBranches();
-			size_t processBranchesRecurse(size_t i, size_t depth = 0);
+			size_t processBranchesRecurse(size_t i, size_t depth = 0); //const BitArray<256>&
 			void processContent();
 		public:
 			
