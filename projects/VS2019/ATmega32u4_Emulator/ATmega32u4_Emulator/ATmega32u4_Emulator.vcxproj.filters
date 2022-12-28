@@ -39,9 +39,6 @@
     <ClCompile Include="..\..\..\..\src\components\CPU.cpp">
       <Filter>Source Files\components</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\src\utils\bitArray.cpp">
-      <Filter>Source Files\utils</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\src\extras\Analytics.cpp">
       <Filter>Source Files\extras</Filter>
     </ClCompile>
@@ -87,9 +84,6 @@
       <Filter>Source Files\components</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\utils\bitMacros.h">
-      <Filter>Source Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\utils\bitArray.h">
       <Filter>Source Files\utils</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\A32u4Types.h">

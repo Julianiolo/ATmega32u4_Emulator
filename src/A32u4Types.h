@@ -28,6 +28,7 @@ typedef uint16_t sizemcu_t;
     #define MCU_PRIdSIZE "d"
     #define MCU_PRIuSIZE "u"
     #define MCU_PRIxSIZE "x"
+    #error
 #endif
 
 
@@ -48,7 +49,7 @@ typedef uint16_t sizemcu_t;
     } while(0)
 #else
     #define MCU_ASSERT(x)
-    #error
+    //#error
 #endif
 #ifdef _MSC_VER
     #define MCU_STATIC_ASSERT(x) static_assert(x,"")

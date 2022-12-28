@@ -45,6 +45,7 @@ A32u4::Flash& A32u4::Flash::operator=(const Flash& src){
 #endif
 	size_ = src.size_;
 	hasProgram = src.hasProgram;
+	return *this;
 }
 
 uint8_t A32u4::Flash::getByte(addrmcu_t addr) const {

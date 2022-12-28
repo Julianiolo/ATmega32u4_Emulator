@@ -5,7 +5,7 @@
 #include <vector>
 #include <map>
 
-#include "elfReader.h"
+#include "ElfReader.h"
 
 namespace A32u4 {
 	class ATmega32u4;

@@ -140,7 +140,7 @@ void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const A
 
 		switch(line.inst_ind){
 			case IND_RET:
-				MCU_FALLTHROUGH
+				MCU_FALLTHROUGH;
 			case IND_RETI:
 				content += "\n";
 				break;

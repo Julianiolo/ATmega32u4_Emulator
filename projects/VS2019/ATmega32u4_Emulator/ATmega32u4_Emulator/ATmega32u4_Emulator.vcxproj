@@ -29,7 +29,6 @@
     <ClCompile Include="..\..\..\..\src\extras\Disassember.cpp" />
     <ClCompile Include="..\..\..\..\src\extras\ElfReader.cpp" />
     <ClCompile Include="..\..\..\..\src\extras\SymbolTable.cpp" />
-    <ClCompile Include="..\..\..\..\src\utils\bitArray.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\A32u4Types.h" />
@@ -47,7 +46,6 @@
     <ClInclude Include="..\..\..\..\src\extras\Disassembler.h" />
     <ClInclude Include="..\..\..\..\src\extras\ElfReader.h" />
     <ClInclude Include="..\..\..\..\src\extras\SymbolTable.h" />
-    <ClInclude Include="..\..\..\..\src\utils\bitArray.h" />
     <ClInclude Include="..\..\..\..\src\utils\bitMacros.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
