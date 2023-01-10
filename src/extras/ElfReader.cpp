@@ -203,13 +203,17 @@ size_t A32u4::ELF::ELFFile::DWARF::_debug_line::getEntryIndByAddr(uint64_t addr)
 	
 	size_t from = 0;
 	size_t to = entrys.size() - 1;
+
+	size_t ind;
+
 	while (from != to) {
 		size_t mid = from + (to-from) / 2;
 
 		CU::Entry* entry = getEntry(mid);
 
 		if (entry->addr == addr) {
-			return mid;
+			ind = mid;
+			goto success;
 		}
 		else if (entry->addr > addr) {
 			if (mid == to)
@@ -223,11 +227,19 @@ size_t A32u4::ELF::ELFFile::DWARF::_debug_line::getEntryIndByAddr(uint64_t addr)
 		}
 	}
 
-	if (getEntry(from)->addr == addr)
-		return from;
+	if (getEntry(from)->addr == addr){
+		ind = from;
+		goto success;
+	}
 
 fail:
 	return -1;
+
+success:
+	while(ind > 0 && getEntry(ind-1)->addr == addr)
+		ind--;
+
+	return ind;
 }
 
 A32u4::ELF::ELFFile::DWARF::_debug_line A32u4::ELF::ELFFile::DWARF::parse_debug_line(const uint8_t* data, size_t dataLen, const ELFHeader::Ident& ident) {
