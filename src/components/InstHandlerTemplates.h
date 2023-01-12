@@ -30,10 +30,12 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mc
 	if (analyse) {
 		mcu->analytics.addData(ind, mcu->cpu.PC);
 	}
-#if 0
+#if MCU_USE_INST_EXEC_ALG == 0
 	return instOnlyList[ind](mcu,word);
-#else
+#elif MCU_USE_INST_EXEC_ALG == 1
 	return callInstSwitch(ind, mcu, word);
+#else
+	#error There is no such Algorithm
 #endif
 }
 

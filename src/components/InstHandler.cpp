@@ -363,6 +363,8 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::setPC_Cycs_Skip(ATmega32u4
 	}
 }
 
+#define FLAG_MODULE mcu->dataspace
+
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ADD(ATmega32u4* mcu, uint16_t word) noexcept { //0000 11rd dddd rrrr
 	const uint8_t Rd_id = getRd5_c(word);
 	const uint8_t Rr_id = getRr5_c(word);
@@ -373,7 +375,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ADD(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_HSVNZC_ADD(Rd, Rr, 0, Rd_res);
+	FLAG_MODULE.setFlags_HSVNZC_ADD(Rd, Rr, 0, Rd_res);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ADC(ATmega32u4* mcu, uint16_t word) noexcept { //0001 11rd dddd rrrr
@@ -388,7 +390,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ADC(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_HSVNZC_ADD(Rd, Rr, C, Rd_res);
+	FLAG_MODULE.setFlags_HSVNZC_ADD(Rd, Rr, C, Rd_res);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ADIW(ATmega32u4* mcu, uint16_t word) noexcept { //1001 0110 KKdd KKKK
@@ -400,7 +402,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ADIW(ATmega32u4* mcu,
 
 	mcu->dataspace.setWordReg(d, R16_res);
 
-	mcu->cpu.setFlags_SVNZC_ADD_16(R16,K,R16_res);
+	FLAG_MODULE.setFlags_SVNZC_ADD_16(R16,K,R16_res);
 	return inst_effect_t(2,1);
 }
 
@@ -414,7 +416,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SUB(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_HSVNZC_SUB(Rd, Rr, 0, Rd_res,false);
+	FLAG_MODULE.setFlags_HSVNZC_SUB(Rd, Rr, 0, Rd_res,false);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SUBI(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -427,7 +429,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SUBI(ATmega32u4* mcu,
 
 	mcu->dataspace.setGPReg_(d, Rd_res);
 
-	mcu->cpu.setFlags_HSVNZC_SUB(Rd, K, 0, Rd_res,false);
+	FLAG_MODULE.setFlags_HSVNZC_SUB(Rd, K, 0, Rd_res,false);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SBC(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -442,7 +444,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SBC(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_HSVNZC_SUB(Rd, Rr, C, Rd_res, true);
+	FLAG_MODULE.setFlags_HSVNZC_SUB(Rd, Rr, C, Rd_res, true);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SBCI(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -457,7 +459,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SBCI(ATmega32u4* mcu,
 
 	mcu->dataspace.setGPReg_(d, Rd_res);
 
-	mcu->cpu.setFlags_HSVNZC_SUB(Rd, K, C, Rd_res,true);
+	FLAG_MODULE.setFlags_HSVNZC_SUB(Rd, K, C, Rd_res,true);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SBIW(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -471,8 +473,8 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SBIW(ATmega32u4* mcu,
 	//mcu->dataspace.setWordReg(d, R16);
 	mcu->dataspace.setWordReg(d, R16_res);
 
-	//mcu->cpu.setFlags_SVNZC_SUB_16(R16_copy, K, R16);
-	mcu->cpu.setFlags_SVNZC_SUB_16(R16, K, R16_res);
+	//FLAG_MODULE.setFlags_SVNZC_SUB_16(R16_copy, K, R16);
+	FLAG_MODULE.setFlags_SVNZC_SUB_16(R16, K, R16_res);
 	return inst_effect_t(2,1);
 }
 
@@ -486,7 +488,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_AND(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_SVNZ(Rd_res);
+	FLAG_MODULE.setFlags_SVNZ(Rd_res);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ANDI(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -499,7 +501,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ANDI(ATmega32u4* mcu,
 
 	mcu->dataspace.setGPReg_(d, Rd_res);
 
-	mcu->cpu.setFlags_SVNZ(Rd_res);
+	FLAG_MODULE.setFlags_SVNZ(Rd_res);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_OR(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -512,7 +514,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_OR(ATmega32u4* mcu, u
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_SVNZ(Rd_res);
+	FLAG_MODULE.setFlags_SVNZ(Rd_res);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ORI(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -525,7 +527,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ORI(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(d, Rd_res);
 
-	mcu->cpu.setFlags_SVNZ(Rd_res);
+	FLAG_MODULE.setFlags_SVNZ(Rd_res);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_EOR(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -538,7 +540,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_EOR(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_SVNZ(Rd);
+	FLAG_MODULE.setFlags_SVNZ(Rd);
 	return inst_effect_t(1,1);
 }
 
@@ -550,7 +552,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_COM(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_SVNZC(Rd_res);
+	FLAG_MODULE.setFlags_SVNZC(Rd_res);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_NEG(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -562,7 +564,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_NEG(ATmega32u4* mcu, 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
 
-	mcu->cpu.setFlags_NZ(Rd_res);
+	FLAG_MODULE.setFlags_NZ(Rd_res);
 
 	uint8_t res_h = 0x00 - (Rd & 0b1111);
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_H] = isBitSetNB(res_h,4); // isBitSet(Rd,3) || !isBitSet(Rd_copy,3)
@@ -584,7 +586,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_INC(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_NZ(Rd_res);
+	FLAG_MODULE.setFlags_NZ(Rd_res);
 	bool V = Rd_res == 0x80;
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V;
 	bool N = (Rd_res & 0b10000000) != 0;
@@ -599,7 +601,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_DEC(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	mcu->cpu.setFlags_NZ(Rd_res);
+	FLAG_MODULE.setFlags_NZ(Rd_res);
 	bool V = (Rd_res ^ 0b10000000) == 0xFF;
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V;
 	bool N = (Rd_res & 0b10000000) != 0;
@@ -838,7 +840,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CP(ATmega32u4* mcu, u
 	const uint8_t Rr = mcu->dataspace.getGPReg_(Rr_id);
 	
 	const uint8_t res = Rd - Rr;
-	mcu->cpu.setFlags_HSVNZC_SUB(Rd, Rr, 0, res,false);
+	FLAG_MODULE.setFlags_HSVNZC_SUB(Rd, Rr, 0, res,false);
 
 	return inst_effect_t(1,1);
 }
@@ -851,7 +853,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CPC(ATmega32u4* mcu, 
 	const uint8_t C = mcu->dataspace.sreg[DataSpace::Consts::SREG_C] != 0;
 
 	const uint8_t res = Rd - (Rr+C);
-	mcu->cpu.setFlags_HSVNZC_SUB(Rd, Rr, C, res,true);
+	FLAG_MODULE.setFlags_HSVNZC_SUB(Rd, Rr, C, res,true);
 
 	return inst_effect_t(1,1);
 }
@@ -862,7 +864,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CPI(ATmega32u4* mcu, 
 	const uint8_t Rd = mcu->dataspace.getGPReg_(d);
 
 	const uint8_t res = Rd - K;
-	mcu->cpu.setFlags_HSVNZC_SUB(Rd, K, 0, res, false);
+	FLAG_MODULE.setFlags_HSVNZC_SUB(Rd, K, 0, res, false);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SBRC(ATmega32u4* mcu, uint16_t word) noexcept {

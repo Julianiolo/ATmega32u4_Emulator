@@ -401,14 +401,16 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			}
 			
 			case Consts::ADCSRA: {
-				if (mcu->cpu.totalCycls - lastADCSRA_ADSC_set >= 0) { // clear bit if conversion is done
+				if (mcu->cpu.totalCycls >= lastADCSRA_ADSC_set + 0) { // clear bit if conversion is done
 					data[Consts::ADCSRA] &= ~(1<<Consts::ADCSRA_ADSC);
 				}
+				if (onlyOne) break;
+				else MCU_FALLTHROUGH;
 			}
 			
 			case Consts::ADCH: {
 				//TODO: maybe unlock changing of ADC value
-				if (mcu->cpu.totalCycls - lastADCSRA_ADSC_set >= 0) {
+				if (mcu->cpu.totalCycls >= lastADCSRA_ADSC_set + 0) {
 					if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
 						data[Consts::ADCH] = getADCVal()>>8;
 					}
@@ -416,10 +418,12 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 						data[Consts::ADCH] = getADCVal()>>2;
 					}
 				}
+				if (onlyOne) break;
+				else MCU_FALLTHROUGH;
 			}
 			case Consts::ADCL: {
 				//TODO: maybe lock changing of ADC value
-				if (mcu->cpu.totalCycls - lastADCSRA_ADSC_set >= 0) {
+				if (mcu->cpu.totalCycls >= lastADCSRA_ADSC_set + 0) {
 					if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
 						data[Consts::ADCL] = (uint8_t)getADCVal();
 					}
@@ -427,6 +431,8 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 						data[Consts::ADCL] = getADCVal() << 6;
 					}
 				}
+				if (onlyOne) break;
+				else MCU_FALLTHROUGH;
 			}
 		}
 	}
@@ -655,6 +661,306 @@ void A32u4::DataSpace::setBitsTo(addrmcu_t Addr, uint8_t mask, uint8_t bits) {
 addrmcu_t A32u4::DataSpace::getSP() const {
 	return getWordRegRam(Consts::SPL);
 }
+
+#define FAST_FLAGSET 1
+#if 1
+void A32u4::DataSpace::setFlags_NZ(uint8_t res) {
+#if FAST_FLAGSET
+	sreg[DataSpace::Consts::SREG_N] = res & 0b10000000;
+	sreg[DataSpace::Consts::SREG_Z] = res == 0;
+#else
+	bool N = (res & 0b10000000) != 0;
+	bool Z = res == 0;
+	uint8_t val = 0;
+	if (N) {
+		val |= 1 << DataSpace::Consts::SREG_N;
+	}
+	if (Z) {
+		val |= 1 << DataSpace::Consts::SREG_Z;
+	}
+	uint8_t& reg = getByteRefAtAddr(DataSpace::Consts::SREG);
+	reg = (reg & 0b11111001) | val;
+#endif
+}
+void A32u4::DataSpace::setFlags_NZ(uint16_t res) {
+#if FAST_FLAGSET
+	sreg[DataSpace::Consts::SREG_N] = res & 0b1000000000000000;
+	sreg[DataSpace::Consts::SREG_Z] = res == 0;
+#else
+	bool N = (res & 0b1000000000000000) != 0;
+	bool Z = res == 0;
+	uint8_t val = 0;
+	if (N) {
+		val |= 1 << DataSpace::Consts::SREG_N;
+	}
+	if (Z) {
+		val |= 1 << DataSpace::Consts::SREG_Z;
+	}
+	uint8_t& reg = getByteRefAtAddr(DataSpace::Consts::SREG);
+	reg = (reg & 0b11111001) | val;
+#endif
+}
+
+void A32u4::DataSpace::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t res) {
+#if FAST_FLAGSET
+	int8_t sum8 = (int8_t)a + (int8_t)b + c;
+	int16_t sum16 = (int8_t)a + (int8_t)b + c;
+	bool V;
+	sreg[DataSpace::Consts::SREG_V] = V = sum8 != sum16;
+
+	bool N;
+	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+
+	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	sreg[DataSpace::Consts::SREG_Z] = res == 0;
+
+	uint16_t usum16 = a + b + c;
+	sreg[DataSpace::Consts::SREG_C] = isBitSet(usum16, 8);
+
+	uint8_t usum4 = (a & 0b1111) + (b & 0b1111) + c;
+	sreg[DataSpace::Consts::SREG_H] = isBitSetNB(usum4, 4);
+#else
+	uint8_t val = 0;
+	int8_t sum8 = (int8_t)a + (int8_t)b + c;
+	int16_t sum16 = (int8_t)a + (int8_t)b + c;
+	bool V = sum8 != sum16;
+	val |= V << DataSpace::Consts::SREG_V;
+	bool N = (res & 0b10000000) != 0;
+	val |= N << DataSpace::Consts::SREG_N;
+	bool S = N ^ V;
+	val |= S << DataSpace::Consts::SREG_S;
+	bool Z = res == 0;
+	val |= Z << DataSpace::Consts::SREG_Z;
+	uint16_t usum16 = a + b + c; //(a&0b10000000) + (b&0b10000000) + c;
+	bool C = isBitSet(usum16, 8);
+	val |= C << DataSpace::Consts::SREG_C;
+	uint8_t usum4 = (a & 0b1111) + (b & 0b1111) + c;
+	bool H = isBitSet(usum4, 4);
+	val |= H << DataSpace::Consts::SREG_H;
+
+	uint8_t& reg = getByteRefAtAddr(DataSpace::Consts::SREG);
+	reg = (reg & 0b11000000) | val;
+#endif
+}
+void A32u4::DataSpace::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint8_t res, bool Incl_Z) {
+#if FAST_FLAGSET
+	int16_t res16 = (int8_t)a - (int8_t)b - c;
+	bool V;
+	sreg[DataSpace::Consts::SREG_V] = V = (int8_t)res != res16;
+
+	bool N;
+	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+
+	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	if (!Incl_Z) {
+		sreg[DataSpace::Consts::SREG_Z] = res == 0;
+	} else {
+		sreg[DataSpace::Consts::SREG_Z] = (res == 0) && sreg[DataSpace::Consts::SREG_Z];
+	}
+
+	sreg[DataSpace::Consts::SREG_C] = a < (uint16_t)b + c;
+	sreg[DataSpace::Consts::SREG_H] = (b & 0b1111) + c > (a & 0b1111);
+#else
+	uint8_t& reg = getByteRefAtAddr(DataSpace::Consts::SREG);
+
+	int16_t res16 = (int8_t)a - (int8_t)b - c;
+	bool V = (int8_t)res != res16;
+	bool N = (res & 0b10000000) != 0;
+	bool S = N ^ V;
+	bool Z;
+	if (!Incl_Z) {
+		Z = res == 0;
+	} else {
+		Z = (res == 0) && (reg &  (1 << DataSpace::Consts::SREG_Z));
+	}
+	bool C = a < (uint16_t)b + c; //res > a;
+	bool H = (b & 0b1111)+c > (a & 0b1111);//(a3 && b3) || (b3 && !r3) || (a3 && !r3);
+
+	uint8_t val = 0;
+	val |= V << DataSpace::Consts::SREG_V;
+	val |= S << DataSpace::Consts::SREG_S;
+	val |= N << DataSpace::Consts::SREG_N;
+	val |= Z << DataSpace::Consts::SREG_Z;
+	val |= C << DataSpace::Consts::SREG_C;
+	val |= H << DataSpace::Consts::SREG_H;
+
+	reg = (reg & 0b11000000) | val;
+#endif
+}
+
+void A32u4::DataSpace::setFlags_SVNZ(uint8_t res) {
+#if FAST_FLAGSET
+	bool V;
+	sreg[DataSpace::Consts::SREG_V] = V = 0;
+
+	bool N;
+	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+
+	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	sreg[DataSpace::Consts::SREG_Z] = res == 0;
+#else
+	bool V = 0;
+	bool N = (res & 0b10000000) != 0;
+	bool Z = res == 0;
+	bool S = V ^ N;
+
+	uint8_t val = 0;
+	if (V) {
+		val |= 1 << DataSpace::Consts::SREG_V;
+}
+	if (N) {
+		val |= 1 << DataSpace::Consts::SREG_N;
+	}
+	if (Z) {
+		val |= 1 << DataSpace::Consts::SREG_Z;
+	}
+	if (S) {
+		val |= 1 << DataSpace::Consts::SREG_S;
+	}
+
+	uint8_t& reg = getByteRefAtAddr(DataSpace::Consts::SREG);
+	reg = (reg & 0b11100001) | val;
+#endif
+}
+void A32u4::DataSpace::setFlags_SVNZC(uint8_t res) {
+#if FAST_FLAGSET
+	bool V;
+	sreg[DataSpace::Consts::SREG_V] = V = 0;
+
+	bool N;
+	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+
+	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	sreg[DataSpace::Consts::SREG_Z] = res == 0;
+
+	sreg[DataSpace::Consts::SREG_C] = 1;
+#else
+	bool V = 0;
+	bool N = (res & 0b10000000) != 0;
+	bool Z = res == 0;
+	bool S = V ^ N;
+	bool C = 1;
+
+	uint8_t val = 0;
+	if (V) {
+		val |= 1 << DataSpace::Consts::SREG_V;
+	}
+	if (N) {
+		val |= 1 << DataSpace::Consts::SREG_N;
+	}
+	if (Z) {
+		val |= 1 << DataSpace::Consts::SREG_Z;
+	}
+	if (S) {
+		val |= 1 << DataSpace::Consts::SREG_S;
+	}
+	if (C) {
+		val |= 1 << DataSpace::Consts::SREG_C;
+	}
+
+	uint8_t& reg = getByteRefAtAddr(DataSpace::Consts::SREG);
+	reg = (reg & 0b11100000) | val;
+#endif
+}
+
+void A32u4::DataSpace::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
+#if FAST_FLAGSET
+	uint16_t sum16 = a + b;
+	uint32_t sum32 = a + b;
+	bool V;
+	sreg[DataSpace::Consts::SREG_V] = V = sum16 != sum32;
+
+	bool R15 = isBitSet(res, 15);
+	bool N;
+	sreg[DataSpace::Consts::SREG_N] = N = R15;
+
+	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	sreg[DataSpace::Consts::SREG_Z] = res == 0;
+
+	bool ah7 = isBitSet(a, 7 + 8);
+
+	sreg[DataSpace::Consts::SREG_C] = !R15 && ah7;
+#else
+	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
+	bool R15 = isBitSet(res, 15);
+
+	uint16_t sum16 = a + b;
+	uint32_t sum32 = a + b;
+	bool V = sum16 != sum32;
+	//bool V = ah7 && R15;
+	bool N = R15;
+	bool Z = res == 0;
+	bool S = V ^ N;
+	bool C = !R15 && ah7;
+
+	uint8_t val = 0;
+	if (V) {
+		val |= 1 << DataSpace::Consts::SREG_V;
+	}
+	if (N) {
+		val |= 1 << DataSpace::Consts::SREG_N;
+}
+	if (Z) {
+		val |= 1 << DataSpace::Consts::SREG_Z;
+	}
+	if (S) {
+		val |= 1 << DataSpace::Consts::SREG_S;
+	}
+	if (C) {
+		val |= 1 << DataSpace::Consts::SREG_C;
+	}
+
+	uint8_t& reg = getByteRefAtAddr(DataSpace::Consts::SREG);
+	reg = (reg & 0b11100000) | val;
+#endif
+}
+void A32u4::DataSpace::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
+#if FAST_FLAGSET
+	int16_t sub16 = (int16_t)a - (int16_t)b;
+	int32_t sub32 = (int16_t)a - (int16_t)b;
+	bool V;
+	sreg[DataSpace::Consts::SREG_V] = V = sub16 != sub32;
+
+	bool R15 = isBitSet(res, 15);
+	bool N;
+	sreg[DataSpace::Consts::SREG_N] = N = R15;
+
+	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+
+	sreg[DataSpace::Consts::SREG_Z] = res == 0;
+
+	sreg[DataSpace::Consts::SREG_C] = b > a;
+#else
+	bool R15 = isBitSet(res, 15);
+
+	int16_t sub16 = (int16_t)a - (int16_t)b;
+	int32_t sub32 = (int16_t)a - (int16_t)b;
+	bool V = sub16 != sub32;
+	//bool V = R15 && !ah7;// had ah7 && R15; but seems to be wrong
+	bool N = R15;
+	bool Z = res == 0;
+	bool S = V ^ N;
+	//bool S = (int16_t)a < (int16_t)b;
+	bool C = b > a;//had R15 && !ah7 before but seems to be wrong
+
+	uint8_t val = 0;
+
+	val |= V << DataSpace::Consts::SREG_V;
+	val |= N << DataSpace::Consts::SREG_N;
+	val |= Z << DataSpace::Consts::SREG_Z;
+	val |= S << DataSpace::Consts::SREG_S;
+	val |= C << DataSpace::Consts::SREG_C;
+
+	uint8_t& reg = getByteRefAtAddr(DataSpace::Consts::SREG);
+	reg = (reg & 0b11100000) | val;
+#endif
+}
+#endif
 
 /*
 

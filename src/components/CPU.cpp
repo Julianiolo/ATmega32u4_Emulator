@@ -115,6 +115,7 @@ uint64_t A32u4::CPU::cycsToNextTimerInt() {
 
 */
 
+#if 0
 void A32u4::CPU::setFlags_NZ(uint8_t res) {
 #if FAST_FLAGSET
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = res & 0b10000000;
@@ -411,6 +412,7 @@ void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
 	reg = (reg & 0b11100000) | val;
 #endif
 }
+#endif
 
 pc_t& A32u4::CPU::getPCRef() {
 	return PC;

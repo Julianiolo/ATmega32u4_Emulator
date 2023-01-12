@@ -126,6 +126,18 @@ namespace A32u4 {
 		void setGPReg_(uint8_t ind, reg_t val);
 
 		uint16_t getADCVal();
+
+
+		void setFlags_NZ(uint8_t res);
+		void setFlags_NZ(uint16_t res);
+		void setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t res);
+		void setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint8_t res, bool Incl_Z);
+
+		void setFlags_SVNZ(uint8_t res);
+		void setFlags_SVNZC(uint8_t res);
+
+		void setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res);
+		void setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res);
 	public:
 		void setSPIByteCallB(SPIByteCallB func);
 

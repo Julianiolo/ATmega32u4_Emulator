@@ -4,3 +4,5 @@
 #define SLEEP_SKIP 1
 
 #define USE_HEAP 1
+
+#define MCU_USE_INST_EXEC_ALG 1

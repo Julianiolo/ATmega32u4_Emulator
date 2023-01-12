@@ -50,6 +50,7 @@ namespace A32u4 {
 			LogLevel_COUNT
 		};
 		typedef int LogLevel;
+		static constexpr const char* logLevelStrs[] = {"None","DebugOutput","Output","Warning","Error"};
 		enum {
 			LogFlags_None                   =        0,
 			LogFlags_ShowFileNameAndLineNum = (1 << 0),
