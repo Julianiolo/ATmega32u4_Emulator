@@ -72,9 +72,13 @@ uint64_t A32u4::CPU::cycsToNextTimerInt() {
 	uint16_t prescCycsT0 = DataSpace::Timers::presc[mcu->dataspace.timers.timer0_presc_cache];
 	return (uint64_t)ticksLeftT0 * prescCycsT0 + (prescCycsT0 - (totalCycls%prescCycsT0));
 #else
-	uint8_t timer0 = mcu->dataspace.data[DataSpace::Consts::TCNT0];
-	uint64_t nextOverflow = mcu->dataspace.timers.lastTimer0Update + (256-timer0)*mcu->dataspace.timers.getTimer0PrescDiv();
-	return nextOverflow - totalCycls;
+	uint64_t amt = -1;
+	{
+		uint8_t timer0 = mcu->dataspace.data[DataSpace::Consts::TCNT0];
+		uint64_t nextOverflow = mcu->dataspace.timers.lastTimer0Update + (256-timer0)*mcu->dataspace.timers.getTimer0PrescDiv();
+		amt = std::min(amt, nextOverflow - totalCycls);
+	}
+	return amt;
 
 #endif
 }
@@ -428,6 +432,33 @@ uint64_t A32u4::CPU::getTotalCycles() const {
 }
 bool A32u4::CPU::isSleeping() const {
 	return CPU_sleep;
+}
+
+void A32u4::CPU::getState(std::ostream& output){
+	output << PC;
+	output << totalCycls;
+	output << targetCycs;
+
+	output << interruptFlags;
+	output << insideInterrupt;
+
+	output << breakOutOfOptim;
+
+	output << CPU_sleep;
+	output << sleepCycsLeft;
+}
+void A32u4::CPU::setState(std::istream& input){
+	input >> PC;
+	input >> totalCycls;
+	input >> targetCycs;
+
+	input >> interruptFlags;
+	input >> insideInterrupt;
+
+	input >> breakOutOfOptim;
+
+	input >> CPU_sleep;
+	input >> sleepCycsLeft;
 }
 
 /*

@@ -4,7 +4,7 @@
 #define _A32u4_DATASPACE
 
 #include <stdint.h>
-#include <istream>
+#include <iostream>
 #include <cstring> //for NULL
 #include "../A32u4Types.h"
 
@@ -170,7 +170,7 @@ namespace A32u4 {
 
 		addrmcu_t getSP() const;
 
-		std::vector<uint8_t> getState();
+		void getState(std::ostream& output);
 		void setState(std::istream& input);
 	};
 }

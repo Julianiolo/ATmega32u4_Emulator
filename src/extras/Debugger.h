@@ -5,6 +5,7 @@
 #include <set>
 #include <vector>
 #include <array>
+#include <iostream>
 
 #include "../A32u4Types.h"
 
@@ -85,6 +86,8 @@ namespace A32u4 {
 		void doHaltActionsLog();
 
 		bool execShouldReturn();
+
+		void updateBreakpointListFromArr();
 	public:
 		enum {
 			OutputMode_Log = 0,
@@ -114,6 +117,9 @@ namespace A32u4 {
 		uint16_t getPCAt(uint16_t stackInd) const;
 		uint16_t getFromPCAt(uint16_t stackInd) const;
 		const uint8_t* getAddressStackIndicators() const;
+
+		void getState(std::ostream& output);
+		void setState(std::istream& input);
 	};
 }
 #endif

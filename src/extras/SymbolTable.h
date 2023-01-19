@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <iostream>
 
 #include "ElfReader.h"
 
@@ -72,7 +73,7 @@ namespace A32u4 {
 			void* extraData = nullptr;
 
 			bool operator<(const Symbol& rhs) const;
-			symb_size_t addrEnd() const;
+			symb_size_t addrEnd() const;			
 		};
 
 		typedef void (*SymbolsPostProcFuncPtr)(Symbol* symbs, size_t len, void* userData);
@@ -84,10 +85,10 @@ namespace A32u4 {
 		void* symbolsPostProcFuncUserData = nullptr;
 
 		std::vector<Symbol> symbolStorage;
-		std::map<uint32_t, size_t> symbsIdMap;
 		std::map<std::string, Symbol::Section> sections;
-		std::map<std::string, uint32_t> symbsNameMap;
 
+		std::map<uint32_t, size_t> symbsIdMap;
+		std::map<std::string, uint32_t> symbsNameMap;
 		std::map<std::string, std::vector<uint32_t>> symbolsBySections;
 
 		std::vector<uint32_t> symbolsRam;
@@ -104,7 +105,7 @@ namespace A32u4 {
 		Symbol parseLine(const char* start, const char* end);
 		size_t parseList(std::vector<Symbol>* vec,const char* str, size_t size = -1);
 
-		void setupConnections(size_t cnt); 
+		void setupConnections(size_t cnt, bool postProc = true); 
 
 		void resetAll();
 	public:
@@ -140,7 +141,14 @@ namespace A32u4 {
 		const SymbolList& getSymbolsBySection(const std::string& section);
 
 		symb_size_t getMaxRamAddrEnd() const;
+
+		void getState(std::ostream& output);
+		void setState(std::istream& input);
 	};
 }
+
+std::ostream& operator<<(std::ostream& output, const A32u4::SymbolTable::Symbol& symbol);
+std::istream& operator>>(std::ostream& output, A32u4::SymbolTable::Symbol& symbol);
+
 
 #endif

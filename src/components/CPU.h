@@ -31,9 +31,6 @@ namespace A32u4 {
 
 		CPU(ATmega32u4* mcu_);
 
-		void execute1(uint64_t amt);
-		void execute2(uint64_t amt);
-		void execute3(uint64_t amt);
 		template<bool debug, bool analyse>
 		void execute(uint64_t amt);
 		template<bool debug, bool analyse>
@@ -63,6 +60,9 @@ namespace A32u4 {
 		addrmcu_t getPCAddr() const;
 		uint64_t getTotalCycles() const;
 		bool isSleeping() const;
+
+		void getState(std::ostream& output);
+		void setState(std::istream& input);
 	};
 }
 

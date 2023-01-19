@@ -970,11 +970,9 @@ void A32u4::DataSpace::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t re
 }
 #endif
 
-std::vector<uint8_t> A32u4::DataSpace::getState(){
-	std::vector<uint8_t> state;
-
-	state.insert(state.end(), data, data+Consts::data_size);
-	state.insert(state.end(), eeprom, eeprom+Consts::eeprom_size);
+void A32u4::DataSpace::getState(std::ostream& output){
+	output.write((const char*)data, Consts::data_size);
+	output.write((const char*)eeprom, Consts::eeprom_size);
 
 	// TODO last_*_set
 }

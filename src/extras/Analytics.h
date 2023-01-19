@@ -5,6 +5,7 @@
 
 #include <array>
 #include <vector>
+#include <iostream>
 
 #include "../config.h"
 #include "../components/InstHandler.h"
@@ -34,7 +35,7 @@ namespace A32u4 {
 		void addData(uint8_t instInd,uint16_t PC);
 
 	public:
-		addrmcu_t maxSP = 0xFFFF;
+		addrmcu_t maxSP = ADDRMCU_T_MAX;
 		uint64_t sleepSum = 0;
 
 		uint64_t getPCCnt(uint16_t addr) const;
@@ -44,6 +45,9 @@ namespace A32u4 {
 		const uint64_t* getInstHeat() const;
 		uint64_t getTotalInstCnt() const;
 		void resetPCHeat();
+
+		void getState(std::ostream& output);
+		void setState(std::istream& input);
 	};
 }
 

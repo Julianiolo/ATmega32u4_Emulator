@@ -240,8 +240,8 @@ size_t A32u4::SymbolTable::parseList(std::vector<Symbol>* vec, const char* str, 
 	return cnt;
 }
 
-void A32u4::SymbolTable::setupConnections(size_t cnt) {
-	if(symbolsPostProcFunc && symbolStorage.size() > 0)
+void A32u4::SymbolTable::setupConnections(size_t cnt, bool postProc) {
+	if(postProc && symbolsPostProcFunc && symbolStorage.size() > 0)
 		symbolsPostProcFunc(&symbolStorage[0]+(symbolStorage.size()-cnt), cnt, symbolsPostProcFuncUserData);
 
 	std::sort(symbolStorage.begin(), symbolStorage.end());
@@ -545,7 +545,84 @@ A32u4::SymbolTable::symb_size_t A32u4::SymbolTable::getMaxRamAddrEnd() const {
 	return maxRamAddrEnd;
 }
 
+void A32u4::SymbolTable::getState(std::ostream& output){
+	output << symbolStorage.size();
+	for(size_t i = 0; i<symbolStorage.size(); i++) {
+		output << symbolStorage[i];
+	}
+	output << sections.size();
+	for(auto& pair : sections) {
+		output << pair.first;
+		output << pair.second.name;
+	}
+}
+void A32u4::SymbolTable::setState(std::istream& input){
+	{
+		size_t numSymbols;
+		input >> numSymbols;
+		for(size_t i = 0; i<numSymbols; i++) {
+			symbolStorage.push_back(Symbol());
+			input >> symbolStorage.back();
+		}
+	}
+	{
+		size_t numSections;
+		input >> numSections;
+		for(auto& pair : sections) {
+			std::string key;
+			std::string val;
+			input >> key;
+			input >> val;
 
+			sections[key] = Symbol::Section(val);
+		}
+	}
+
+	setupConnections(symbolStorage.size(), false);
+}
+
+std::ostream& operator<<(std::ostream& output, const A32u4::SymbolTable::Symbol& symbol){
+	output << symbol.value;
+
+	output << symbol.flags.scope;
+	output << symbol.flags.isWeak;
+	output << symbol.flags.isConstuctor;
+	output << symbol.flags.isWarning;
+	output << symbol.flags.indirectFlags;
+	output << symbol.flags.debugDynamicFlags;
+	output << symbol.flags.funcFileObjectFlags;
+
+	output << symbol.flagStr;
+	output << symbol.name;
+	output << symbol.demangled;
+	output << symbol.note;
+	output << symbol.size;
+	output << symbol.section;
+	output << symbol.id;
+	output << symbol.isHidden;
+	output << symbol.extraData;
+}
+std::istream& operator>>(std::istream& input, A32u4::SymbolTable::Symbol& symbol){
+	input >> symbol.value;
+
+	input >> symbol.flags.scope;
+	input >> symbol.flags.isWeak;
+	input >> symbol.flags.isConstuctor;
+	input >> symbol.flags.isWarning;
+	input >> symbol.flags.indirectFlags;
+	input >> symbol.flags.debugDynamicFlags;
+	input >> symbol.flags.funcFileObjectFlags;
+
+	input >> symbol.flagStr;
+	input >> symbol.name;
+	input >> symbol.demangled;
+	input >> symbol.note;
+	input >> symbol.size;
+	input >> symbol.section;
+	input >> symbol.id;
+	input >> symbol.isHidden;
+	input >> symbol.extraData;
+}
 
 /*
 

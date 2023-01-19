@@ -272,6 +272,33 @@ const uint8_t* A32u4::Debugger::getAddressStackIndicators() const {
 	return &addressStackIndicators[0];
 }
 
+void A32u4::Debugger::updateBreakpointListFromArr() {
+	breakpointList.clear();
+	for(size_t i = 0; i<breakPointArrMaxSize; i++){
+		if(breakpoints[i])
+			breakpointList.insert(i);
+	}
+}
+
+void A32u4::Debugger::getState(std::ostream& output){
+	output << callStackPtr;
+	output << halted;
+
+	output.write((const char*)&breakpoints[0], breakPointArrMaxSize);
+	output.write((const char*)&callStack[0], addressStackMaxSize);
+	output.write((const char*)&addressStackIndicators[0], addressStackIndicatorsSize);
+
+}
+void A32u4::Debugger::setState(std::istream& input){
+	input >> callStackPtr;
+	input >> halted;
+
+	input.read((char*)&breakpoints[0], breakPointArrMaxSize);
+	input.read((char*)&callStack[0], addressStackMaxSize);
+	input.read((char*)&addressStackIndicators[0], addressStackIndicatorsSize);
+
+	updateBreakpointListFromArr();
+}
 
 /*
 

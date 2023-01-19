@@ -35,7 +35,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mc
 #elif MCU_USE_INST_EXEC_ALG == 1
 	return callInstSwitch(ind, mcu, word);
 #else
-	#error There is no such Algorithm
+	#error There is no INST_EXEC Algorithm selected
 #endif
 }
 

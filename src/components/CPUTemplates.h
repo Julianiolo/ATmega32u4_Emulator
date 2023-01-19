@@ -76,7 +76,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 
 			uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
 			if (sleepCycsLeft <= (targetCycs - totalCycls) ) {
-				
+				// done sleeping
 				timer0 = 255;
 
 				totalCycls += sleepCycsLeft;

@@ -1,7 +1,7 @@
 #ifndef _ATMEGA32U4
 #define _ATMEGA32U4
 
-#include <istream>
+#include <iostream>
 
 #include "components/CPU.h"
 #include "components/DataSpace.h"
@@ -109,7 +109,7 @@ namespace A32u4 {
 		void setLogCallB(LogCallB newLogCallB);
 		void setLogCallBSimple(LogCallBSimple newLogCallBSimple);
 
-		std::vector<uint8_t> getState();
+		void getState(std::ostream& output);
 		void setState(std::istream& input);
 
 	private:

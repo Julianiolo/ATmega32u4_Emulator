@@ -216,6 +216,16 @@ bool A32u4::Flash::isProgramLoaded() const {
 	return hasProgram;
 }
 
+void A32u4::Flash::getState(std::ostream& output){
+	output.write((const char*)data, sizeMax);
+}
+void A32u4::Flash::setState(std::istream& input){
+	input.read((char*)data, sizeMax);
+
+#if FLASH_USE_INSTIND_CACHE
+	populateInstIndCache();
+#endif
+}
 
 /*
 

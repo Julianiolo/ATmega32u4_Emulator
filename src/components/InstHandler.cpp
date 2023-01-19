@@ -243,7 +243,8 @@ uint8_t A32u4::InstHandler::getInstInd(uint16_t word) noexcept {
 	return getInstInd3(word);
 }
 uint8_t A32u4::InstHandler::getInstInd3(uint16_t word) noexcept {
-	uint8_t startInd = startIndArr2[(word & 0b1100000000000000) >> 13 | ((word & 0b0001000000000000) != 0)];
+	static constexpr uint8_t startIndArr[] = { 73, 94, 109, 107, 99, 0, 71, 87 };
+	uint8_t startInd = startIndArr[(word & 0b1100000000000000) >> 13 | ((word & 0b0001000000000000) != 0)];
 
 	for (uint8_t i = startInd; i < instListLen; i++) {
 		if ((word & instList[i].mask) == instList[i].res) {

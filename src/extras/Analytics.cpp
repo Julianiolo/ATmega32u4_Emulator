@@ -59,3 +59,18 @@ void A32u4::Analytics::resetPCHeat(){
 		pcCounter[i] = 0;
 	}
 }
+
+void A32u4::Analytics::getState(std::ostream& output){
+	output.write((char*)&pcCounter[0], PCHeatArrSize);
+	output.write((char*)&instCounter[0], InstHeatArrSize);
+
+	output << maxSP;
+	output << sleepSum;
+}
+void A32u4::Analytics::setState(std::istream& input){
+	input.read((char*)&pcCounter[0], PCHeatArrSize);
+	input.read((char*)&instCounter[0], InstHeatArrSize);
+
+	input >> maxSP;
+	input >> sleepSum;
+}

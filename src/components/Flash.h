@@ -2,7 +2,7 @@
 #define _A32u4_FLASH
 
 #include <cstring>
-
+#include <iostream>
 
 #include "../config.h"
 #include "../A32u4Types.h"
@@ -68,6 +68,9 @@ namespace A32u4 {
 		sizemcu_t sizeWords() const;
 
 		bool isProgramLoaded() const; // returns true if a program was loaded
+
+		void getState(std::ostream& output);
+		void setState(std::istream& input);
 	};
 }
 #endif
