@@ -729,6 +729,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_FMULSU(ATmega32u4* mc
 }
 
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RJMP(ATmega32u4* mcu, uint16_t word) noexcept {
+	MCU_UNUSED(mcu);
 	const int16_t k = getk12_c_sin(word);
 	return inst_effect_t(2,k+1);
 }
@@ -1217,7 +1218,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_X(ATmega32u4* mcu,
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_XpostInc(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint16_t Addr = mcu->dataspace.getX();
 
 	const uint8_t Rd_res = mcu->dataspace.getByteAt(Addr);
@@ -1230,7 +1230,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_XpostInc(ATmega32u
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_XpreDec(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint16_t Addr = mcu->dataspace.getX();
 
 	const uint8_t Rd_res = mcu->dataspace.getByteAt(Addr - 1);
@@ -1243,7 +1242,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_XpreDec(ATmega32u4
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_Y(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint16_t Addr = mcu->dataspace.getY();
 
 	const uint8_t Rd_res = mcu->dataspace.getByteAt(Addr);
@@ -1254,7 +1252,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_Y(ATmega32u4* mcu,
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_YpostInc(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint16_t Addr = mcu->dataspace.getY();
 
 	const uint8_t Rd_res = mcu->dataspace.getByteAt(Addr);
@@ -1267,7 +1264,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_YpostInc(ATmega32u
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_YpreDec(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint16_t Addr = mcu->dataspace.getY();
 
 	const uint8_t Rd_res = mcu->dataspace.getByteAt(Addr - 1);
@@ -1280,7 +1276,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_YpreDec(ATmega32u4
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LDD_Y(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint8_t q = getq6_d123(word);
 	const uint16_t Addr = mcu->dataspace.getY() + q;
 
@@ -1292,7 +1287,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LDD_Y(ATmega32u4* mcu
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_Z(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint16_t Addr = mcu->dataspace.getZ();
 
 	const uint8_t Rd_res = mcu->dataspace.getByteAt(Addr);
@@ -1303,7 +1297,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_Z(ATmega32u4* mcu,
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_ZpostInc(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint16_t Addr = mcu->dataspace.getZ();
 
 	const uint8_t Rd_res = mcu->dataspace.getByteAt(Addr);
@@ -1316,7 +1309,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_ZpostInc(ATmega32u
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_ZpreDec(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint16_t Addr = mcu->dataspace.getZ();
 
 	const uint8_t Rd_res = mcu->dataspace.getByteAt(Addr - 1);
@@ -1329,7 +1321,6 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LD_ZpreDec(ATmega32u4
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LDD_Z(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint8_t Rd_id = getRd5_c(word);
-	const uint8_t Rd = mcu->dataspace.getGPReg_(Rd_id);
 	const uint8_t q = getq6_d123(word);
 	const uint16_t Addr = mcu->dataspace.getZ() + q;
 
@@ -1473,6 +1464,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_STS(ATmega32u4* mcu, 
 	return inst_effect_t(2,2);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LPM_0(ATmega32u4* mcu, uint16_t word) noexcept {
+	MCU_UNUSED(word);
 	const uint16_t Addr = mcu->dataspace.getZ();
 
 	const uint8_t R0 = mcu->flash.getByte(Addr);
@@ -1504,6 +1496,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LPM_dpostInc(ATmega32
 	return inst_effect_t(3,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ELPM_0(ATmega32u4* mcu, uint16_t word) noexcept {
+	MCU_UNUSED(word);
 	const uint32_t Addr = mcu->dataspace.getExtendedZ();
 
 	const uint8_t R0 = mcu->flash.getByte(Addr);
@@ -1576,9 +1569,13 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_POP(ATmega32u4* mcu, 
 	return inst_effect_t(2,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_NOP(ATmega32u4* mcu, uint16_t word) noexcept {
+	MCU_UNUSED(mcu);
+	MCU_UNUSED(word);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SLEEP(ATmega32u4* mcu, uint16_t word) noexcept {
+	MCU_UNUSED(word);
+	
 	//TODO
 	uint8_t SMCR_val = mcu->dataspace.getByteAt(DataSpace::Consts::SMCR);
 	if (SMCR_val & 0b1) { //if SE (sleep enable) is set

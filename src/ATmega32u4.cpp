@@ -35,6 +35,20 @@ A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
 	return *this;
 }
 
+std::vector<uint8_t> A32u4::ATmega32u4::getState(){
+	std::vector<uint8_t> state;
+
+	{
+		std::vector<uint8_t> dataspaceState = dataspace.getState();
+		state.insert(state.end(), dataspaceState.begin(), dataspaceState.end());
+	}
+
+	return state;
+}
+void A32u4::ATmega32u4::setState(std::istream& input){
+	dataspace.setState(input);
+}
+
 void A32u4::ATmega32u4::setMcu() {
 	cpu.mcu = this;
 	dataspace.mcu = this;

@@ -5,6 +5,7 @@
 
 #include "StringUtils.h"
 #include "DataUtils.h"
+#include "../A32u4Types.h"
 
 uint8_t A32u4::ELF::ELFFile::SymbolTableEntry::getInfoBinding() const {
 	return info >> 4;
@@ -18,6 +19,8 @@ bool A32u4::ELF::ELFFile::DWARF::_debug_line::File::operator==(const File& f) {
 }
 
 A32u4::ELF::ELFFile::DWARF::_debug_line::CU::Header A32u4::ELF::ELFFile::DWARF::_debug_line::parseCUHeader(const uint8_t* data, size_t dataLen, const ELFHeader::Ident& ident) {
+	MCU_ASSERT(dataLen >= (4+2+4+1+1+1+1+1+9));
+	
 	CU::Header header;
 	const uint8_t* ptr = data;
 
@@ -487,6 +490,8 @@ A32u4::ELF::ELFFile::ProgramHeader A32u4::ELF::parseELFProgramHeader(const uint8
 	bool is64Bit = ident.classtype == ELFFile::ELFHeader::Ident::ClassType_64Bit;
 	uint8_t addrSize = is64Bit ? 8 : 4;
 
+	MCU_ASSERT(dataLen >= (size_t)(4+(4)+ addrSize + (addrSize+addrSize) + (4+4) + 4));
+
 	header.type      = (ELFFile::Word)    intFromByteArrAdv(&ptr, 4, lsb);
 
 	if (is64Bit) {
@@ -516,6 +521,8 @@ A32u4::ELF::ELFFile::SectionHeader A32u4::ELF::parseELFSectionHeader(const uint8
 	bool is64Bit = ident.classtype == ELFFile::ELFHeader::Ident::ClassType_64Bit;
 	uint8_t addrSize = is64Bit ? 8 : 4;
 
+	MCU_ASSERT(dataLen >= (size_t)((4+4+4) + (addrSize+addrSize) + (4+4+4+4+4)));
+
 	header.name      = (ELFFile::Word)    intFromByteArrAdv(&ptr, 4, lsb);
 	header.type      = (ELFFile::Word)    intFromByteArrAdv(&ptr, 4, lsb);
 	header.flags     = (ELFFile::Word)    intFromByteArrAdv(&ptr, 4, lsb);
@@ -539,6 +546,8 @@ A32u4::ELF::ELFFile::SymbolTableEntry A32u4::ELF::parseELFSymbol(const uint8_t* 
 	bool lsb = ident.dataEncoding == ELFFile::ELFHeader::Ident::DataEncoding_LSB;
 	bool is64Bit = ident.classtype == ELFFile::ELFHeader::Ident::ClassType_64Bit;
 	uint8_t addrSize = is64Bit ? 8 : 4;
+
+	MCU_ASSERT(dataLen >= (size_t)((4+addrSize+4) + (1+1) + 2));
 
 	symb.name  = (ELFFile::Word)     intFromByteArrAdv(&ptr, 4, lsb);
 	symb.value = (ELFFile::Address)  intFromByteArrAdv(&ptr, addrSize, lsb);

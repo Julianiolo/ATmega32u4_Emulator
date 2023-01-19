@@ -80,6 +80,18 @@ const uint8_t* A32u4::Flash::getData() {
 	return data;
 }
 
+void A32u4::Flash::setByte(addrmcu_t addr, uint8_t val){
+	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash setByte Address to Big: ",addr,4), "Flash", return 0);
+	data[addr] = val;
+	populateInstIndCacheEntry(addr/2);
+}
+void A32u4::Flash::setInst(pc_t pc, uint16_t val){
+	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash setWord Address to Big: ",addr,4), "Flash", return 0);
+	data[pc*2] = val&0xFF;
+	data[pc*2+1] = (val>>8)&0xFF;
+	populateInstIndCacheEntry(pc);
+}
+
 sizemcu_t A32u4::Flash::size() const {
 	return size_;
 }
@@ -192,9 +204,12 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 }
 void A32u4::Flash::populateInstIndCache(){
 	for (uint16_t i = 0; i < sizeWords(); i++) {
-		uint16_t inst = getInst(i);
-		instCache[i] = InstHandler::getInstInd(inst);
+		populateInstIndCacheEntry(i);
 	}
+}
+void A32u4::Flash::populateInstIndCacheEntry(pc_t pc) {
+	uint16_t inst = getInst(pc);
+	instCache[pc] = InstHandler::getInstInd(inst);
 }
 
 bool A32u4::Flash::isProgramLoaded() const {

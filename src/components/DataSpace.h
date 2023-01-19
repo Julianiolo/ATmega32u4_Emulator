@@ -4,6 +4,7 @@
 #define _A32u4_DATASPACE
 
 #include <stdint.h>
+#include <istream>
 #include <cstring> //for NULL
 #include "../A32u4Types.h"
 
@@ -66,9 +67,19 @@ namespace A32u4 {
 #endif
 		Timers timers;
 
-		uint8_t errorIndicator = -1;
+		void (*SCK_Callback)() = NULL;
+		SPIByteCallB SPI_Byte_Callback = NULL;
+
 
 		uint8_t sreg[8] = {0,0,0,0,0,0,0,0};
+
+		uint64_t lastEECR_EEMPE_set = 0;
+
+		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
+		uint64_t lastPLLCSR_PLLE_set = 0;
+		
+		static constexpr uint64_t ADC_wait = 0;
+		uint64_t lastADCSRA_ADSC_set = 0;
 
 		DataSpace(ATmega32u4* mcu);
 		~DataSpace();
@@ -104,14 +115,6 @@ namespace A32u4 {
 		void pushAddrToStack(addrmcu_t Addr);
 		addrmcu_t popAddrFromStack();
 
-		uint64_t lastEECR_EEMPE_set = 0;
-
-		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
-		uint64_t lastPLLCSR_PLLE_set = 0;
-		void (*SCK_Callback)() = NULL;
-		SPIByteCallB SPI_Byte_Callback = NULL;
-
-		uint64_t lastADCSRA_ADSC_set = 0;
 
 		void update_Get(uint16_t Addr, bool onlyOne);
 
@@ -120,6 +123,10 @@ namespace A32u4 {
 		void setPLLCSR(uint8_t val, uint8_t oldVal);
 		void setSPDR();
 		void setTCCR0B(uint8_t val);
+
+		void updateSREGCache();
+
+		void updateCache();
 
 
 		uint8_t getGPReg_(uint8_t ind) const;
@@ -162,6 +169,9 @@ namespace A32u4 {
 		void setBitsTo(addrmcu_t Addr, uint8_t mask, uint8_t bits);
 
 		addrmcu_t getSP() const;
+
+		std::vector<uint8_t> getState();
+		void setState(std::istream& input);
 	};
 }
 

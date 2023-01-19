@@ -461,9 +461,7 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 				break;
 
 			case Consts::SREG:
-				for (uint8_t i = 0; i < 8; i++) {
-					sreg[i] = val & (1 << i);
-				}
+				updateSREGCache();
 				if((val & (1<<Consts::SREG_I)) && (data[Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)))
 					mcu->cpu.breakOutOfOptim = true; // we need to break out of Optimisation to check if an interrupt can now occur (Global Interrupt Enable)
 				break;
@@ -485,6 +483,16 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 				break;
 		}
 	}
+}
+
+void A32u4::DataSpace::updateSREGCache() {
+	uint8_t val = data[Consts::SREG];
+	for (uint8_t i = 0; i < 8; i++) {
+		sreg[i] = val & (1 << i);
+	}
+}
+void A32u4::DataSpace::updateCache() {
+	updateSREGCache();
 }
 
 
@@ -961,6 +969,21 @@ void A32u4::DataSpace::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t re
 #endif
 }
 #endif
+
+std::vector<uint8_t> A32u4::DataSpace::getState(){
+	std::vector<uint8_t> state;
+
+	state.insert(state.end(), data, data+Consts::data_size);
+	state.insert(state.end(), eeprom, eeprom+Consts::eeprom_size);
+
+	// TODO last_*_set
+}
+void A32u4::DataSpace::setState(std::istream& input){
+	input.read((char*)data, Consts::data_size);
+	input.read((char*)eeprom, Consts::eeprom_size);
+
+	updateCache();
+}
 
 /*
 

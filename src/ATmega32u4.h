@@ -1,6 +1,8 @@
 #ifndef _ATMEGA32U4
 #define _ATMEGA32U4
 
+#include <istream>
+
 #include "components/CPU.h"
 #include "components/DataSpace.h"
 #include "components/Flash.h"
@@ -106,6 +108,9 @@ namespace A32u4 {
 
 		void setLogCallB(LogCallB newLogCallB);
 		void setLogCallBSimple(LogCallBSimple newLogCallBSimple);
+
+		std::vector<uint8_t> getState();
+		void setState(std::istream& input);
 
 	private:
 		void setMcu();

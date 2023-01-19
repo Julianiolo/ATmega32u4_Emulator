@@ -47,6 +47,7 @@ namespace A32u4 {
 
 		uint8_t getInstIndCache(pc_t pc) const;
 		void populateInstIndCache();
+		void populateInstIndCacheEntry(pc_t pc);
 	public:
 		uint8_t getByte(addrmcu_t addr) const;
 		uint16_t getWord(addrmcu_t addr) const;
@@ -54,6 +55,9 @@ namespace A32u4 {
 		uint8_t getInstInd(pc_t pc) const;
 
 		const uint8_t* getData();
+
+		void setByte(addrmcu_t addr, uint8_t val);
+		void setInst(pc_t pc, uint16_t val);
 
 		void loadFromMemory(const uint8_t* data, size_t dataLen);
 		bool loadFromHexFile(const char* path);
