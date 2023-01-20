@@ -1,15 +1,14 @@
-//#pragma once
-
 #ifndef _A32u4_DATASPACE
 #define _A32u4_DATASPACE
 
 #include <stdint.h>
-#include <iostream>
-#include <cstring> //for NULL
-#include "../A32u4Types.h"
+#include <iostream> // istream & ostream
+#include <cstring> // for NULL
 
+#include "../A32u4Types.h"
 #include "../config.h"
-#include "CPU.h"
+
+#include "CPU.h" // for CPU::ClockFreq
 
 namespace A32u4 {
 	class ATmega32u4;

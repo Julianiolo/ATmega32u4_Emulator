@@ -8,10 +8,10 @@
 #include <iostream>
 
 #include "../A32u4Types.h"
-
 #include "../config.h"
-#include "../components/Flash.h"
-#include "../components/DataSpace.h"
+
+#include "../components/Flash.h" // for Flash::sizeMax
+#include "../components/DataSpace.h" // for DataSpace::Consts::*
 
 namespace A32u4 {
 	class ATmega32u4;

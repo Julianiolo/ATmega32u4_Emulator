@@ -1,8 +1,12 @@
 #ifndef _A32u4_CPU
 #define _A32u4_CPU
 
-#include "InstHandler.h"
+#include <iostream> // istream & ostream
+
 #include "../A32u4Types.h"
+
+// sub components
+#include "InstHandler.h"
 
 namespace A32u4 {
 	class ATmega32u4;

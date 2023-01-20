@@ -148,7 +148,7 @@ namespace A32u4 {
 }
 
 std::ostream& operator<<(std::ostream& output, const A32u4::SymbolTable::Symbol& symbol);
-std::istream& operator>>(std::ostream& output, A32u4::SymbolTable::Symbol& symbol);
+std::istream& operator>>(std::istream& output, A32u4::SymbolTable::Symbol& symbol);
 
 
 #endif
