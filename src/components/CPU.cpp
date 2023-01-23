@@ -1,7 +1,9 @@
 #include "CPU.h"
+
+#include "../utils/bitMacros.h"
+
 #include "../ATmega32u4.h"
 #include "CPUTemplates.h"
-#include "../utils/bitMacros.h"
 
 #define FAST_FLAGSET 1
 #define fastBitSet(cond,val,mask) (-(cond) ^ (val)) & (mask)

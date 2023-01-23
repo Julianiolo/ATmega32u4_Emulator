@@ -3,16 +3,16 @@
 
 #include <iostream>
 
+#include "config.h"
+
+#include "StringUtils.h"
+
 #include "components/CPU.h"
 #include "components/DataSpace.h"
 #include "components/Flash.h"
 #include "extras/Debugger.h"
 #include "extras/Analytics.h"
 #include "extras/SymbolTable.h"
-
-#include "config.h"
-
-#include "StringUtils.h"
 
 #define MCU_LOG(level, msg) ATmega32u4::log_(level,msg,__FILE__,__LINE__);
 #define MCU_LOG_M(level, msg, module_) ATmega32u4::log_(level,msg,__FILE__,__LINE__,module_);

@@ -1,11 +1,10 @@
 #include "ATmega32u4.h"
 
-#include <iostream>
+#include "StringUtils.h"
 
 #include "components/InstHandlerTemplates.h"
 #include "components/CPUTemplates.h"
 
-#include "StringUtils.h"
 
 A32u4::ATmega32u4* A32u4::ATmega32u4::currLogTarget = nullptr;
 

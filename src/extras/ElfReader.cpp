@@ -5,6 +5,7 @@
 
 #include "StringUtils.h"
 #include "DataUtils.h"
+
 #include "../A32u4Types.h"
 
 uint8_t A32u4::ELF::ELFFile::SymbolTableEntry::getInfoBinding() const {

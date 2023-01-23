@@ -5,15 +5,15 @@
 #include <streambuf>
 #include <iostream>
 #include <chrono>
-#include <map>
+
+#include "StringUtils.h"
+#include "DataUtils.h"
 
 #include "../ATmega32u4.h"
 
 #include "../components/InstInds.h"
 #include "../components/InstHandler.h"
 
-#include "StringUtils.h"
-#include "DataUtils.h"
 
 #define INST_PAR_TYPE_RAWVAL 0
 #define INST_PAR_TYPE_RAWVALDEC 1

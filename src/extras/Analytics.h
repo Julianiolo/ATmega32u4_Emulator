@@ -1,13 +1,13 @@
 #ifndef _A32u4_ANALYTICS
 #define _A32u4_ANALYTICS
 
-#include "../A32u4Types.h"
-
 #include <array>
 #include <vector>
 #include <iostream>
 
+#include "../A32u4Types.h"
 #include "../config.h"
+
 #include "../components/InstHandler.h"
 #include "../components/Flash.h"
 

@@ -11,8 +11,8 @@
 
 #include "bitVector.h"
 #include "bitArray.h"
-#include "../components/Flash.h"
 
+#include "../components/Flash.h"
 #include "Analytics.h"
 
 

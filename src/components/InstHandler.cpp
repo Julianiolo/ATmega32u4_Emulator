@@ -1,13 +1,13 @@
 #include "InstHandler.h"
-#include "../ATmega32u4.h"
-
-#include "../config.h"
-
-#include "InstInds.h"
-#include "../extras/Disassembler.h"
 
 #include "StringUtils.h"
 #include "../utils/bitMacros.h"
+
+#include "../config.h"
+
+#include "../ATmega32u4.h"
+#include "InstInds.h"
+#include "../extras/Disassembler.h"
 
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::callInstSwitch(uint8_t ind, ATmega32u4* mcu, uint16_t word){
 	switch(ind) {

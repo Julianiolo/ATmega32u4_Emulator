@@ -2,14 +2,12 @@
 
 #include <iostream>
 
+#include "../utils/bitMacros.h"
+
 #include "../ATmega32u4.h"
 #include "../extras/Debugger.h"
 
-#include "../utils/bitMacros.h"
-
 #include "CPUTemplates.h" // for addCycles (EEPROM)
-
-
 
 A32u4::DataSpace::Timers::Timers(ATmega32u4* mcu) : mcu(mcu), lastCounter(0)
 {

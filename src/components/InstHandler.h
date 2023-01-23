@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-
 namespace A32u4 {
 	class ATmega32u4;
 
