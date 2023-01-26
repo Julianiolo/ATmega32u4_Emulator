@@ -169,6 +169,11 @@ namespace A32u4 {
 
 		addrmcu_t getSP() const;
 
+		void getRamState(std::ostream& output);
+		void setRamState(std::istream& input);
+		void getEepromState(std::ostream& output);
+		void setEepromState(std::istream& input);
+
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
 	};

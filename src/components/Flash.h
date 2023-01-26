@@ -69,6 +69,9 @@ namespace A32u4 {
 
 		bool isProgramLoaded() const; // returns true if a program was loaded
 
+		void getRomState(std::ostream& output);
+		void setRomState(std::istream& input);
+
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
 	};

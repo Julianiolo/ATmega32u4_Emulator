@@ -969,16 +969,29 @@ void A32u4::DataSpace::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t re
 #endif
 
 void A32u4::DataSpace::getState(std::ostream& output){
-	output.write((const char*)data, Consts::data_size);
-	output.write((const char*)eeprom, Consts::eeprom_size);
+	getRamState(output);
+	getEepromState(output);
+	
 
 	// TODO last_*_set
 }
 void A32u4::DataSpace::setState(std::istream& input){
-	input.read((char*)data, Consts::data_size);
-	input.read((char*)eeprom, Consts::eeprom_size);
+	setRamState(input);
+	setEepromState(input);
+}
 
+void A32u4::DataSpace::getRamState(std::ostream& output){
+	output.write((const char*)data, Consts::data_size);
+}
+void A32u4::DataSpace::setRamState(std::istream& input){
+	input.read((char*)data, Consts::data_size);
 	updateCache();
+}
+void A32u4::DataSpace::getEepromState(std::ostream& output){
+	output.write((const char*)eeprom, Consts::eeprom_size);
+}
+void A32u4::DataSpace::setEepromState(std::istream& input){
+	input.read((char*)eeprom, Consts::eeprom_size);
 }
 
 /*

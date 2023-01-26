@@ -601,6 +601,7 @@ std::ostream& operator<<(std::ostream& output, const A32u4::SymbolTable::Symbol&
 	output << symbol.id;
 	output << symbol.isHidden;
 	output << symbol.extraData;
+	return output;
 }
 std::istream& operator>>(std::istream& input, A32u4::SymbolTable::Symbol& symbol){
 	input >> symbol.value;
@@ -622,6 +623,7 @@ std::istream& operator>>(std::istream& input, A32u4::SymbolTable::Symbol& symbol
 	input >> symbol.id;
 	input >> symbol.isHidden;
 	input >> symbol.extraData;
+	return input;
 }
 
 /*

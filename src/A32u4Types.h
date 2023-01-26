@@ -42,6 +42,8 @@ typedef uint16_t sizemcu_t;
 #endif
 
 
+#define MCU_ARR_SIZE(a) (sizeof(a)/sizeof(a[0]))
+
 #ifdef _DEBUG
     #define MCU_ASSERT(x) do {\
         if(!(x)){\
