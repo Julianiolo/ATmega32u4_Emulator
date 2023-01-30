@@ -176,6 +176,11 @@ void A32u4::DataSpace::Timers::markTimer0Update() {
 }
 
 
+void A32u4::DataSpace::LastSet::resetAll() {
+	EECR_EEMPE = 0;
+	PLLCSR_PLLE = 0;
+	ADCSRA_ADSC = 0;
+}
 
 /*
 
@@ -216,14 +221,15 @@ A32u4::DataSpace& A32u4::DataSpace::operator=(const DataSpace& src){
 
 	std::memcpy(sreg, src.sreg, 8);
 
-	abort();
+	lastSet = src.lastSet;
+
+	timers = src.timers;
 }
 
 void A32u4::DataSpace::reset() {
 	resetIO();
 	timers.reset();
-	lastEECR_EEMPE_set = 0;
-	lastPLLCSR_PLLE_set = 0;
+	lastSet.resetAll();
 
 	std::memset(sreg, 0, 8); // reset sreg cache
 }
@@ -361,7 +367,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 		switch (Addr) {
 			case 0xFFFF: //case for updating everything
 			case Consts::EECR: {
-				if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastEECR_EEMPE_set > 4) { // check if EE;PE is set but shouldnt
+				if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastSet.EECR_EEMPE > 4) { // check if EE;PE is set but shouldnt
 					data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
 				}
 				if (onlyOne) break;
@@ -369,7 +375,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			}
 
 			case Consts::PLLCSR: {
-				if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && !(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastPLLCSR_PLLE_set > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
+				if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && !(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastSet.PLLCSR_PLLE > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
 					data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
 				}
 				if (onlyOne) break;
@@ -399,7 +405,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			}
 			
 			case Consts::ADCSRA: {
-				if (mcu->cpu.totalCycls >= lastADCSRA_ADSC_set + 0) { // clear bit if conversion is done
+				if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) { // clear bit if conversion is done
 					data[Consts::ADCSRA] &= ~(1<<Consts::ADCSRA_ADSC);
 				}
 				if (onlyOne) break;
@@ -408,7 +414,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			
 			case Consts::ADCH: {
 				//TODO: maybe unlock changing of ADC value
-				if (mcu->cpu.totalCycls >= lastADCSRA_ADSC_set + 0) {
+				if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) {
 					if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
 						data[Consts::ADCH] = getADCVal()>>8;
 					}
@@ -421,7 +427,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			}
 			case Consts::ADCL: {
 				//TODO: maybe lock changing of ADC value
-				if (mcu->cpu.totalCycls >= lastADCSRA_ADSC_set + 0) {
+				if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) {
 					if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
 						data[Consts::ADCL] = (uint8_t)getADCVal();
 					}
@@ -475,7 +481,7 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 				}
 				if (!(oldVal & (1 << Consts::ADCSRA_ADSC)) && (val & (1 << Consts::ADCSRA_ADSC))) { // ADCSRA_ADSC has been set to 1 => start conversion
 					if (val & (1 << Consts::ADCSRA_ADEN)) { // check if adc is enabled
-						lastADCSRA_ADSC_set = mcu->cpu.totalCycls;
+						lastSet.ADCSRA_ADSC = mcu->cpu.totalCycls;
 					}
 				}
 				break;
@@ -507,7 +513,7 @@ void A32u4::DataSpace::setEECR(uint8_t val, uint8_t oldVal){
 	}
 
 	if ((val & (1 << Consts::EECR_EEMPE)) && !(oldVal & (1 << Consts::EECR_EEMPE))) {
-		lastEECR_EEMPE_set = mcu->cpu.totalCycls;
+		lastSet.EECR_EEMPE = mcu->cpu.totalCycls;
 	}
 
 	if (val & (1 << Consts::EECR_EEPE)) {
@@ -537,7 +543,7 @@ void A32u4::DataSpace::setEECR(uint8_t val, uint8_t oldVal){
 void A32u4::DataSpace::setPLLCSR(uint8_t val, uint8_t oldVal) {
 	if (val & (1 << Consts::PLLCSR_PLLE)) {
 		if (!(oldVal & (1 << Consts::PLLCSR_PLLE))) { //if PLLE is 0 but should be 1
-			lastPLLCSR_PLLE_set = mcu->cpu.totalCycls;
+			lastSet.PLLCSR_PLLE = mcu->cpu.totalCycls;
 		}
 	}
 	else {
@@ -992,6 +998,11 @@ void A32u4::DataSpace::getEepromState(std::ostream& output){
 }
 void A32u4::DataSpace::setEepromState(std::istream& input){
 	input.read((char*)eeprom, Consts::eeprom_size);
+}
+
+void A32u4::DataSpace::_setMcu(ATmega32u4* mcu_){
+	mcu = mcu_;
+	timers.mcu = mcu_;
 }
 
 /*

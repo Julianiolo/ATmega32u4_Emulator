@@ -28,7 +28,7 @@ namespace A32u4 {
 
 		class Timers {
 		public:
-			ATmega32u4* const mcu;
+			ATmega32u4* mcu;
 
 			uint8_t timer0_presc_cache = 0;
 			uint64_t lastTimer0Update = 0;
@@ -72,13 +72,16 @@ namespace A32u4 {
 
 		uint8_t sreg[8] = {0,0,0,0,0,0,0,0};
 
-		uint64_t lastEECR_EEMPE_set = 0;
+		struct LastSet {
+			uint64_t EECR_EEMPE = 0;
+			uint64_t PLLCSR_PLLE = 0;
+			uint64_t ADCSRA_ADSC = 0;
+
+			void resetAll();
+		} lastSet;
 
 		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
-		uint64_t lastPLLCSR_PLLE_set = 0;
-		
 		static constexpr uint64_t ADC_wait = 0;
-		uint64_t lastADCSRA_ADSC_set = 0;
 
 		DataSpace(ATmega32u4* mcu);
 		~DataSpace();
@@ -176,6 +179,8 @@ namespace A32u4 {
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
+
+		void _setMcu(ATmega32u4* mcu_);
 	};
 }
 
