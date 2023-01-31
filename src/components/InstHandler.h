@@ -2,6 +2,9 @@
 #define _A32u4_INSTHANDLER
 
 #include <stdint.h>
+#include <array>
+
+#include "InstInds.h"
 
 namespace A32u4 {
 	class ATmega32u4;
@@ -333,7 +336,7 @@ namespace A32u4 {
 			INST_ORI,
 		};
 
-		static constexpr Inst_ELEM instList[] = {
+		static constexpr std::array<Inst_ELEM,IND_COUNT_> instList = {
 		//            func                 mask                res
 		//         				            1   2   3   4       1   2   3   4
 			Inst_ELEM{INST_STS          , 0b1111111000001111, 0b1001001000000000, "sts"    , 0x32,getRd5_c,0},                         //1001 001d dddd 0000 kkkk kkkk kkkk kkkk

@@ -224,6 +224,8 @@ A32u4::DataSpace& A32u4::DataSpace::operator=(const DataSpace& src){
 	lastSet = src.lastSet;
 
 	timers = src.timers;
+
+	return *this;
 }
 
 void A32u4::DataSpace::reset() {
