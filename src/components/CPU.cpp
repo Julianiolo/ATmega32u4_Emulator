@@ -77,7 +77,7 @@ uint64_t A32u4::CPU::cycsToNextTimerInt() {
 	uint64_t amt = -1;
 	{
 		uint8_t timer0 = mcu->dataspace.data[DataSpace::Consts::TCNT0];
-		uint64_t nextOverflow = mcu->dataspace.timers.lastTimer0Update + (256-timer0)*mcu->dataspace.timers.getTimer0PrescDiv();
+		uint64_t nextOverflow = mcu->dataspace.lastSet.Timer0Update + (256-timer0)*mcu->dataspace.getTimer0PrescDiv();
 		amt = std::min(amt, nextOverflow - totalCycls);
 	}
 	return amt;

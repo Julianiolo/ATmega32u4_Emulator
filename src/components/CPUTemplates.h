@@ -22,8 +22,8 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 		}
 
 		if (!CPU_sleep) {
-			if(mcu->dataspace.timers.getTimer0Presc() <= 1){
-				if(mcu->dataspace.timers.getTimer0Presc() == 0){
+			if(mcu->dataspace.getTimer0Presc() <= 1){
+				if(mcu->dataspace.getTimer0Presc() == 0){
 					InstHandler::inst_effect_t res = InstHandler::handleCurrentInstT<debug, analyse>(mcu);
 					totalCycls += res.addToCycs;
 					PC += res.addToPC;
@@ -31,8 +31,8 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 					InstHandler::inst_effect_t res = InstHandler::handleCurrentInstT<debug, analyse>(mcu);
 					totalCycls += res.addToCycs;
 					PC += res.addToPC;
-					mcu->dataspace.timers.doTicks(res.addToCycs);
-					mcu->dataspace.timers.checkForIntr();
+					mcu->dataspace.doTicks(res.addToCycs);
+					mcu->dataspace.checkForIntr();
 				}
 			}
 			else{
@@ -55,13 +55,13 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
 				if (totalCycls >= currTargetCycs && doTimerTick) {
 					timer0 = 255;
-					mcu->dataspace.timers.doTick(timer0);
+					mcu->dataspace.doTick(timer0);
 				}
 				else {
-					timer0 += (uint8_t)((totalCycls - mcu->dataspace.timers.lastTimer0Update) / DataSpace::Timers::presc[mcu->dataspace.timers.getTimer0Presc()]);
+					timer0 += (uint8_t)((totalCycls - mcu->dataspace.lastSet.Timer0Update) / mcu->dataspace.getTimer0PrescDiv());
 				}
-				mcu->dataspace.timers.markTimer0Update();
-				mcu->dataspace.timers.checkForIntr();
+				mcu->dataspace.markTimer0Update();
+				mcu->dataspace.checkForIntr();
 			}
 		}
 		else {
@@ -81,8 +81,8 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 
 				totalCycls += sleepCycsLeft;
 
-				mcu->dataspace.timers.doTick(timer0);
-				mcu->dataspace.timers.checkForIntr();
+				mcu->dataspace.doTick(timer0);
+				mcu->dataspace.checkForIntr();
 
 				if(analyse){
 					mcu->analytics.sleepSum += sleepCycsLeft;
@@ -97,8 +97,8 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 					mcu->analytics.sleepSum += skipCycs;
 				}
 				totalCycls += skipCycs;
-				timer0 += (uint8_t)(sleepCycsLeft / DataSpace::Timers::presc[mcu->dataspace.timers.getTimer0Presc()]);
-				mcu->dataspace.timers.markTimer0Update();
+				timer0 += (uint8_t)(sleepCycsLeft / mcu->dataspace.getTimer0PrescDiv());
+				mcu->dataspace.markTimer0Update();
 				//printf("slept for: %llu, continuing later\n", sleepCycsLeft);
 			}
 #endif

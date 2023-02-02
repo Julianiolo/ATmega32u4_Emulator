@@ -9,100 +9,7 @@
 
 #include "CPUTemplates.h" // for addCycles (EEPROM)
 
-A32u4::DataSpace::Timers::Timers(ATmega32u4* mcu) : mcu(mcu), lastCounter(0)
-{
-
-}
-
-void A32u4::DataSpace::Timers::reset() {
-	lastCounter = 0;
-	lastTimer0Update = 0;
-}
-
-void A32u4::DataSpace::Timers::update() {
-	abort();
-#define USE_TIM0_CACHE 1
-
-#if 1
-#if USE_TIM0_CACHE
-	if (getTimer0Presc() == 3) {
-#else
-	if ((mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B] & 0b111) == 3) {
-#endif
-		goto fast_goto_64;
-	}
-#endif
-
-	bool doTick;
-#if USE_TIM0_CACHE
-	switch (getTimer0Presc()) {
-#else
-	switch (mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B] & 0b111) {
-#endif
-	case 0:
-		doTick = false; break;
-	case 1:
-		doTick = true; break;
-	case 2:
-		doTick = ((uint32_t)mcu->cpu.totalCycls / 8) != lastCounter;
-		lastCounter = (uint32_t)mcu->cpu.totalCycls / 8;
-		break;
-	case 3:
-#if 1
-		fast_goto_64:
-		doTick = ((uint32_t)mcu->cpu.totalCycls / 64) != lastCounter;
-		lastCounter = (uint32_t)mcu->cpu.totalCycls / 64;
-#else
-		{
-			uint64_t val = mcu->cpu.totalCycls / 64;
-			doTick = val != lastCounter;
-			lastCounter = val;
-		}
-#endif
-		break;
-	case 4:
-		doTick = ((uint32_t)mcu->cpu.totalCycls / 256) != lastCounter;
-		lastCounter = (uint32_t)mcu->cpu.totalCycls / 256;
-		break;
-	case 5:
-		doTick = ((uint32_t)mcu->cpu.totalCycls / 1024) != lastCounter;
-		lastCounter = (uint32_t)mcu->cpu.totalCycls / 1024;
-		break;
-	default:
-		abort();
-	}
-
-	//uint8_t& mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] = mcu->dataspace.getByteRefAtAddr(TIFR0);
-
-	if (doTick) {
-#if 1
-		if (isBitSetNB(mcu->dataspace.data[DataSpace::Consts::PRR0], 5)) {
-#else
-		if (isBitSetNB(REF_PRR0, 5)) {
-#endif
-			return;
-		}
-		uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
-		timer0++;
-		if (timer0 == 0) {	
-			mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
-			goto direct_intr;
-		}
-	}
-
-	if (mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)) {
-		direct_intr:
-		if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TIMSK0) & (1 << DataSpace::Consts::TIMSK0_TOIE0)) {
-			if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG) & (1 << DataSpace::Consts::SREG_I)) {
-				//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
-				mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
-				mcu->cpu.directExecuteInterrupt(23);
-			}
-		}
-	}
-}
-
-void A32u4::DataSpace::Timers::doTick(uint8_t& timer) {
+void A32u4::DataSpace::doTick(uint8_t& timer) {
 #if 1
 	if (isBitSetNB(mcu->dataspace.data[DataSpace::Consts::PRR0], 5)) {
 #else
@@ -118,7 +25,7 @@ void A32u4::DataSpace::Timers::doTick(uint8_t& timer) {
 
 	markTimer0Update();
 }
-void A32u4::DataSpace::Timers::doTicks(uint8_t num) {
+void A32u4::DataSpace::doTicks(uint8_t num) {
 #if 1
 	if (isBitSetNB(mcu->dataspace.data[DataSpace::Consts::PRR0], 5)) {
 #else
@@ -138,7 +45,7 @@ void A32u4::DataSpace::Timers::doTicks(uint8_t num) {
 	markTimer0Update();
 }
 
-void A32u4::DataSpace::Timers::checkForIntr() {
+void A32u4::DataSpace::checkForIntr() {
 	if (mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)) {
 		//std::cout << mcu->cpu.totalCycls << std::endl;
 		if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TIMSK0) & (1 << DataSpace::Consts::TIMSK0_TOIE0)) {
@@ -151,19 +58,17 @@ void A32u4::DataSpace::Timers::checkForIntr() {
 		}
 	}
 }
-uint8_t A32u4::DataSpace::Timers::getTimer0Presc() const {
+uint8_t A32u4::DataSpace::getTimer0Presc() const {
 	return mcu->dataspace.data[DataSpace::Consts::TCCR0B] & 0b111;
 }
-uint16_t A32u4::DataSpace::Timers::getTimer0PrescDiv() const {
-	return DataSpace::Timers::presc[getTimer0Presc()];
+uint16_t A32u4::DataSpace::getTimer0PrescDiv() const {
+	return DataSpace::timerPresc[getTimer0Presc()];
 }
-void A32u4::DataSpace::Timers::markTimer0Update() { 
+void A32u4::DataSpace::markTimer0Update() { 
 	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
-	uint64_t diff = mcu->cpu.totalCycls - lastTimer0Update;
+	uint64_t diff = mcu->cpu.totalCycls - lastSet.Timer0Update;
 	diff = (diff / getTimer0PrescDiv()) * getTimer0PrescDiv();
-	lastTimer0Update += diff;
-	//if(print)
-	//	printf("marked at %llu\n", lastTimer0Update);
+	lastSet.Timer0Update += diff;
 }
 
 
@@ -171,6 +76,7 @@ void A32u4::DataSpace::LastSet::resetAll() {
 	EECR_EEMPE = 0;
 	PLLCSR_PLLE = 0;
 	ADCSRA_ADSC = 0;
+	Timer0Update = 0;
 }
 
 /*
@@ -181,9 +87,8 @@ DataSpace:
 
 A32u4::DataSpace::DataSpace(ATmega32u4* mcu) : mcu(mcu), 
 #if USE_HEAP
-data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
+data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size])
 #endif
-timers(mcu)
 {
 #if 1
 	std::memset(data, 0, Consts::data_size);
@@ -200,9 +105,8 @@ A32u4::DataSpace::~DataSpace() {
 
 A32u4::DataSpace::DataSpace(const DataSpace& src): 
 #if USE_HEAP
-data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size]),
+data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size])
 #endif
-timers(src.timers)
 {
 	operator=(src);
 }
@@ -214,14 +118,11 @@ A32u4::DataSpace& A32u4::DataSpace::operator=(const DataSpace& src){
 
 	lastSet = src.lastSet;
 
-	timers = src.timers;
-
 	return *this;
 }
 
 void A32u4::DataSpace::reset() {
 	resetIO();
-	timers.reset();
 	lastSet.resetAll();
 
 	std::memset(sreg, 0, 8); // reset sreg cache
@@ -376,8 +277,8 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			}
 
 			case Consts::TCNT0: {
-				data[Consts::TCNT0] += (uint8_t)((mcu->cpu.totalCycls - mcu->dataspace.timers.lastTimer0Update) / DataSpace::Timers::presc[mcu->dataspace.timers.getTimer0Presc()]);
-				timers.markTimer0Update();
+				data[Consts::TCNT0] += (uint8_t)((mcu->cpu.totalCycls - lastSet.Timer0Update) / DataSpace::timerPresc[getTimer0Presc()]);
+				markTimer0Update();
 				if (onlyOne) break;
 				else MCU_FALLTHROUGH;
 			}
@@ -454,7 +355,7 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 				break;
 
 			case Consts::TIFR0:
-				timers.checkForIntr();
+				checkForIntr();
 				break;
 
 			case Consts::SREG:
@@ -566,25 +467,8 @@ void A32u4::DataSpace::setTCCR0B(uint8_t val) {
 	const uint8_t timer0Presc = val & 0b111;
 	mcu->cpu.breakOutOfOptim = true;
 	//printf("SWITCH to div:%d\n", timers.getTimer0PrescDiv());
-	timers.lastTimer0Update = mcu->cpu.totalCycls; // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
+	lastSet.Timer0Update = mcu->cpu.totalCycls; // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
 	//printf("fmark at %llu\n", mcu->cpu.totalCycls);
-
-#if 1
-	switch (timer0Presc) {
-	case 2:
-		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 8;
-		break;
-	case 3:
-		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 64;
-		break;
-	case 4:
-		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 256;
-		break;
-	case 5:
-		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 1024;
-		break;
-	}
-#endif
 }
 
 void A32u4::DataSpace::pushByteToStack(uint8_t val) {
@@ -974,7 +858,6 @@ void A32u4::DataSpace::getState(std::ostream& output){
 	output << lastSet.EECR_EEMPE;
 	output << lastSet.PLLCSR_PLLE;
 	output << lastSet.ADCSRA_ADSC;
-	// TODO last_*_set
 }
 void A32u4::DataSpace::setState(std::istream& input){
 	setRamState(input);
@@ -999,16 +882,108 @@ void A32u4::DataSpace::setEepromState(std::istream& input){
 	input.read((char*)eeprom, Consts::eeprom_size);
 }
 
-void A32u4::DataSpace::_setMcu(ATmega32u4* mcu_){
-	mcu = mcu_;
-	timers.mcu = mcu_;
-}
-
 /*
 
+#if 0
+	switch (timer0Presc) {
+	case 2:
+		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 8;
+		break;
+	case 3:
+		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 64;
+		break;
+	case 4:
+		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 256;
+		break;
+	case 5:
+		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 1024;
+		break;
+	}
+#endif
 
-constexpr uint8_t A32u4::DataSpace::getDataByteC(addrmcu_t Addr) {
-return getByteAtC(Addr);
+
+void A32u4::DataSpace::Timers::update() {
+	abort();
+#define USE_TIM0_CACHE 1
+
+#if 1
+#if USE_TIM0_CACHE
+	if (getTimer0Presc() == 3) {
+#else
+	if ((mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B] & 0b111) == 3) {
+#endif
+		goto fast_goto_64;
+	}
+#endif
+
+	bool doTick;
+#if USE_TIM0_CACHE
+	switch (getTimer0Presc()) {
+#else
+	switch (mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B] & 0b111) {
+#endif
+	case 0:
+		doTick = false; break;
+	case 1:
+		doTick = true; break;
+	case 2:
+		doTick = ((uint32_t)mcu->cpu.totalCycls / 8) != lastCounter;
+		lastCounter = (uint32_t)mcu->cpu.totalCycls / 8;
+		break;
+	case 3:
+#if 1
+		fast_goto_64:
+		doTick = ((uint32_t)mcu->cpu.totalCycls / 64) != lastCounter;
+		lastCounter = (uint32_t)mcu->cpu.totalCycls / 64;
+#else
+		{
+			uint64_t val = mcu->cpu.totalCycls / 64;
+			doTick = val != lastCounter;
+			lastCounter = val;
+		}
+#endif
+		break;
+	case 4:
+		doTick = ((uint32_t)mcu->cpu.totalCycls / 256) != lastCounter;
+		lastCounter = (uint32_t)mcu->cpu.totalCycls / 256;
+		break;
+	case 5:
+		doTick = ((uint32_t)mcu->cpu.totalCycls / 1024) != lastCounter;
+		lastCounter = (uint32_t)mcu->cpu.totalCycls / 1024;
+		break;
+	default:
+		abort();
+	}
+
+	//uint8_t& mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] = mcu->dataspace.getByteRefAtAddr(TIFR0);
+
+	if (doTick) {
+#if 1
+		if (isBitSetNB(mcu->dataspace.data[DataSpace::Consts::PRR0], 5)) {
+#else
+		if (isBitSetNB(REF_PRR0, 5)) {
+#endif
+			return;
+		}
+		uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
+		timer0++;
+		if (timer0 == 0) {	
+			mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+			goto direct_intr;
+		}
+	}
+
+	if (mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)) {
+		direct_intr:
+		if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TIMSK0) & (1 << DataSpace::Consts::TIMSK0_TOIE0)) {
+			if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::SREG) & (1 << DataSpace::Consts::SREG_I)) {
+				//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
+				mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
+				mcu->cpu.directExecuteInterrupt(23);
+			}
+		}
+	}
+}
 }
 
 

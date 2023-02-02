@@ -59,7 +59,7 @@ void A32u4::ATmega32u4::setState(std::istream& input){
 
 void A32u4::ATmega32u4::setMcu() {
 	cpu.mcu = this;
-	dataspace._setMcu(this);
+	dataspace.mcu = this;
 	flash.mcu = this;
 	debugger.mcu = this;
 	symbolTable.mcu = this;

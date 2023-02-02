@@ -1057,7 +1057,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_BLD(ATmega32u4* mcu, 
 		Rd_res = Rd & ~(1 << b);
 	}
 #else
-	Rd_res ^= (-(uint8_t)T ^ Rd) & (1 << b);
+	Rd_res = Rd ^ ((-(uint8_t)T ^ Rd) & (1 << b));
 #endif
 	
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
