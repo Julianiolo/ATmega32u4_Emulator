@@ -15,7 +15,6 @@ A32u4::DataSpace::Timers::Timers(ATmega32u4* mcu) : mcu(mcu), lastCounter(0)
 }
 
 void A32u4::DataSpace::Timers::reset() {
-	timer0_presc_cache = 0;
 	lastCounter = 0;
 	lastTimer0Update = 0;
 }
@@ -26,7 +25,7 @@ void A32u4::DataSpace::Timers::update() {
 
 #if 1
 #if USE_TIM0_CACHE
-	if (timer0_presc_cache == 3) {
+	if (getTimer0Presc() == 3) {
 #else
 	if ((mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B] & 0b111) == 3) {
 #endif
@@ -36,7 +35,7 @@ void A32u4::DataSpace::Timers::update() {
 
 	bool doTick;
 #if USE_TIM0_CACHE
-	switch (timer0_presc_cache) {
+	switch (getTimer0Presc()) {
 #else
 	switch (mcu->dataspace.data[A32u4::DataSpace::Consts::TCCR0B] & 0b111) {
 #endif
@@ -118,14 +117,6 @@ void A32u4::DataSpace::Timers::doTick(uint8_t& timer) {
 	}
 
 	markTimer0Update();
-
-
-	//static uint64_t last = 0;
-	//uint64_t diff = mcu->cpu.totalCycls - last;
-	//printf("%llu\n", diff);
-	//last = mcu->cpu.totalCycls;
-
-
 }
 void A32u4::DataSpace::Timers::doTicks(uint8_t num) {
 #if 1
@@ -161,7 +152,7 @@ void A32u4::DataSpace::Timers::checkForIntr() {
 	}
 }
 uint8_t A32u4::DataSpace::Timers::getTimer0Presc() const {
-	return timer0_presc_cache;
+	return mcu->dataspace.data[DataSpace::Consts::TCCR0B] & 0b111;
 }
 uint16_t A32u4::DataSpace::Timers::getTimer0PrescDiv() const {
 	return DataSpace::Timers::presc[getTimer0Presc()];
@@ -572,14 +563,14 @@ void A32u4::DataSpace::setSPDR() {
 	//request Interrupt if SPIE set
 }
 void A32u4::DataSpace::setTCCR0B(uint8_t val) {
-	timers.timer0_presc_cache = val & 0b111;
+	const uint8_t timer0Presc = val & 0b111;
 	mcu->cpu.breakOutOfOptim = true;
 	//printf("SWITCH to div:%d\n", timers.getTimer0PrescDiv());
 	timers.lastTimer0Update = mcu->cpu.totalCycls; // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
 	//printf("fmark at %llu\n", mcu->cpu.totalCycls);
 
 #if 1
-	switch (timers.timer0_presc_cache) {
+	switch (timer0Presc) {
 	case 2:
 		timers.lastCounter = (uint32_t)mcu->cpu.totalCycls / 8;
 		break;
@@ -980,12 +971,18 @@ void A32u4::DataSpace::getState(std::ostream& output){
 	getRamState(output);
 	getEepromState(output);
 	
-
+	output << lastSet.EECR_EEMPE;
+	output << lastSet.PLLCSR_PLLE;
+	output << lastSet.ADCSRA_ADSC;
 	// TODO last_*_set
 }
 void A32u4::DataSpace::setState(std::istream& input){
 	setRamState(input);
 	setEepromState(input);
+
+	input >> lastSet.EECR_EEMPE;
+	input >> lastSet.PLLCSR_PLLE;
+	input >> lastSet.ADCSRA_ADSC;
 }
 
 void A32u4::DataSpace::getRamState(std::ostream& output){

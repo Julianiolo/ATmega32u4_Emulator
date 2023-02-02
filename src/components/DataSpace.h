@@ -30,7 +30,6 @@ namespace A32u4 {
 		public:
 			ATmega32u4* mcu;
 
-			uint8_t timer0_presc_cache = 0;
 			uint64_t lastTimer0Update = 0;
 			uint32_t lastCounter;
 
