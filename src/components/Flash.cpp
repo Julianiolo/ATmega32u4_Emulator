@@ -225,14 +225,17 @@ void A32u4::Flash::setState(std::istream& input){
 }
 
 void A32u4::Flash::getRomState(std::ostream& output) {
+	output << size_;
 	output.write((const char*)data, sizeMax);
 }
 void A32u4::Flash::setRomState(std::istream& input){
+	input >> size_;
 	input.read((char*)data, sizeMax);
 
 #if FLASH_USE_INSTIND_CACHE
 	populateInstIndCache();
 #endif
+	hasProgram = true;
 }
 
 /*
