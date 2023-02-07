@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "StringUtils.h"
+#include "StreamUtils.h"
 
 #include "../ATmega32u4.h"
 #include "InstHandler.h"
@@ -225,11 +226,11 @@ void A32u4::Flash::setState(std::istream& input){
 }
 
 void A32u4::Flash::getRomState(std::ostream& output) {
-	output << size_;
+	StreamUtils::write(output, size_);
 	output.write((const char*)data, sizeMax);
 }
 void A32u4::Flash::setRomState(std::istream& input){
-	input >> size_;
+	StreamUtils::read(input, &size_);
 	input.read((char*)data, sizeMax);
 
 #if FLASH_USE_INSTIND_CACHE
@@ -237,6 +238,11 @@ void A32u4::Flash::setRomState(std::istream& input){
 #endif
 	hasProgram = true;
 }
+
+bool A32u4::Flash::operator==(const Flash& other) const{
+	return size_==other.size_ && std::memcmp(data,other.data,sizeMax) == 0;
+}
+
 
 /*
 

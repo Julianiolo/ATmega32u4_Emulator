@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "../utils/bitMacros.h"
+#include "StreamUtils.h"
 
 #include "../ATmega32u4.h"
 #include "../extras/Debugger.h"
@@ -169,7 +170,9 @@ MCU_INLINE void A32u4::DataSpace::setGPReg_(uint8_t ind, reg_t val) {
 uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
 	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, A32U4_ADDR_ERR_STR("Data get Index out of bounds: ",addr,4), "DataSpace", return 0);
 
-	update_Get(addr, true);
+	if (addr >= Consts::GPRs_size && addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size) { //only io needs updates
+		update_Get(addr, true);
+	}
 
 	return data[addr];
 }
@@ -257,81 +260,79 @@ void A32u4::DataSpace::setSP(uint16_t val) {
 }
 
 void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
-	if (Addr >= Consts::GPRs_size && Addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size) { //only io needs updates
-		switch (Addr) {
-			case 0xFFFF: //case for updating everything
-			case Consts::EECR: {
-				if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastSet.EECR_EEMPE > 4) { // check if EE;PE is set but shouldnt
-					data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
-				}
-				if (onlyOne) break;
-				else MCU_FALLTHROUGH;
+	switch (Addr) {
+		case 0xFFFF: //case for updating everything
+		case Consts::EECR: {
+			if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastSet.EECR_EEMPE > 4) { // check if EE;PE is set but shouldnt
+				data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
 			}
+			if (onlyOne) break;
+			else MCU_FALLTHROUGH;
+		}
 
-			case Consts::PLLCSR: {
-				if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && !(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastSet.PLLCSR_PLLE > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
-					data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
-				}
-				if (onlyOne) break;
-				else MCU_FALLTHROUGH;
+		case Consts::PLLCSR: {
+			if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && !(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastSet.PLLCSR_PLLE > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
+				data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
 			}
+			if (onlyOne) break;
+			else MCU_FALLTHROUGH;
+		}
 
-			case Consts::TCNT0: {
-				data[Consts::TCNT0] += (uint8_t)((mcu->cpu.totalCycls - lastSet.Timer0Update) / DataSpace::timerPresc[getTimer0Presc()]);
-				markTimer0Update();
-				if (onlyOne) break;
-				else MCU_FALLTHROUGH;
-			}
+		case Consts::TCNT0: {
+			data[Consts::TCNT0] += (uint8_t)((mcu->cpu.totalCycls - lastSet.Timer0Update) / DataSpace::timerPresc[getTimer0Presc()]);
+			markTimer0Update();
+			if (onlyOne) break;
+			else MCU_FALLTHROUGH;
+		}
 
-			case Consts::SREG: {
-				uint8_t val = 0;
-				val |= (sreg[Consts::SREG_C] != 0) << Consts::SREG_C;
-				val |= (sreg[Consts::SREG_Z] != 0) << Consts::SREG_Z;
-				val |= (sreg[Consts::SREG_N] != 0) << Consts::SREG_N;
-				val |= (sreg[Consts::SREG_V] != 0) << Consts::SREG_V;
-				val |= (sreg[Consts::SREG_S] != 0) << Consts::SREG_S;
-				val |= (sreg[Consts::SREG_H] != 0) << Consts::SREG_H;
-				val |= (sreg[Consts::SREG_T] != 0) << Consts::SREG_T;
-				val |= (sreg[Consts::SREG_I] != 0) << Consts::SREG_I;
-				data[Consts::SREG] = val;
-				if (onlyOne) break;
-				else MCU_FALLTHROUGH;
+		case Consts::SREG: {
+			uint8_t val = 0;
+			val |= (sreg[Consts::SREG_C] != 0) << Consts::SREG_C;
+			val |= (sreg[Consts::SREG_Z] != 0) << Consts::SREG_Z;
+			val |= (sreg[Consts::SREG_N] != 0) << Consts::SREG_N;
+			val |= (sreg[Consts::SREG_V] != 0) << Consts::SREG_V;
+			val |= (sreg[Consts::SREG_S] != 0) << Consts::SREG_S;
+			val |= (sreg[Consts::SREG_H] != 0) << Consts::SREG_H;
+			val |= (sreg[Consts::SREG_T] != 0) << Consts::SREG_T;
+			val |= (sreg[Consts::SREG_I] != 0) << Consts::SREG_I;
+			data[Consts::SREG] = val;
+			if (onlyOne) break;
+			else MCU_FALLTHROUGH;
+		}
+		
+		case Consts::ADCSRA: {
+			if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) { // clear bit if conversion is done
+				data[Consts::ADCSRA] &= ~(1<<Consts::ADCSRA_ADSC);
 			}
-			
-			case Consts::ADCSRA: {
-				if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) { // clear bit if conversion is done
-					data[Consts::ADCSRA] &= ~(1<<Consts::ADCSRA_ADSC);
+			if (onlyOne) break;
+			else MCU_FALLTHROUGH;
+		}
+		
+		case Consts::ADCH: {
+			//TODO: maybe unlock changing of ADC value
+			if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) {
+				if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
+					data[Consts::ADCH] = getADCVal()>>8;
 				}
-				if (onlyOne) break;
-				else MCU_FALLTHROUGH;
-			}
-			
-			case Consts::ADCH: {
-				//TODO: maybe unlock changing of ADC value
-				if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) {
-					if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
-						data[Consts::ADCH] = getADCVal()>>8;
-					}
-					else { // left adjusted
-						data[Consts::ADCH] = getADCVal()>>2;
-					}
+				else { // left adjusted
+					data[Consts::ADCH] = getADCVal()>>2;
 				}
-				if (onlyOne) break;
-				else MCU_FALLTHROUGH;
 			}
-			case Consts::ADCL: {
-				//TODO: maybe lock changing of ADC value
-				if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) {
-					if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
-						data[Consts::ADCL] = (uint8_t)getADCVal();
-					}
-					else { // left adjusted
-						data[Consts::ADCL] = getADCVal() << 6;
-					}
+			if (onlyOne) break;
+			else MCU_FALLTHROUGH;
+		}
+		case Consts::ADCL: {
+			//TODO: maybe lock changing of ADC value
+			if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) {
+				if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
+					data[Consts::ADCL] = (uint8_t)getADCVal();
 				}
-				if (onlyOne) break;
-				else MCU_FALLTHROUGH;
+				else { // left adjusted
+					data[Consts::ADCL] = getADCVal() << 6;
+				}
 			}
+			if (onlyOne) break;
+			else MCU_FALLTHROUGH;
 		}
 	}
 }
@@ -852,20 +853,22 @@ void A32u4::DataSpace::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t re
 #endif
 
 void A32u4::DataSpace::getState(std::ostream& output){
+	update_Get(0xFFFF, false);
+
 	getRamState(output);
 	getEepromState(output);
-	
-	output << lastSet.EECR_EEMPE;
-	output << lastSet.PLLCSR_PLLE;
-	output << lastSet.ADCSRA_ADSC;
+
+	StreamUtils::write(output, lastSet.EECR_EEMPE);
+	StreamUtils::write(output, lastSet.PLLCSR_PLLE);
+	StreamUtils::write(output, lastSet.ADCSRA_ADSC);
 }
 void A32u4::DataSpace::setState(std::istream& input){
 	setRamState(input);
 	setEepromState(input);
 
-	input >> lastSet.EECR_EEMPE;
-	input >> lastSet.PLLCSR_PLLE;
-	input >> lastSet.ADCSRA_ADSC;
+	StreamUtils::read(input, &lastSet.EECR_EEMPE);
+	StreamUtils::read(input, &lastSet.PLLCSR_PLLE);
+	StreamUtils::read(input, &lastSet.ADCSRA_ADSC);
 }
 
 void A32u4::DataSpace::getRamState(std::ostream& output){
@@ -881,6 +884,18 @@ void A32u4::DataSpace::getEepromState(std::ostream& output){
 void A32u4::DataSpace::setEepromState(std::istream& input){
 	input.read((char*)eeprom, Consts::eeprom_size);
 }
+
+bool A32u4::DataSpace::operator==(const DataSpace& other) const{
+#define _CMP_(x) (x==other.x)
+	return std::memcmp(data,other.data,Consts::data_size) == 0 &&
+		std::memcmp(eeprom,other.eeprom,Consts::eeprom_size) == 0 &&
+		std::equal(sreg,sreg+8,other.sreg,[](uint8_t a,uint8_t b){
+			return (!!a) == (!!b);
+		}) &&
+		_CMP_(lastSet.EECR_EEMPE) && _CMP_(lastSet.PLLCSR_PLLE) && _CMP_(lastSet.ADCSRA_ADSC);
+#undef _CMP_
+}
+
 
 /*
 

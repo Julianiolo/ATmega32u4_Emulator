@@ -27,6 +27,8 @@ namespace A32u4 {
 		struct CallData{
 			pc_t to;
 			pc_t from;
+
+			bool operator==(const CallData& other) const;
 		};
 	private:
 		friend class ATmega32u4;
@@ -120,6 +122,8 @@ namespace A32u4 {
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
+
+		bool operator==(const Debugger& other) const;
 	};
 }
 #endif

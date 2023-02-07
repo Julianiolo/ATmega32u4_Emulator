@@ -1,6 +1,7 @@
 #include "CPU.h"
 
 #include "../utils/bitMacros.h"
+#include "StreamUtils.h"
 
 #include "../ATmega32u4.h"
 #include "CPUTemplates.h"
@@ -437,30 +438,39 @@ bool A32u4::CPU::isSleeping() const {
 }
 
 void A32u4::CPU::getState(std::ostream& output){
-	output << PC;
-	output << totalCycls;
-	output << targetCycs;
+	StreamUtils::write(output, PC);
+	StreamUtils::write(output, totalCycls);
+	StreamUtils::write(output, targetCycs);
 
-	output << interruptFlags;
-	output << insideInterrupt;
+	StreamUtils::write(output, interruptFlags);
+	StreamUtils::write(output, insideInterrupt);
 
-	output << breakOutOfOptim;
+	StreamUtils::write(output, breakOutOfOptim);
 
-	output << CPU_sleep;
-	output << sleepCycsLeft;
+	StreamUtils::write(output, CPU_sleep);
+	StreamUtils::write(output, sleepCycsLeft);
 }
 void A32u4::CPU::setState(std::istream& input){
-	input >> PC;
-	input >> totalCycls;
-	input >> targetCycs;
+	StreamUtils::read(input, &PC);
+	StreamUtils::read(input, &totalCycls);
+	StreamUtils::read(input, &targetCycs);
+	
+	StreamUtils::read(input, &interruptFlags);
+	StreamUtils::read(input, &insideInterrupt);
 
-	input >> interruptFlags;
-	input >> insideInterrupt;
+	StreamUtils::read(input, &breakOutOfOptim);
 
-	input >> breakOutOfOptim;
+	StreamUtils::read(input, &CPU_sleep);
+	StreamUtils::read(input, &sleepCycsLeft);
+}
 
-	input >> CPU_sleep;
-	input >> sleepCycsLeft;
+bool A32u4::CPU::operator==(const CPU& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(PC) && _CMP_(totalCycls) && _CMP_(targetCycs) &&
+		_CMP_(interruptFlags) && _CMP_(insideInterrupt) &&
+		_CMP_(breakOutOfOptim) &&
+		_CMP_(CPU_sleep) && _CMP_(sleepCycsLeft);
+#undef _CMP_
 }
 
 /*

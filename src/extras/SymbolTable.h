@@ -73,7 +73,10 @@ namespace A32u4 {
 			void* extraData = nullptr;
 
 			bool operator<(const Symbol& rhs) const;
-			symb_size_t addrEnd() const;			
+			symb_size_t addrEnd() const;
+
+			void getState(std::ostream& output);
+			void setState(std::istream& input);			
 		};
 
 		typedef void (*SymbolsPostProcFuncPtr)(Symbol* symbs, size_t len, void* userData);
@@ -146,9 +149,5 @@ namespace A32u4 {
 		void setState(std::istream& input);
 	};
 }
-
-std::ostream& operator<<(std::ostream& output, const A32u4::SymbolTable::Symbol& symbol);
-std::istream& operator>>(std::istream& output, A32u4::SymbolTable::Symbol& symbol);
-
 
 #endif

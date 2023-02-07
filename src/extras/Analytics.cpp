@@ -1,5 +1,7 @@
 #include "Analytics.h"
 
+#include "StreamUtils.h"
+
 A32u4::Analytics::Analytics()
 #if USE_HEAP
 	: pcCounter(PCHeatArrSize),
@@ -64,13 +66,20 @@ void A32u4::Analytics::getState(std::ostream& output){
 	output.write((char*)&pcCounter[0], PCHeatArrSize);
 	output.write((char*)&instCounter[0], InstHeatArrSize);
 
-	output << maxSP;
-	output << sleepSum;
+	StreamUtils::write(output, maxSP);
+	StreamUtils::write(output, sleepSum);
 }
 void A32u4::Analytics::setState(std::istream& input){
 	input.read((char*)&pcCounter[0], PCHeatArrSize);
 	input.read((char*)&instCounter[0], InstHeatArrSize);
 
-	input >> maxSP;
-	input >> sleepSum;
+	StreamUtils::read(input, &maxSP);
+	StreamUtils::read(input, &sleepSum);
+}
+
+bool A32u4::Analytics::operator==(const Analytics& other) const{
+#define _CMP_(x) (x==other.x)
+	return pcCounter == other.pcCounter && instCounter == other.instCounter &&
+		_CMP_(maxSP) && _CMP_(sleepSum);
+#undef _CMP_
 }

@@ -67,6 +67,8 @@ namespace A32u4 {
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
+
+		bool operator==(const CPU& other) const;
 	};
 }
 

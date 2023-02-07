@@ -1,10 +1,15 @@
 #include "Debugger.h"
-#include "../ATmega32u4.h"
-#include "Disassembler.h"
-#include "StringUtils.h"
 
 #include <iostream>
 #include <stdint.h>
+
+#include "StringUtils.h"
+#include "StreamUtils.h"
+
+#include "../ATmega32u4.h"
+#include "Disassembler.h"
+
+
 
 A32u4::Debugger::Debugger(ATmega32u4* mcu):
 	mcu(mcu)
@@ -281,17 +286,16 @@ void A32u4::Debugger::updateBreakpointListFromArr() {
 }
 
 void A32u4::Debugger::getState(std::ostream& output){
-	output << callStackPtr;
-	output << halted;
+	StreamUtils::write(output, callStackPtr);
+	StreamUtils::write(output, halted);
 
 	output.write((const char*)&breakpoints[0], breakPointArrMaxSize);
 	output.write((const char*)&callStack[0], addressStackMaxSize);
 	output.write((const char*)&addressStackIndicators[0], addressStackIndicatorsSize);
-
 }
 void A32u4::Debugger::setState(std::istream& input){
-	input >> callStackPtr;
-	input >> halted;
+	StreamUtils::read(input, &callStackPtr);
+	StreamUtils::read(input, &halted);
 
 	input.read((char*)&breakpoints[0], breakPointArrMaxSize);
 	input.read((char*)&callStack[0], addressStackMaxSize);
@@ -299,6 +303,21 @@ void A32u4::Debugger::setState(std::istream& input){
 
 	updateBreakpointListFromArr();
 }
+
+bool A32u4::Debugger::CallData::operator==(const CallData& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(from) && _CMP_(to);
+#undef _CMP_
+}
+
+
+bool A32u4::Debugger::operator==(const Debugger& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(callStackPtr) && _CMP_(halted) &&
+		_CMP_(breakpoints) && _CMP_(callStack) && _CMP_(addressStackIndicators);
+#undef _CMP_
+}
+
 
 /*
 

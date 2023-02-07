@@ -111,7 +111,8 @@ namespace A32u4 {
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
-
+		
+		bool operator==(const ATmega32u4& other) const;
 	private:
 		void setMcu();
 	};

@@ -1,6 +1,7 @@
 #include "ATmega32u4.h"
 
 #include "StringUtils.h"
+#include "StreamUtils.h"
 
 #include "components/InstHandlerTemplates.h"
 #include "components/CPUTemplates.h"
@@ -35,8 +36,8 @@ A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
 }
 
 void A32u4::ATmega32u4::getState(std::ostream& output){
-	output << wasReset;
-	output << currentExecFlags;
+	StreamUtils::write(output, wasReset);
+	StreamUtils::write(output, currentExecFlags);
 
 	cpu.getState(output);
 	dataspace.getState(output);
@@ -46,8 +47,8 @@ void A32u4::ATmega32u4::getState(std::ostream& output){
 	analytics.getState(output);
 }
 void A32u4::ATmega32u4::setState(std::istream& input){
-	input >> wasReset;
-	input >> currentExecFlags;
+	StreamUtils::read(input, &wasReset);
+	StreamUtils::read(input, &currentExecFlags);
 
 	cpu.setState(input);
 	dataspace.setState(input);
@@ -168,4 +169,12 @@ void A32u4::ATmega32u4::setLogCallB(LogCallB newLogCallB){
 }
 void A32u4::ATmega32u4::setLogCallBSimple(LogCallBSimple newLogCallBSimple){
 	logCallBSimple = newLogCallBSimple;
+}
+
+bool A32u4::ATmega32u4::operator==(const ATmega32u4& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(wasReset) && _CMP_(currentExecFlags) &&
+		_CMP_(cpu) && _CMP_(dataspace) && _CMP_(flash)&&
+		_CMP_(debugger) && _CMP_(analytics);
+#undef _CMP_
 }

@@ -45,7 +45,7 @@ namespace A32u4 {
 		SPIByteCallB SPI_Byte_Callback = NULL;
 
 
-		bool sreg[8] = {0,0,0,0,0,0,0,0};
+		uint8_t sreg[8] = {0,0,0,0,0,0,0,0};
 
 		struct LastSet {
 			uint64_t EECR_EEMPE = 0;
@@ -165,6 +165,8 @@ namespace A32u4 {
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
+
+		bool operator==(const DataSpace& other) const;
 	};
 }
 
