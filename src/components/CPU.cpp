@@ -10,7 +10,7 @@
 #define fastBitSet(cond,val,mask) (-(cond) ^ (val)) & (mask)
 
 A32u4::CPU::CPU(ATmega32u4* mcu_) : mcu(mcu_), 
-PC(0), totalCycls(0), targetCycs(0),
+PC(0), totalCycls(0), targetCycls(0),
 interruptFlags(0), insideInterrupt(false) {
 
 }
@@ -25,7 +25,7 @@ void A32u4::CPU::reset() {
 	sleepCycsLeft = 0;
 
 	totalCycls = 0;
-	targetCycs = 0;
+	targetCycls = 0;
 	breakOutOfOptim = false;
 }
 
@@ -440,7 +440,7 @@ bool A32u4::CPU::isSleeping() const {
 void A32u4::CPU::getState(std::ostream& output){
 	StreamUtils::write(output, PC);
 	StreamUtils::write(output, totalCycls);
-	StreamUtils::write(output, targetCycs);
+	StreamUtils::write(output, targetCycls);
 
 	StreamUtils::write(output, interruptFlags);
 	StreamUtils::write(output, insideInterrupt);
@@ -453,7 +453,7 @@ void A32u4::CPU::getState(std::ostream& output){
 void A32u4::CPU::setState(std::istream& input){
 	StreamUtils::read(input, &PC);
 	StreamUtils::read(input, &totalCycls);
-	StreamUtils::read(input, &targetCycs);
+	StreamUtils::read(input, &targetCycls);
 	
 	StreamUtils::read(input, &interruptFlags);
 	StreamUtils::read(input, &insideInterrupt);
@@ -466,7 +466,7 @@ void A32u4::CPU::setState(std::istream& input){
 
 bool A32u4::CPU::operator==(const CPU& other) const{
 #define _CMP_(x) (x==other.x)
-	return _CMP_(PC) && _CMP_(totalCycls) && _CMP_(targetCycs) &&
+	return _CMP_(PC) && _CMP_(totalCycls) && _CMP_(targetCycls) &&
 		_CMP_(interruptFlags) && _CMP_(insideInterrupt) &&
 		_CMP_(breakOutOfOptim) &&
 		_CMP_(CPU_sleep) && _CMP_(sleepCycsLeft);

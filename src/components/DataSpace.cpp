@@ -151,11 +151,11 @@ void A32u4::DataSpace::resetIO() {
 }
 
 MCU_INLINE uint8_t& A32u4::DataSpace::getByteRefAtAddr(uint16_t addr) {
-	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, "getByteRef addr out of bounds: " + std::to_string(addr), "DataSpace", return errorIndicator);
+	A32U4_ASSERT_INRANGE_M(addr, 0, Consts::data_size, "getByteRef addr out of bounds: " + std::to_string(addr), "DataSpace", return data[0]);
 	return data[addr];
 }
 MCU_INLINE uint8_t& A32u4::DataSpace::getGPRegRef(uint8_t ind) {
-	A32U4_ASSERT_INRANGE_M(ind, 0, Consts::GPRs_size, "General Purpouse Register Index out of bounds: " + std::to_string((int)ind), "DataSpace", return errorIndicator);
+	A32U4_ASSERT_INRANGE_M(ind, 0, Consts::GPRs_size, "General Purpouse Register Index out of bounds: " + std::to_string((int)ind), "DataSpace", return data[0]);
 	return data[ind];
 }
 MCU_INLINE uint8_t A32u4::DataSpace::getGPReg(uint8_t ind) const {

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "../A32u4Types.h"
 
 template<bool debug, bool analyse>
 void A32u4::CPU::execute(uint64_t amt) {
@@ -12,12 +13,18 @@ void A32u4::CPU::execute(uint64_t amt) {
 
 template<bool debug, bool analyse>
 void A32u4::CPU::execute4T(uint64_t amt) {
-	targetCycs += amt;
-	while (totalCycls < targetCycs) {
+	targetCycls += amt;
+	size_t cnt = 0;
+	while (totalCycls < targetCycls) {
 		breakOutOfOptim = false;
+		cnt++;
+		if(cnt >= amt*2) {
+			printf("WTF %lu %lu %lu %d %lu\n",totalCycls,targetCycls,amt,CPU_sleep,cycsToNextTimerInt());
+			abort();
+		}
 
 		if (mcu->debugger.isHalted() && !mcu->debugger.doStep) {
-			targetCycs = std::max(targetCycs - amt, totalCycls);
+			targetCycls = std::max(targetCycls - amt, totalCycls);
 			return;
 		}
 
@@ -41,8 +48,8 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				bool doTimerTick = true;
 				uint64_t currTargetCycs = totalCycls + cycsToNextInt;
 				
-				if (currTargetCycs > targetCycs) {
-					currTargetCycs = targetCycs;
+				if (currTargetCycs > targetCycls) {
+					currTargetCycs = targetCycls;
 					doTimerTick = false;
 				}
 
@@ -75,7 +82,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 			}
 
 			uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
-			if (sleepCycsLeft <= (targetCycs - totalCycls) ) {
+			if (sleepCycsLeft <= (targetCycls - totalCycls) ) {
 				// done sleeping
 				timer0 = 255;
 
@@ -91,7 +98,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				sleepCycsLeft = 0;
 			}
 			else {
-				uint64_t skipCycs = targetCycs - totalCycls;
+				uint64_t skipCycs = targetCycls - totalCycls;
 				sleepCycsLeft -= skipCycs;
 				if(analyse){
 					mcu->analytics.sleepSum += skipCycs;

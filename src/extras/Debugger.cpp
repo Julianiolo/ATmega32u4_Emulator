@@ -234,8 +234,8 @@ void A32u4::Debugger::halt() {
 	halted = true;
 	if (debugOutputMode == OutputMode_Passthrough) {
 		doStep = false;
-		mcu->cpu.breakOutOfOptim = true;
 	}
+	mcu->cpu.breakOutOfOptim = true;
 }
 void A32u4::Debugger::step() {
 	doStep = true;

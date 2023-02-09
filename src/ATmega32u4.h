@@ -33,7 +33,7 @@
 #define A32U4_ASSERT_INRANGE_M_W(val,from,to,msg,module_, action)
 #endif
 
-#define A32U4_ADDR_ERR_STR(A_msg,A_addr,A_HexPlaces) A_msg  + std::to_string(A_addr) + " => 0x" + StringUtils::uIntToHexStr(A_addr,A_HexPlaces)
+#define A32U4_ADDR_ERR_STR(A_msg,A_addr,A_HexPlaces) (A_msg  + std::to_string(A_addr) + " => 0x" + StringUtils::uIntToHexStr(A_addr,A_HexPlaces) + " @PC:" + std::to_string(mcu->cpu.PC))
 
 namespace A32u4 {
 	class ATmega32u4 {
@@ -60,11 +60,9 @@ namespace A32u4 {
 			LogFlags_ShowAll = LogFlags_ShowFileNameAndLineNum | LogFlags_ShowModule
 		};
 
-		typedef void (*LogCallB)(LogLevel logLevel, const char* msg, const char* fileName , size_t lineNum, const char* Module);
-		typedef void (*LogCallBSimple)(LogLevel logLevel, const char* msg);
+		typedef void (*LogCallB)(LogLevel logLevel, const char* msg, const char* fileName , int lineNum, const char* module);
 	private:
-		LogCallB logCallB = nullptr;
-		LogCallBSimple logCallBSimple = nullptr;
+		LogCallB logCallB = defaultLogHandler;
 		static ATmega32u4* currLogTarget;
 
 		bool wasReset = false;
@@ -89,24 +87,32 @@ namespace A32u4 {
 
 		void execute(uint64_t cyclAmt, uint8_t flags);
 
+		bool load(const uint8_t* data, size_t dataLen);
+		bool loadFile(const char* path);
+
+		bool loadFromHex(const uint8_t* data, size_t dataLen);
+		bool loadFromHexFile(const char* path);
+		bool loadFromELF(const uint8_t* data, size_t dataLen);
+		bool loadFromELFFile(const char* path);
+
 		static int logFlags;
-		void log(LogLevel logLevel, const char* msg, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
-		void log(LogLevel logLevel, const std::string& msg, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
+		void log(LogLevel logLevel, const char* msg, const char* fileName = NULL, size_t lineNum = -1, const char* module = NULL);
+		void log(LogLevel logLevel, const std::string& msg, const char* fileName = NULL, size_t lineNum = -1, const char* module = NULL);
 		template<typename ... Args>
 		void logf(LogLevel logLevel, const char* msg, Args ... args) {
 			log(logLevel, StringUtils::format(msg, args ...));
 		}
 
 		void activateLog();
-		static void log_(LogLevel logLevel, const char* msg, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
-		static void log_(LogLevel logLevel, const std::string& msg, const char* fileName = NULL, size_t lineNum = -1, const char* Module = NULL);
+		static void log_(LogLevel logLevel, const char* msg, const char* fileName = NULL, size_t lineNum = -1, const char* module = NULL);
+		static void log_(LogLevel logLevel, const std::string& msg, const char* fileName = NULL, size_t lineNum = -1, const char* module = NULL);
 		template<typename ... Args>
 		static void logf_(LogLevel logLevel, const char* msg, Args ... args) {
 			log_(logLevel, StringUtils::format(msg, args ...));
 		}
 
 		void setLogCallB(LogCallB newLogCallB);
-		void setLogCallBSimple(LogCallBSimple newLogCallBSimple);
+		static void defaultLogHandler(LogLevel logLevel, const char* msg, const char* fileName , int lineNum, const char* module);
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);

@@ -83,12 +83,12 @@ const uint8_t* A32u4::Flash::getData() {
 }
 
 void A32u4::Flash::setByte(addrmcu_t addr, uint8_t val){
-	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash setByte Address to Big: ",addr,4), "Flash", return 0);
+	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash setByte Address too Big: ",addr,4), "Flash", return);
 	data[addr] = val;
 	populateInstIndCacheEntry(addr/2);
 }
 void A32u4::Flash::setInst(pc_t pc, uint16_t val){
-	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash setWord Address to Big: ",addr,4), "Flash", return 0);
+	A32U4_ASSERT_INRANGE_M(pc, 0, sizeMax/2, A32U4_ADDR_ERR_STR("Flash setWord pc too Big: ",pc,4), "Flash", return);
 	data[pc*2] = val&0xFF;
 	data[pc*2+1] = (val>>8)&0xFF;
 	populateInstIndCacheEntry(pc);

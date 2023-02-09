@@ -83,6 +83,7 @@ namespace A32u4 {
 
 			bool operator<(const Symbol& rhs) const;
 			bool operator==(const Symbol& other) const;	
+			bool equals(const Symbol& other, bool includeID = true) const;
 		};
 
 		typedef void (*SymbolsPostProcFuncPtr)(Symbol* symbs, size_t len, void* userData);
@@ -104,8 +105,6 @@ namespace A32u4 {
 		std::vector<uint32_t> symbolsRom;
 
 		symb_size_t maxRamAddrEnd = 0;
-
-		bool doesHaveSymbols = false;
 
 		uint32_t genSymbolId();
 
