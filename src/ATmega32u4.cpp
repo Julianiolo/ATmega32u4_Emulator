@@ -13,7 +13,7 @@ A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this), debugg
 	activateLog();
 }
 A32u4::ATmega32u4::ATmega32u4(const ATmega32u4& src): 
-logCallB(src.logCallB), logCallBSimple(src.logCallBSimple), currentExecFlags(src.currentExecFlags), wasReset(src.wasReset),
+logCallB(src.logCallB), logCallBSimple(src.logCallBSimple), wasReset(src.wasReset),
 cpu(src.cpu), dataspace(src.dataspace), flash(src.flash), debugger(src.debugger), symbolTable(src.symbolTable)
 {
 	setMcu();
@@ -21,7 +21,6 @@ cpu(src.cpu), dataspace(src.dataspace), flash(src.flash), debugger(src.debugger)
 A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
 	logCallB = src.logCallB;
 	logCallBSimple = src.logCallBSimple;
-	currentExecFlags = src.currentExecFlags;
 	wasReset = src.wasReset;
 
 	cpu = src.cpu;
@@ -37,7 +36,6 @@ A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
 
 void A32u4::ATmega32u4::getState(std::ostream& output){
 	StreamUtils::write(output, wasReset);
-	StreamUtils::write(output, currentExecFlags);
 
 	cpu.getState(output);
 	dataspace.getState(output);
@@ -45,10 +43,10 @@ void A32u4::ATmega32u4::getState(std::ostream& output){
 
 	debugger.getState(output);
 	analytics.getState(output);
+	symbolTable.getState(output);
 }
 void A32u4::ATmega32u4::setState(std::istream& input){
 	StreamUtils::read(input, &wasReset);
-	StreamUtils::read(input, &currentExecFlags);
 
 	cpu.setState(input);
 	dataspace.setState(input);
@@ -56,6 +54,7 @@ void A32u4::ATmega32u4::setState(std::istream& input){
 
 	debugger.setState(input);
 	analytics.setState(input);
+	symbolTable.setState(input);
 }
 
 void A32u4::ATmega32u4::setMcu() {
@@ -87,7 +86,6 @@ void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
 	if (!wasReset)
 		abort();
 
-	currentExecFlags = flags;
 	if(!flash.isProgramLoaded())
 		return;
 	switch (flags) {
@@ -140,12 +138,7 @@ void A32u4::ATmega32u4::log(LogLevel logLevel, const char* msg, const char* file
 	}
 
 	if (logLevel == LogLevel_Error) {
-		if (currentExecFlags == (uint8_t)-1 || currentExecFlags & ExecFlags_Debug) {
-			debugger.halt();
-		}
-		else {
-			abort();
-		}
+		debugger.halt();
 	}
 }
 void A32u4::ATmega32u4::log(LogLevel logLevel, const std::string& msg, const char* fileName, size_t lineNum, const char* Module) {
@@ -173,7 +166,7 @@ void A32u4::ATmega32u4::setLogCallBSimple(LogCallBSimple newLogCallBSimple){
 
 bool A32u4::ATmega32u4::operator==(const ATmega32u4& other) const{
 #define _CMP_(x) (x==other.x)
-	return _CMP_(wasReset) && _CMP_(currentExecFlags) &&
+	return _CMP_(wasReset) &&
 		_CMP_(cpu) && _CMP_(dataspace) && _CMP_(flash)&&
 		_CMP_(debugger) && _CMP_(analytics);
 #undef _CMP_

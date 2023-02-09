@@ -66,7 +66,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 		}
 		else {
 #if !SLEEP_SKIP
-			addCycles((uint8_t)8);
+			addCycles((uint8_t)1);
 			mcu->dataspace.timers.update();
 #else
 			if (sleepCycsLeft == 0) {

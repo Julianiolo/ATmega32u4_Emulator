@@ -80,6 +80,13 @@ void A32u4::DataSpace::LastSet::resetAll() {
 	Timer0Update = 0;
 }
 
+bool A32u4::DataSpace::LastSet::operator==(const LastSet& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(EECR_EEMPE) && _CMP_(PLLCSR_PLLE) && _CMP_(ADCSRA_ADSC) && _CMP_(Timer0Update);
+#undef _CMP_
+}
+
+
 /*
 
 DataSpace:
@@ -465,7 +472,6 @@ void A32u4::DataSpace::setSPDR() {
 	//request Interrupt if SPIE set
 }
 void A32u4::DataSpace::setTCCR0B(uint8_t val) {
-	const uint8_t timer0Presc = val & 0b111;
 	mcu->cpu.breakOutOfOptim = true;
 	//printf("SWITCH to div:%d\n", timers.getTimer0PrescDiv());
 	lastSet.Timer0Update = mcu->cpu.totalCycls; // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
@@ -861,6 +867,7 @@ void A32u4::DataSpace::getState(std::ostream& output){
 	StreamUtils::write(output, lastSet.EECR_EEMPE);
 	StreamUtils::write(output, lastSet.PLLCSR_PLLE);
 	StreamUtils::write(output, lastSet.ADCSRA_ADSC);
+	StreamUtils::write(output, lastSet.Timer0Update);
 }
 void A32u4::DataSpace::setState(std::istream& input){
 	setRamState(input);
@@ -869,6 +876,7 @@ void A32u4::DataSpace::setState(std::istream& input){
 	StreamUtils::read(input, &lastSet.EECR_EEMPE);
 	StreamUtils::read(input, &lastSet.PLLCSR_PLLE);
 	StreamUtils::read(input, &lastSet.ADCSRA_ADSC);
+	StreamUtils::read(input, &lastSet.Timer0Update);
 }
 
 void A32u4::DataSpace::getRamState(std::ostream& output){
@@ -892,7 +900,7 @@ bool A32u4::DataSpace::operator==(const DataSpace& other) const{
 		std::equal(sreg,sreg+8,other.sreg,[](uint8_t a,uint8_t b){
 			return (!!a) == (!!b);
 		}) &&
-		_CMP_(lastSet.EECR_EEMPE) && _CMP_(lastSet.PLLCSR_PLLE) && _CMP_(lastSet.ADCSRA_ADSC);
+		_CMP_(lastSet);
 #undef _CMP_
 }
 

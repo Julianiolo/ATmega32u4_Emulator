@@ -288,6 +288,9 @@ void A32u4::Debugger::updateBreakpointListFromArr() {
 void A32u4::Debugger::getState(std::ostream& output){
 	StreamUtils::write(output, callStackPtr);
 	StreamUtils::write(output, halted);
+	StreamUtils::write(output, doStep);
+	StreamUtils::write(output, lastSPRecived);
+	StreamUtils::write(output, skipCycs);
 
 	output.write((const char*)&breakpoints[0], breakPointArrMaxSize);
 	output.write((const char*)&callStack[0], addressStackMaxSize);
@@ -296,6 +299,9 @@ void A32u4::Debugger::getState(std::ostream& output){
 void A32u4::Debugger::setState(std::istream& input){
 	StreamUtils::read(input, &callStackPtr);
 	StreamUtils::read(input, &halted);
+	StreamUtils::read(input, &doStep);
+	StreamUtils::read(input, &lastSPRecived);
+	StreamUtils::read(input, &skipCycs);
 
 	input.read((char*)&breakpoints[0], breakPointArrMaxSize);
 	input.read((char*)&callStack[0], addressStackMaxSize);
@@ -313,8 +319,9 @@ bool A32u4::Debugger::CallData::operator==(const CallData& other) const{
 
 bool A32u4::Debugger::operator==(const Debugger& other) const{
 #define _CMP_(x) (x==other.x)
-	return _CMP_(callStackPtr) && _CMP_(halted) &&
-		_CMP_(breakpoints) && _CMP_(callStack) && _CMP_(addressStackIndicators);
+	return _CMP_(callStackPtr) && _CMP_(halted) && _CMP_(doStep) &&
+		_CMP_(breakpoints) && _CMP_(callStack) && _CMP_(addressStackIndicators) && 
+		_CMP_(breakpointList) && _CMP_(skipCycs) && _CMP_(lastSPRecived);
 #undef _CMP_
 }
 

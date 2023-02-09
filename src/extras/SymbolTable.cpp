@@ -9,16 +9,38 @@
 
 #include "../ATmega32u4.h"
 
+bool A32u4::SymbolTable::Symbol::Flags::operator==(const Flags& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(scope) && 
+		_CMP_(isWeak) && _CMP_(isConstuctor) && _CMP_(isWarning) && 
+		_CMP_(indirectFlags) && _CMP_(debugDynamicFlags) && _CMP_(funcFileObjectFlags);
+#undef _CMP_
+}
+
+
 A32u4::SymbolTable::Symbol::Section::Section() {
 
 }
 A32u4::SymbolTable::Symbol::Section::Section(const std::string& name) : name(name) {
 
 }
+bool A32u4::SymbolTable::Symbol::Section::operator==(const Section& other) const{
+	return name == other.name;
+}
+
+
 
 bool A32u4::SymbolTable::Symbol::operator<(const Symbol& rhs) const {
 	return this->value < rhs.value;
 }
+bool A32u4::SymbolTable::Symbol::operator==(const Symbol& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(value) && _CMP_(flags) && _CMP_(flagStr) && 
+		_CMP_(name) && _CMP_(demangled) && _CMP_(note) && 
+		_CMP_(hasDemangledName) && _CMP_(size) && _CMP_(section) && _CMP_(id) && _CMP_(isHidden);
+#undef _CMP_
+}
+
 uint64_t A32u4::SymbolTable::Symbol::addrEnd() const {
 	return value + size;
 }
@@ -626,6 +648,16 @@ void A32u4::SymbolTable::Symbol::setState(std::istream& input){
 	StreamUtils::read(input, &isHidden);
 	StreamUtils::read(input, &extraData);
 }
+
+bool A32u4::SymbolTable::operator==(const SymbolTable& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(symbolStorage) && _CMP_(sections) &&
+		_CMP_(symbsIdMap) && _CMP_(symbsNameMap) && _CMP_(symbolsBySections) &&
+		_CMP_(symbolsRam) && _CMP_(symbolsRom) &&
+		_CMP_(maxRamAddrEnd) && _CMP_(doesHaveSymbols);
+#undef _CMP_
+}
+
 
 /*
 

@@ -54,6 +54,7 @@ namespace A32u4 {
 			uint64_t Timer0Update = 0;
 
 			void resetAll();
+			bool operator==(const LastSet& other) const;
 		} lastSet;
 
 		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
