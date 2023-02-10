@@ -5,8 +5,22 @@
 #include <cmath>
 
 #include "StringUtils.h"
+#include "StreamUtils.h"
 
 #include "../ATmega32u4.h"
+
+#define MCU_MODULE "SymbolTable"
+
+bool A32u4::SymbolTable::Symbol::Flags::operator==(const Flags& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(scope) && 
+		_CMP_(isWeak) && _CMP_(isConstuctor) && _CMP_(isWarning) && 
+		_CMP_(indirectFlags) && _CMP_(debugDynamicFlags) && _CMP_(funcFileObjectFlags);
+#undef _CMP_
+}
+
+
+
 
 A32u4::SymbolTable::Symbol::Section::Section() {
 
@@ -14,10 +28,39 @@ A32u4::SymbolTable::Symbol::Section::Section() {
 A32u4::SymbolTable::Symbol::Section::Section(const std::string& name) : name(name) {
 
 }
+bool A32u4::SymbolTable::Symbol::Section::operator==(const Section& other) const{
+	return name == other.name;
+}
+
+
 
 bool A32u4::SymbolTable::Symbol::operator<(const Symbol& rhs) const {
-	return this->value < rhs.value;
+	if(value != rhs.value) {
+		return value < rhs.value;
+	}
+	if(name != rhs.name) {
+		return name < rhs.name;
+	}
+	if(size != rhs.size) {
+		return size < rhs.size;
+	}
+	if(section != rhs.section) {
+		return section < rhs.section;
+	}
+	return id < rhs.id;
 }
+bool A32u4::SymbolTable::Symbol::operator==(const Symbol& other) const{
+	return equals(other);
+}
+bool A32u4::SymbolTable::Symbol::equals(const Symbol& other, bool includeID) const{
+#define _CMP_(x) (x==other.x)
+	bool same = _CMP_(value) && _CMP_(flags) && _CMP_(flagStr) && 
+		_CMP_(name) && _CMP_(demangled) && _CMP_(note) && 
+		_CMP_(hasDemangledName) && _CMP_(size) && _CMP_(section) && _CMP_(isHidden);
+	return same && (!includeID || _CMP_(id));
+#undef _CMP_
+}
+
 uint64_t A32u4::SymbolTable::Symbol::addrEnd() const {
 	return value + size;
 }
@@ -252,20 +295,28 @@ void A32u4::SymbolTable::setupConnections(size_t cnt, bool postProc) {
 	symbsNameMap.clear();
 	symbolsBySections.clear();
 
-	for (size_t i = 0; i<symbolStorage.size(); i++) {
+	for (size_t i = 0; i<symbolStorage.size(); ) {
 		auto& s = symbolStorage[i];
 
 		uint32_t id;
 		if(s.id == (decltype(s.id))-1){
 			id = genSymbolId();
+			MCU_ASSERT(symbsIdMap.find(id) == symbsIdMap.end());
 			s.id = id;
 		}else{
 			id = s.id;
 		}
 
-		symbsIdMap[id] = i;
 		// check that there are no duplicate symbolnames (exept "")
-		MCU_ASSERT(s.name.size() == 0 || symbsNameMap.find(s.name) == symbsNameMap.end());
+		if(s.name.size() != 0 && symbsNameMap.find(s.name) != symbsNameMap.end()) {
+			if(!s.equals(symbolStorage[symbsNameMap[s.name]],false)) {
+				MCU_LOGF(A32u4::ATmega32u4::LogLevel_Warning, "Duplicate Symbol name! %s", s.name.c_str());
+			}else{
+				symbolStorage.erase(symbolStorage.begin() + i);
+				continue;
+			}
+		}
+		symbsIdMap[id] = i;
 		symbsNameMap[s.name] = id;
 
 		symbolsBySections[s.section].push_back(id);
@@ -275,6 +326,8 @@ void A32u4::SymbolTable::setupConnections(size_t cnt, bool postProc) {
 
 		if (s.section == ".text")
 			symbolsRom.push_back(id);
+
+		i++;
 	}
 
 	MCU_ASSERT(symbsIdMap.size() == symbolStorage.size());
@@ -346,14 +399,13 @@ bool A32u4::SymbolTable::loadFromDump(const char* str, const char* str_end) {
 
 	setupConnections(cnt);
 
-	doesHaveSymbols = true;
 	return true;
 }
 bool A32u4::SymbolTable::loadFromDumpFile(const char* path) {
 	bool success = false;
 	std::string fileStr = StringUtils::loadFileIntoString(path, &success);
 	if (!success) { // loading didnt work
-		mcu->logf(ATmega32u4::LogLevel_Error, "Cannot Open symbol table dump File: %s", path);
+		MCU_LOGF(ATmega32u4::LogLevel_Error, "Cannot Open symbol table dump File: %s", path);
 		return false;
 	}
 
@@ -419,9 +471,6 @@ bool A32u4::SymbolTable::loadFromELF(const ELF::ELFFile& elf) {
 	}
 
 	setupConnections(cnt);
-
-	doesHaveSymbols = true;
-
 	return true;
 }
 
@@ -436,7 +485,7 @@ bool A32u4::SymbolTable::loadDeviceSymbolDumpFile(const char* path) {
 	bool success = true;
 	std::string fileStr = StringUtils::loadFileIntoString(path, &success); // (std::string("Cannot Open device symbol table dump File: ") + path).c_str()
 	if (!success) {// loading didnt work
-		mcu->logf(A32u4::ATmega32u4::LogLevel_Warning, "Cannot Open device symbol table dump file: %s", path);
+		MCU_LOGF(A32u4::ATmega32u4::LogLevel_Warning, "Cannot Open device symbol table dump file: %s", path);
 		return false;
 	}
 
@@ -455,13 +504,11 @@ void A32u4::SymbolTable::resetAll() {
 	symbolsRom.clear();
 
 	maxRamAddrEnd = 0;
-
-	doesHaveSymbols = false;
 }
 
 
 bool A32u4::SymbolTable::hasSymbols() const {
-	return doesHaveSymbols;
+	return symbolStorage.size() > 0;
 }
 
 const A32u4::SymbolTable::Symbol::Section* A32u4::SymbolTable::getSection(const std::string& name) const {
@@ -546,33 +593,35 @@ A32u4::SymbolTable::symb_size_t A32u4::SymbolTable::getMaxRamAddrEnd() const {
 }
 
 void A32u4::SymbolTable::getState(std::ostream& output){
-	output << symbolStorage.size();
+	StreamUtils::write(output, symbolStorage.size());
 	for(size_t i = 0; i<symbolStorage.size(); i++) {
-		output << symbolStorage[i];
+		symbolStorage[i].getState(output);
 	}
-	output << sections.size();
+
+	StreamUtils::write(output, sections.size());
 	for(auto& pair : sections) {
-		output << pair.first;
-		output << pair.second.name;
+		StreamUtils::write(output, pair.first);
+		StreamUtils::write(output, pair.second.name);
 	}
 }
 void A32u4::SymbolTable::setState(std::istream& input){
 	{
 		size_t numSymbols;
-		input >> numSymbols;
+		StreamUtils::read(input, &numSymbols);
 		for(size_t i = 0; i<numSymbols; i++) {
 			symbolStorage.push_back(Symbol());
-			input >> symbolStorage.back();
+			symbolStorage.back().setState(input);
 		}
 	}
 	{
 		size_t numSections;
-		input >> numSections;
-		for(auto& pair : sections) {
+		StreamUtils::read(input, &numSections);
+		for(size_t i = 0; i<numSections; i++) {
 			std::string key;
 			std::string val;
-			input >> key;
-			input >> val;
+
+			StreamUtils::read(input, &key);
+			StreamUtils::read(input, &val);
 
 			sections[key] = Symbol::Section(val);
 		}
@@ -581,50 +630,56 @@ void A32u4::SymbolTable::setState(std::istream& input){
 	setupConnections(symbolStorage.size(), false);
 }
 
-std::ostream& operator<<(std::ostream& output, const A32u4::SymbolTable::Symbol& symbol){
-	output << symbol.value;
+void A32u4::SymbolTable::Symbol::getState(std::ostream& output){
+	StreamUtils::write(output, value);
 
-	output << symbol.flags.scope;
-	output << symbol.flags.isWeak;
-	output << symbol.flags.isConstuctor;
-	output << symbol.flags.isWarning;
-	output << symbol.flags.indirectFlags;
-	output << symbol.flags.debugDynamicFlags;
-	output << symbol.flags.funcFileObjectFlags;
+	StreamUtils::write(output, flags.scope);
+	StreamUtils::write(output, flags.isWeak);
+	StreamUtils::write(output, flags.isConstuctor);
+	StreamUtils::write(output, flags.isWarning);
+	StreamUtils::write(output, flags.indirectFlags);
+	StreamUtils::write(output, flags.debugDynamicFlags);
+	StreamUtils::write(output, flags.funcFileObjectFlags);
 
-	output << symbol.flagStr;
-	output << symbol.name;
-	output << symbol.demangled;
-	output << symbol.note;
-	output << symbol.size;
-	output << symbol.section;
-	output << symbol.id;
-	output << symbol.isHidden;
-	output << symbol.extraData;
-	return output;
+	StreamUtils::write(output, flagStr);
+	StreamUtils::write(output, name);
+	StreamUtils::write(output, demangled);
+	StreamUtils::write(output, note);
+	StreamUtils::write(output, size);
+	StreamUtils::write(output, section);
+	StreamUtils::write(output, id);
+	StreamUtils::write(output, isHidden);
 }
-std::istream& operator>>(std::istream& input, A32u4::SymbolTable::Symbol& symbol){
-	input >> symbol.value;
+void A32u4::SymbolTable::Symbol::setState(std::istream& input){
+	StreamUtils::read(input, &value);
 
-	input >> symbol.flags.scope;
-	input >> symbol.flags.isWeak;
-	input >> symbol.flags.isConstuctor;
-	input >> symbol.flags.isWarning;
-	input >> symbol.flags.indirectFlags;
-	input >> symbol.flags.debugDynamicFlags;
-	input >> symbol.flags.funcFileObjectFlags;
+	StreamUtils::read(input, &flags.scope);
+	StreamUtils::read(input, &flags.isWeak);
+	StreamUtils::read(input, &flags.isConstuctor);
+	StreamUtils::read(input, &flags.isWarning);
+	StreamUtils::read(input, &flags.indirectFlags);
+	StreamUtils::read(input, &flags.debugDynamicFlags);
+	StreamUtils::read(input, &flags.funcFileObjectFlags);
 
-	input >> symbol.flagStr;
-	input >> symbol.name;
-	input >> symbol.demangled;
-	input >> symbol.note;
-	input >> symbol.size;
-	input >> symbol.section;
-	input >> symbol.id;
-	input >> symbol.isHidden;
-	input >> symbol.extraData;
-	return input;
+	StreamUtils::read(input, &flagStr);
+	StreamUtils::read(input, &name);
+	StreamUtils::read(input, &demangled);
+	StreamUtils::read(input, &note);
+	StreamUtils::read(input, &size);
+	StreamUtils::read(input, &section);
+	StreamUtils::read(input, &id);
+	StreamUtils::read(input, &isHidden);
 }
+
+bool A32u4::SymbolTable::operator==(const SymbolTable& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(symbolStorage) && _CMP_(sections) &&
+		_CMP_(symbsIdMap) && _CMP_(symbsNameMap) && _CMP_(symbolsBySections) &&
+		_CMP_(symbolsRam) && _CMP_(symbolsRom) &&
+		_CMP_(maxRamAddrEnd);
+#undef _CMP_
+}
+
 
 /*
 

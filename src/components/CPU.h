@@ -18,12 +18,13 @@ namespace A32u4 {
 		friend class ATmega32u4;
 		friend class InstHandler;
 		friend class DataSpace;
+		friend class Flash;
 		friend class Debugger;
 	private:
 		ATmega32u4* mcu;
 
 		pc_t PC;
-		uint64_t totalCycls, targetCycs;
+		uint64_t totalCycls, targetCycls;
 
 		uint64_t interruptFlags;
 		bool insideInterrupt;
@@ -67,6 +68,8 @@ namespace A32u4 {
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
+
+		bool operator==(const CPU& other) const;
 	};
 }
 

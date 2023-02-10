@@ -1,6 +1,7 @@
 #include "CPU.h"
 
 #include "../utils/bitMacros.h"
+#include "StreamUtils.h"
 
 #include "../ATmega32u4.h"
 #include "CPUTemplates.h"
@@ -9,7 +10,7 @@
 #define fastBitSet(cond,val,mask) (-(cond) ^ (val)) & (mask)
 
 A32u4::CPU::CPU(ATmega32u4* mcu_) : mcu(mcu_), 
-PC(0), totalCycls(0), targetCycs(0),
+PC(0), totalCycls(0), targetCycls(0),
 interruptFlags(0), insideInterrupt(false) {
 
 }
@@ -24,7 +25,7 @@ void A32u4::CPU::reset() {
 	sleepCycsLeft = 0;
 
 	totalCycls = 0;
-	targetCycs = 0;
+	targetCycls = 0;
 	breakOutOfOptim = false;
 }
 
@@ -77,7 +78,7 @@ uint64_t A32u4::CPU::cycsToNextTimerInt() {
 	uint64_t amt = -1;
 	{
 		uint8_t timer0 = mcu->dataspace.data[DataSpace::Consts::TCNT0];
-		uint64_t nextOverflow = mcu->dataspace.timers.lastTimer0Update + (256-timer0)*mcu->dataspace.timers.getTimer0PrescDiv();
+		uint64_t nextOverflow = mcu->dataspace.lastSet.Timer0Update + (256-timer0)*mcu->dataspace.getTimer0PrescDiv();
 		amt = std::min(amt, nextOverflow - totalCycls);
 	}
 	return amt;
@@ -437,30 +438,39 @@ bool A32u4::CPU::isSleeping() const {
 }
 
 void A32u4::CPU::getState(std::ostream& output){
-	output << PC;
-	output << totalCycls;
-	output << targetCycs;
+	StreamUtils::write(output, PC);
+	StreamUtils::write(output, totalCycls);
+	StreamUtils::write(output, targetCycls);
 
-	output << interruptFlags;
-	output << insideInterrupt;
+	StreamUtils::write(output, interruptFlags);
+	StreamUtils::write(output, insideInterrupt);
 
-	output << breakOutOfOptim;
+	StreamUtils::write(output, breakOutOfOptim);
 
-	output << CPU_sleep;
-	output << sleepCycsLeft;
+	StreamUtils::write(output, CPU_sleep);
+	StreamUtils::write(output, sleepCycsLeft);
 }
 void A32u4::CPU::setState(std::istream& input){
-	input >> PC;
-	input >> totalCycls;
-	input >> targetCycs;
+	StreamUtils::read(input, &PC);
+	StreamUtils::read(input, &totalCycls);
+	StreamUtils::read(input, &targetCycls);
+	
+	StreamUtils::read(input, &interruptFlags);
+	StreamUtils::read(input, &insideInterrupt);
 
-	input >> interruptFlags;
-	input >> insideInterrupt;
+	StreamUtils::read(input, &breakOutOfOptim);
 
-	input >> breakOutOfOptim;
+	StreamUtils::read(input, &CPU_sleep);
+	StreamUtils::read(input, &sleepCycsLeft);
+}
 
-	input >> CPU_sleep;
-	input >> sleepCycsLeft;
+bool A32u4::CPU::operator==(const CPU& other) const{
+#define _CMP_(x) (x==other.x)
+	return _CMP_(PC) && _CMP_(totalCycls) && _CMP_(targetCycls) &&
+		_CMP_(interruptFlags) && _CMP_(insideInterrupt) &&
+		_CMP_(breakOutOfOptim) &&
+		_CMP_(CPU_sleep) && _CMP_(sleepCycsLeft);
+#undef _CMP_
 }
 
 /*

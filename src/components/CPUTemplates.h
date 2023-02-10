@@ -1,4 +1,5 @@
 #include <algorithm>
+#include "../A32u4Types.h"
 
 template<bool debug, bool analyse>
 void A32u4::CPU::execute(uint64_t amt) {
@@ -12,18 +13,24 @@ void A32u4::CPU::execute(uint64_t amt) {
 
 template<bool debug, bool analyse>
 void A32u4::CPU::execute4T(uint64_t amt) {
-	targetCycs += amt;
-	while (totalCycls < targetCycs) {
+	targetCycls += amt;
+	size_t cnt = 0;
+	while (totalCycls < targetCycls) {
 		breakOutOfOptim = false;
+		cnt++;
+		if(cnt >= amt*2) {
+			printf("WTF %lu %lu %lu %d %lu\n",totalCycls,targetCycls,amt,CPU_sleep,cycsToNextTimerInt());
+			abort();
+		}
 
 		if (mcu->debugger.isHalted() && !mcu->debugger.doStep) {
-			targetCycs = std::max(targetCycs - amt, totalCycls);
+			targetCycls = std::max(targetCycls - amt, totalCycls);
 			return;
 		}
 
 		if (!CPU_sleep) {
-			if(mcu->dataspace.timers.getTimer0Presc() <= 1){
-				if(mcu->dataspace.timers.getTimer0Presc() == 0){
+			if(mcu->dataspace.getTimer0Presc() <= 1){
+				if(mcu->dataspace.getTimer0Presc() == 0){
 					InstHandler::inst_effect_t res = InstHandler::handleCurrentInstT<debug, analyse>(mcu);
 					totalCycls += res.addToCycs;
 					PC += res.addToPC;
@@ -31,8 +38,8 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 					InstHandler::inst_effect_t res = InstHandler::handleCurrentInstT<debug, analyse>(mcu);
 					totalCycls += res.addToCycs;
 					PC += res.addToPC;
-					mcu->dataspace.timers.doTicks(res.addToCycs);
-					mcu->dataspace.timers.checkForIntr();
+					mcu->dataspace.doTicks(res.addToCycs);
+					mcu->dataspace.checkForIntr();
 				}
 			}
 			else{
@@ -41,8 +48,8 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				bool doTimerTick = true;
 				uint64_t currTargetCycs = totalCycls + cycsToNextInt;
 				
-				if (currTargetCycs > targetCycs) {
-					currTargetCycs = targetCycs;
+				if (currTargetCycs > targetCycls) {
+					currTargetCycs = targetCycls;
 					doTimerTick = false;
 				}
 
@@ -55,18 +62,18 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
 				if (totalCycls >= currTargetCycs && doTimerTick) {
 					timer0 = 255;
-					mcu->dataspace.timers.doTick(timer0);
+					mcu->dataspace.doTick(timer0);
 				}
 				else {
-					timer0 += (uint8_t)((totalCycls - mcu->dataspace.timers.lastTimer0Update) / DataSpace::Timers::presc[mcu->dataspace.timers.getTimer0Presc()]);
+					timer0 += (uint8_t)((totalCycls - mcu->dataspace.lastSet.Timer0Update) / mcu->dataspace.getTimer0PrescDiv());
 				}
-				mcu->dataspace.timers.markTimer0Update();
-				mcu->dataspace.timers.checkForIntr();
+				mcu->dataspace.markTimer0Update();
+				mcu->dataspace.checkForIntr();
 			}
 		}
 		else {
 #if !SLEEP_SKIP
-			addCycles((uint8_t)8);
+			addCycles((uint8_t)1);
 			mcu->dataspace.timers.update();
 #else
 			if (sleepCycsLeft == 0) {
@@ -75,14 +82,14 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 			}
 
 			uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
-			if (sleepCycsLeft <= (targetCycs - totalCycls) ) {
+			if (sleepCycsLeft <= (targetCycls - totalCycls) ) {
 				// done sleeping
 				timer0 = 255;
 
 				totalCycls += sleepCycsLeft;
 
-				mcu->dataspace.timers.doTick(timer0);
-				mcu->dataspace.timers.checkForIntr();
+				mcu->dataspace.doTick(timer0);
+				mcu->dataspace.checkForIntr();
 
 				if(analyse){
 					mcu->analytics.sleepSum += sleepCycsLeft;
@@ -91,14 +98,14 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				sleepCycsLeft = 0;
 			}
 			else {
-				uint64_t skipCycs = targetCycs - totalCycls;
+				uint64_t skipCycs = targetCycls - totalCycls;
 				sleepCycsLeft -= skipCycs;
 				if(analyse){
 					mcu->analytics.sleepSum += skipCycs;
 				}
 				totalCycls += skipCycs;
-				timer0 += (uint8_t)(sleepCycsLeft / DataSpace::Timers::presc[mcu->dataspace.timers.getTimer0Presc()]);
-				mcu->dataspace.timers.markTimer0Update();
+				timer0 += (uint8_t)(sleepCycsLeft / mcu->dataspace.getTimer0PrescDiv());
+				mcu->dataspace.markTimer0Update();
 				//printf("slept for: %llu, continuing later\n", sleepCycsLeft);
 			}
 #endif

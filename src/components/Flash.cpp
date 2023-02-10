@@ -5,9 +5,12 @@
 #include <fstream>
 
 #include "StringUtils.h"
+#include "StreamUtils.h"
 
 #include "../ATmega32u4.h"
 #include "InstHandler.h"
+
+#define MCU_MODULE "Flash"
 
 A32u4::Flash::Flash(ATmega32u4* mcu):
 	mcu(mcu)
@@ -50,12 +53,12 @@ A32u4::Flash& A32u4::Flash::operator=(const Flash& src){
 }
 
 uint8_t A32u4::Flash::getByte(addrmcu_t addr) const {
-	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getByte Address to Big: ",addr,4), "Flash", return 0);
+	A32U4_ASSERT_INRANGE2(addr, 0, sizeMax, return 0, "Flash getByte Address to Big: " MCU_ADDR_FORMAT);
 
 	return data[addr];
 }
 uint16_t A32u4::Flash::getWord(addrmcu_t addr) const {
-	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getWord Address to Big: ",addr,4), "Flash", return 0);
+	A32U4_ASSERT_INRANGE2(addr, 0, sizeMax, return 0, "Flash getWord Address to Big: " MCU_ADDR_FORMAT);
 
 	return ((uint16_t)data[addr + 1] << 8) | data[addr];
 }
@@ -66,7 +69,7 @@ uint16_t A32u4::Flash::getInst(pc_t pc) const {
 }
 
 uint8_t A32u4::Flash::getInstIndCache(pc_t pc) const {
-	A32U4_ASSERT_INRANGE_M(pc, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash getInstIndCache Address to Big: ",pc,4), "Flash", return 0xEE);
+	A32U4_ASSERT_INRANGE2(pc, 0, sizeMax, return 0xEE, "Flash getInstIndCache Address to Big: " MCU_ADDR_FORMAT);
 	return instCache[pc];
 }
 uint8_t A32u4::Flash::getInstInd(pc_t pc) const{
@@ -82,12 +85,12 @@ const uint8_t* A32u4::Flash::getData() {
 }
 
 void A32u4::Flash::setByte(addrmcu_t addr, uint8_t val){
-	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash setByte Address to Big: ",addr,4), "Flash", return 0);
+	A32U4_ASSERT_INRANGE2(addr, 0, sizeMax, return, "Flash setByte Address too Big: " MCU_ADDR_FORMAT);
 	data[addr] = val;
 	populateInstIndCacheEntry(addr/2);
 }
 void A32u4::Flash::setInst(pc_t pc, uint16_t val){
-	A32U4_ASSERT_INRANGE_M(addr, 0, sizeMax, A32U4_ADDR_ERR_STR("Flash setWord Address to Big: ",addr,4), "Flash", return 0);
+	A32U4_ASSERT_INRANGE2(pc, 0, sizeMax/2, return, "Flash setWord pc too Big: " MCU_ADDR_FORMAT);
 	data[pc*2] = val&0xFF;
 	data[pc*2+1] = (val>>8)&0xFF;
 	populateInstIndCacheEntry(pc);
@@ -110,7 +113,7 @@ void A32u4::Flash::clear() {
 
 void A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 	if (dataLen >= sizeMax) {
-		mcu->logf(ATmega32u4::LogLevel_Warning ,"%llu bytes is more than fits into the Flash, max is %llu bytes", dataLen, sizeMax);
+		MCU_LOGF(ATmega32u4::LogLevel_Warning,"%llu bytes is more than fits into the Flash, max is %llu bytes", dataLen, sizeMax);
 		// return; // should we return here?
 	}
 
@@ -137,7 +140,7 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 	for (size_t i = 0; i < strl; i++) {
 		unsigned char c = (unsigned char)str[i];
 		if (c == 0 || c > 127) {
-			mcu->logf(ATmega32u4::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character (0x%02x at %" MCU_PRIuSIZE ")", c, i);
+			MCU_LOGF(ATmega32u4::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character (0x%02x at %" MCU_PRIuSIZE ")", c, i);
 			return false;
 		}
 	}
@@ -180,7 +183,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	{
 		const char* ext = StringUtils::getFileExtension(path);
 		if (std::strcmp(ext, "hex") != 0) {
-			mcu->log(ATmega32u4::LogLevel_Error, StringUtils::format("Wrong Extension for loading Flash contents: %s", ext), __FILE__, __LINE__, "Flash");
+			MCU_LOGF(ATmega32u4::LogLevel_Error, "Wrong Extension for loading Flash contents: %s", ext);
 			return false;
 		}
 	}
@@ -190,7 +193,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	t.open(path, std::ios::binary);
 	if (!t.is_open()) {
 		t.close();
-		mcu->log(ATmega32u4::LogLevel_Error, StringUtils::format("Cannot open file: %s", path), __FILE__, __LINE__, "Flash");
+		MCU_LOGF(ATmega32u4::LogLevel_Error, "Cannot open file: %s", path);
 		return false;
 	}
 	t.seekg(0, std::ios::end);
@@ -225,15 +228,23 @@ void A32u4::Flash::setState(std::istream& input){
 }
 
 void A32u4::Flash::getRomState(std::ostream& output) {
+	StreamUtils::write(output, size_);
 	output.write((const char*)data, sizeMax);
 }
 void A32u4::Flash::setRomState(std::istream& input){
+	StreamUtils::read(input, &size_);
 	input.read((char*)data, sizeMax);
 
 #if FLASH_USE_INSTIND_CACHE
 	populateInstIndCache();
 #endif
+	hasProgram = true;
 }
+
+bool A32u4::Flash::operator==(const Flash& other) const{
+	return size_==other.size_ && std::memcmp(data,other.data,sizeMax) == 0;
+}
+
 
 /*
 

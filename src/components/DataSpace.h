@@ -26,30 +26,6 @@ namespace A32u4 {
 		friend class Debugger;
 		friend class InstHandler;
 
-		class Timers {
-		public:
-			ATmega32u4* mcu;
-
-			uint8_t timer0_presc_cache = 0;
-			uint64_t lastTimer0Update = 0;
-			uint32_t lastCounter;
-
-			static constexpr uint16_t presc[] = {0,1,8,64,256,1024};
-
-			Timers(ATmega32u4* mcu);
-
-
-			void reset();
-
-			void update();
-			void doTick(uint8_t& timer);
-			void doTicks(uint8_t num);
-			void checkForIntr();
-			uint8_t getTimer0Presc() const;
-			uint16_t getTimer0PrescDiv() const;
-			void markTimer0Update();
-		};
-
 		ATmega32u4* mcu;
 		
 #if !USE_HEAP
@@ -64,7 +40,6 @@ namespace A32u4 {
 #else
 		uint8_t* eeprom;
 #endif
-		Timers timers;
 
 		void (*SCK_Callback)() = NULL;
 		SPIByteCallB SPI_Byte_Callback = NULL;
@@ -76,8 +51,10 @@ namespace A32u4 {
 			uint64_t EECR_EEMPE = 0;
 			uint64_t PLLCSR_PLLE = 0;
 			uint64_t ADCSRA_ADSC = 0;
+			uint64_t Timer0Update = 0;
 
 			void resetAll();
+			bool operator==(const LastSet& other) const;
 		} lastSet;
 
 		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
@@ -137,6 +114,16 @@ namespace A32u4 {
 		uint16_t getADCVal();
 
 
+		// Timer stuff
+		static constexpr uint16_t timerPresc[] = {1,1,8,64,256,1024};
+		void doTick(uint8_t& timer);
+		void doTicks(uint8_t num);
+		void checkForIntr();
+		uint8_t getTimer0Presc() const;
+		uint16_t getTimer0PrescDiv() const;
+		void markTimer0Update();
+
+
 		void setFlags_NZ(uint8_t res);
 		void setFlags_NZ(uint16_t res);
 		void setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t res);
@@ -180,7 +167,7 @@ namespace A32u4 {
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
 
-		void _setMcu(ATmega32u4* mcu_);
+		bool operator==(const DataSpace& other) const;
 	};
 }
 

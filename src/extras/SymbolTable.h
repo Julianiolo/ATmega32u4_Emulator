@@ -25,6 +25,8 @@ namespace A32u4 {
 				uint8_t indirectFlags = Flags_Indirect_Normal;
 				uint8_t debugDynamicFlags = Flags_DebDyn_Normal;
 				uint8_t funcFileObjectFlags = Flags_FuncFileObj_Normal;
+
+				bool operator==(const Flags& other) const;
 			};
 			enum Flags_Scope {
 				Flags_Scope_None = 0,
@@ -54,6 +56,8 @@ namespace A32u4 {
 				std::string name;
 				Section();
 				Section(const std::string& name);
+
+				bool operator==(const Section& other) const;
 			};
 
 			symb_size_t value;
@@ -72,8 +76,14 @@ namespace A32u4 {
 
 			void* extraData = nullptr;
 
+			symb_size_t addrEnd() const;
+
+			void getState(std::ostream& output);
+			void setState(std::istream& input);
+
 			bool operator<(const Symbol& rhs) const;
-			symb_size_t addrEnd() const;			
+			bool operator==(const Symbol& other) const;	
+			bool equals(const Symbol& other, bool includeID = true) const;
 		};
 
 		typedef void (*SymbolsPostProcFuncPtr)(Symbol* symbs, size_t len, void* userData);
@@ -95,8 +105,6 @@ namespace A32u4 {
 		std::vector<uint32_t> symbolsRom;
 
 		symb_size_t maxRamAddrEnd = 0;
-
-		bool doesHaveSymbols = false;
 
 		uint32_t genSymbolId();
 
@@ -144,11 +152,9 @@ namespace A32u4 {
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
+
+		bool operator==(const SymbolTable& other) const;
 	};
 }
-
-std::ostream& operator<<(std::ostream& output, const A32u4::SymbolTable::Symbol& symbol);
-std::istream& operator>>(std::istream& output, A32u4::SymbolTable::Symbol& symbol);
-
 
 #endif

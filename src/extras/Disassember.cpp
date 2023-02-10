@@ -14,6 +14,7 @@
 #include "../components/InstInds.h"
 #include "../components/InstHandler.h"
 
+#define MCU_MODULE "Debugger"
 
 #define INST_PAR_TYPE_RAWVAL 0
 #define INST_PAR_TYPE_RAWVALDEC 1
@@ -181,10 +182,7 @@ void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data, cons
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0;
-		MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, 
-			StringUtils::format("disassembly took %f ms",ms), 
-			"Disassembler"
-		);
+		MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "disassembly took %f ms", ms);
 	}
 }
 
@@ -308,7 +306,7 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 		
 		{
 			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end0 - start0).count()/1000.0;
-			MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, StringUtils::format("branch init took: %f ms", ms), "Disassembler");
+			MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "branch init took: %f ms", ms);
 		}
 
 
@@ -335,13 +333,11 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 		auto end1 = std::chrono::high_resolution_clock::now();
 		{
 			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start1).count()/1000.0;
-			MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, 
-				StringUtils::format("branch comp took: %f ms; %" MCU_PRIuSIZE "=>%" MCU_PRIuSIZE " [%" MCU_PRIuSIZE " bs,%" MCU_PRIuSIZE " lines]", 
-					ms, 
-					passingBranches.size(), passingBranchesVec.size(),
-					branchRoots.size(), lines.size()
-				), 
-				"Disassembler"
+			MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, 
+				"branch comp took: %f ms; %" MCU_PRIuSIZE "=>%" MCU_PRIuSIZE " [%" MCU_PRIuSIZE " bs,%" MCU_PRIuSIZE " lines]", 
+				ms, 
+				passingBranches.size(), passingBranchesVec.size(),
+				branchRoots.size(), lines.size()
 			);
 		}
 	}
@@ -361,7 +357,7 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 		auto end = std::chrono::high_resolution_clock::now();
 		{
 			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0;
-			MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, StringUtils::format("branch recursion took: %f ms", ms), "Disassembler");
+			MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "branch recursion took: %f ms", ms);
 		}
 	}
 	#else
@@ -446,7 +442,7 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 			maxBranchDisplayDepth = branchRoots[i].displayDepth;
 	}
 
-	MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, StringUtils::format("branch max Display Depth is %" MCU_PRIuSIZE, maxBranchDisplayDepth), "Disassembler");
+	MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "branch max Display Depth is %" MCU_PRIuSIZE, maxBranchDisplayDepth);
 }
 #if 0
 const BitArray<256>& A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_t depth) {

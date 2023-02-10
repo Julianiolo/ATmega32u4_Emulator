@@ -13,6 +13,11 @@ typedef uint16_t sizemcu_t;
 
 #define ADDRMCU_T_MAX 0xFFFF
 
+#define MCU_PRIuADDR PRIu16
+#define MCU_PRIxADDR PRIx16
+#define MCU_PRIuPC PRIu16
+#define MCU_PRIxPC PRIx16
+
 // Print size_t macros
 #if SIZE_MAX == 0xffffull
     #define MCU_PRIdSIZE PRId16
@@ -44,23 +49,26 @@ typedef uint16_t sizemcu_t;
 
 #define MCU_ARR_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
+inline void assertion_failed_(const char* file, int line) {
+    printf("Assertion Failed! %s:%d\n", file, line);
+    abort();
+}
 #ifdef _DEBUG
     #define MCU_ASSERT(x) do {\
         if(!(x)){\
-            printf("Assertion Failed! %s:%d\n", __FILE__, __LINE__);\
-            abort();\
+            assertion_failed_(__FILE__, __LINE__);\
         }\
     } while(0)
 #else
     #define MCU_ASSERT(x)
-    //#error
 #endif
+
 #ifdef _MSC_VER
     #define MCU_STATIC_ASSERT(x) static_assert(x,"")
 #else
     #define MCU_STATIC_ASSERT(x) static_assert(x)
 #endif
-    #define MCU_STATIC_ASSERT_MSG(x,msg) static_assert(x,msg)
+#define MCU_STATIC_ASSERT_MSG(x,msg) static_assert(x,msg)
 
 #define MCU_FALLTHROUGH [[fallthrough]]
 #define MCU_UNUSED(x) do { (void)(x); } while(0)
