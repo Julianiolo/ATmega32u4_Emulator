@@ -3,6 +3,7 @@
 #include "StringUtils.h"
 #include "StreamUtils.h"
 
+#define MCU_MODULE "Inst Handler"
 #include "components/InstHandlerTemplates.h"
 #include "components/CPUTemplates.h"
 

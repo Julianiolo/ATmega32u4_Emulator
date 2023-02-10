@@ -13,6 +13,11 @@ typedef uint16_t sizemcu_t;
 
 #define ADDRMCU_T_MAX 0xFFFF
 
+#define MCU_PRIuADDR PRIu16
+#define MCU_PRIxADDR PRIx16
+#define MCU_PRIuPC PRIu16
+#define MCU_PRIxPC PRIx16
+
 // Print size_t macros
 #if SIZE_MAX == 0xffffull
     #define MCU_PRIdSIZE PRId16

@@ -14,26 +14,28 @@
 #include "extras/Analytics.h"
 #include "extras/SymbolTable.h"
 
-#define MCU_LOG(level, msg) ATmega32u4::log_(level,msg,__FILE__,__LINE__);
-#define MCU_LOG_M(level, msg, module_) ATmega32u4::log_(level,msg,__FILE__,__LINE__,module_);
+#define MCU_LOG(level, msg) mcu->log(level,msg,__FILE__,__LINE__,MCU_MODULE);
+#define MCU_LOGF(level, msg, ...) mcu->logf2(level,MCU_MODULE,__FILE__,__LINE__,msg,##__VA_ARGS__);
+#define MCU_LOG_(level, msg) A32u4::ATmega32u4::log_(level,msg,__FILE__,__LINE__,MCU_MODULE);
+#define MCU_LOGF_(level, msg, ...) A32u4::ATmega32u4::logf2_(level,MCU_MODULE,__FILE__,__LINE__,msg,##__VA_ARGS__);
+
 
 #if RANGE_CHECK
 #if RANGE_CHECK_ERROR
-#define A32U4_ASSERT_INRANGE(val,from,to,msg,action) if((val) < (from) || (val) >= (to)) { mcu->log(ATmega32u4::LogLevel_Error, (msg), __FILE__, __LINE__); action;}
-#define A32U4_ASSERT_INRANGE_M(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ mcu->log(ATmega32u4::LogLevel_Error, (msg), __FILE__, __LINE__,module_); action;}
-#define A32U4_ASSERT_INRANGE_M_W(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ mcu->log(ATmega32u4::LogLevel_Warning, (msg), __FILE__, __LINE__,module_); action;}
+#define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { MCU_LOGF(ATmega32u4::LogLevel_Error, msg, ##__VA_ARGS__); action;}
+#define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { MCU_LOGF(ATmega32u4::LogLevel_Error, msg, val, val); action;}
 #else
-#define A32U4_ASSERT_INRANGE(val,from,to,msg,action) if((val) < (from) || (val) >= (to)) { action;}
-#define A32U4_ASSERT_INRANGE_M(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ action;}
-#define A32U4_ASSERT_INRANGE_M_W(val,from,to,msg,module_, action) if((val) < (from) || (val) >= (to)){ action;}
+#define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { action;}
+#define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { action;}
 #endif
 #else
-#define A32U4_ASSERT_INRANGE(val,from,to,msg,action)
-#define A32U4_ASSERT_INRANGE_M(val,from,to,msg,module_,action)
-#define A32U4_ASSERT_INRANGE_M_W(val,from,to,msg,module_, action)
+#define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...)
+#define A32U4_ASSERT_INRANGE2(val,from,to,action,msg)
 #endif
 
-#define A32U4_ADDR_ERR_STR(A_msg,A_addr,A_HexPlaces) (A_msg  + std::to_string(A_addr) + " => 0x" + StringUtils::uIntToHexStr(A_addr,A_HexPlaces) + " @PC:" + std::to_string(mcu->cpu.PC))
+#define MCU_ADDR_FORMAT "%" MCU_PRIuADDR "(0x%" MCU_PRIxADDR ")"
+
+//#define A32U4_ADDR_ERR_STR(A_msg,A_addr) "%s%u => 0x%4x @PC:%", MCU_PRIuPC, A_msg, A_addr, A_addr, mcu->cpu.PC
 
 namespace A32u4 {
 	class ATmega32u4 {
@@ -102,6 +104,10 @@ namespace A32u4 {
 		void logf(LogLevel logLevel, const char* msg, Args ... args) {
 			log(logLevel, StringUtils::format(msg, args ...));
 		}
+		template<typename ... Args>
+		void logf2(LogLevel logLevel, const char* module, const char* fileName, int lineNum, const char* msg, Args ... args) {
+			log(logLevel, StringUtils::format(msg, args ...), fileName, lineNum, module);
+		}
 
 		void activateLog();
 		static void log_(LogLevel logLevel, const char* msg, const char* fileName = NULL, size_t lineNum = -1, const char* module = NULL);
@@ -109,6 +115,10 @@ namespace A32u4 {
 		template<typename ... Args>
 		static void logf_(LogLevel logLevel, const char* msg, Args ... args) {
 			log_(logLevel, StringUtils::format(msg, args ...));
+		}
+		template<typename ... Args>
+		static void logf2_(LogLevel logLevel, const char* module, const char* fileName, int lineNum, const char* msg, Args ... args) {
+			log_(logLevel, StringUtils::format(msg, args ...), fileName, lineNum, module);
 		}
 
 		void setLogCallB(LogCallB newLogCallB);

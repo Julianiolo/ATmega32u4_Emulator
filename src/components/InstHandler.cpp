@@ -9,6 +9,8 @@
 #include "InstInds.h"
 #include "../extras/Disassembler.h"
 
+#define MCU_MODULE "InstHandler"
+
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::callInstSwitch(uint8_t ind, ATmega32u4* mcu, uint16_t word){
 	switch(ind) {
 		case 0:

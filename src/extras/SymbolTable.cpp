@@ -9,6 +9,8 @@
 
 #include "../ATmega32u4.h"
 
+#define MCU_MODULE "SymbolTable"
+
 bool A32u4::SymbolTable::Symbol::Flags::operator==(const Flags& other) const{
 #define _CMP_(x) (x==other.x)
 	return _CMP_(scope) && 
@@ -308,7 +310,7 @@ void A32u4::SymbolTable::setupConnections(size_t cnt, bool postProc) {
 		// check that there are no duplicate symbolnames (exept "")
 		if(s.name.size() != 0 && symbsNameMap.find(s.name) != symbsNameMap.end()) {
 			if(!s.equals(symbolStorage[symbsNameMap[s.name]],false)) {
-				mcu->logf(A32u4::ATmega32u4::LogLevel_Warning, "Duplicate Symbol name! %s", s.name.c_str());
+				MCU_LOGF(A32u4::ATmega32u4::LogLevel_Warning, "Duplicate Symbol name! %s", s.name.c_str());
 			}else{
 				symbolStorage.erase(symbolStorage.begin() + i);
 				continue;
@@ -403,7 +405,7 @@ bool A32u4::SymbolTable::loadFromDumpFile(const char* path) {
 	bool success = false;
 	std::string fileStr = StringUtils::loadFileIntoString(path, &success);
 	if (!success) { // loading didnt work
-		mcu->logf(ATmega32u4::LogLevel_Error, "Cannot Open symbol table dump File: %s", path);
+		MCU_LOGF(ATmega32u4::LogLevel_Error, "Cannot Open symbol table dump File: %s", path);
 		return false;
 	}
 
@@ -483,7 +485,7 @@ bool A32u4::SymbolTable::loadDeviceSymbolDumpFile(const char* path) {
 	bool success = true;
 	std::string fileStr = StringUtils::loadFileIntoString(path, &success); // (std::string("Cannot Open device symbol table dump File: ") + path).c_str()
 	if (!success) {// loading didnt work
-		mcu->logf(A32u4::ATmega32u4::LogLevel_Warning, "Cannot Open device symbol table dump file: %s", path);
+		MCU_LOGF(A32u4::ATmega32u4::LogLevel_Warning, "Cannot Open device symbol table dump file: %s", path);
 		return false;
 	}
 
