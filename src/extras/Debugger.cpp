@@ -278,7 +278,7 @@ const uint8_t* A32u4::Debugger::getAddressStackIndicators() const {
 
 void A32u4::Debugger::updateBreakpointListFromArr() {
 	breakpointList.clear();
-	for(size_t i = 0; i<breakPointArrMaxSize; i++){
+	for(sizemcu_t i = 0; i<breakPointArrMaxSize; i++){
 		if(breakpoints[i])
 			breakpointList.insert(i);
 	}

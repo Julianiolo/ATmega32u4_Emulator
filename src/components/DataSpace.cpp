@@ -340,7 +340,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				}
 			}
 			if (onlyOne) break;
-			else MCU_FALLTHROUGH;
+			//else MCU_FALLTHROUGH;
 		}
 	}
 }

@@ -19,7 +19,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 		breakOutOfOptim = false;
 		cnt++;
 		if(cnt >= amt*2) {
-			printf("WTF %lu %lu %lu %d %lu\n",totalCycls,targetCycls,amt,CPU_sleep,cycsToNextTimerInt());
+			printf("WTF %" PRIu64 " %" PRIu64 " %" PRIu64 " %d %" PRIu64 "\n",totalCycls,targetCycls,amt,(int)CPU_sleep,cycsToNextTimerInt());
 			abort();
 		}
 

@@ -113,7 +113,7 @@ void A32u4::Flash::clear() {
 
 void A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 	if (dataLen >= sizeMax) {
-		MCU_LOGF(ATmega32u4::LogLevel_Warning,"%llu bytes is more than fits into the Flash, max is %llu bytes", dataLen, sizeMax);
+		MCU_LOGF(ATmega32u4::LogLevel_Warning,"%" MCU_PRIuSIZE " bytes is more than fits into the Flash, max is %" MCU_PRIuSIZEMCU " bytes", dataLen, sizeMax);
 		// return; // should we return here?
 	}
 

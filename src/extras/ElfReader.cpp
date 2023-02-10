@@ -324,7 +324,7 @@ A32u4::ELF::ELFFile::DWARF::_debug_line A32u4::ELF::ELFFile::DWARF::parse_debug_
 		
 		// add Entrys to global Entrys
 		for (size_t i = 0; i < cu.entrys.size(); i++) {
-			lines.entrys.push_back({ lines.cus.size(), i });
+			lines.entrys.push_back({ (uint32_t)lines.cus.size(), i });
 		}
 
 		off = end;

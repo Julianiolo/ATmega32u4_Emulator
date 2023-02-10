@@ -5,8 +5,15 @@
 
 #define MCU_MODULE "Inst Handler"
 #include "components/InstHandlerTemplates.h"
+#undef MCU_MODULE
+#define MCU_MODULE "CPU"
 #include "components/CPUTemplates.h"
+#undef MCU_MODULE
 
+#define MCU_MODULE "ATmega32u4"
+
+#undef MCU_MCUPTR_PREFIX
+#define MCU_MCUPTR_PREFIX 
 
 A32u4::ATmega32u4* A32u4::ATmega32u4::currLogTarget = nullptr;
 
@@ -66,7 +73,7 @@ void A32u4::ATmega32u4::setMcu() {
 }
 
 void A32u4::ATmega32u4::reset() { //add: reason
-	log(LogLevel_Output, "Reset", __FILE__, __LINE__, "ATmega32u4");
+	MCU_LOG(LogLevel_Output, "Reset");
 	debugger.reset();
 	analytics.reset();
 	resetHardware();
@@ -102,41 +109,41 @@ void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
 			cpu.execute<true, true>(cyclAmt);
 			break;
 		default:
-			this->log(LogLevel_Error, "Unhandeled Flags: " + StringUtils::uIntToBinStr(flags,8));
+			MCU_LOG(LogLevel_Error, "Unhandeled Flags: " + StringUtils::uIntToBinStr(flags,8));
 			break;
 	}
 }
 
-int A32u4::ATmega32u4::logFlags = 0;
-
-void A32u4::ATmega32u4::log(LogLevel logLevel, const char* msg, const char* fileName, size_t lineNum, const char* module) {
+void A32u4::ATmega32u4::log(LogLevel logLevel, const char* msg, const char* fileName, int lineNum, const char* module) {
 	MCU_ASSERT(logCallB != nullptr);
-	logCallB(logLevel, msg,fileName,lineNum,module);
+	logCallB(logLevel, msg,fileName,lineNum,module,logCallBUserData);
 
 	if (logLevel == LogLevel_Error) {
 		debugger.halt();
 	}
 }
-void A32u4::ATmega32u4::log(LogLevel logLevel, const std::string& msg, const char* fileName, size_t lineNum, const char* module) {
+void A32u4::ATmega32u4::log(LogLevel logLevel, const std::string& msg, const char* fileName, int lineNum, const char* module) {
 	log(logLevel, msg.c_str(), fileName, lineNum, module);
 }
 
 void A32u4::ATmega32u4::activateLog() {
 	currLogTarget = this;
 }
-void A32u4::ATmega32u4::log_(LogLevel logLevel, const char* msg, const char* fileName, size_t lineNum, const char* module) {
+void A32u4::ATmega32u4::log_(LogLevel logLevel, const char* msg, const char* fileName, int lineNum, const char* module) {
 	if (currLogTarget)
 		currLogTarget->log(logLevel, msg, fileName, lineNum, module);
 }
-void A32u4::ATmega32u4::log_(LogLevel logLevel, const std::string& msg, const char* fileName, size_t lineNum, const char* module){
+void A32u4::ATmega32u4::log_(LogLevel logLevel, const std::string& msg, const char* fileName, int lineNum, const char* module){
 	if (currLogTarget)
 		currLogTarget->log(logLevel, msg, fileName, lineNum, module);
 }
 
-void A32u4::ATmega32u4::setLogCallB(LogCallB newLogCallB){
+void A32u4::ATmega32u4::setLogCallB(LogCallB newLogCallB, void* userData){
 	logCallB = newLogCallB;
+	logCallBUserData = userData;
 }
-void A32u4::ATmega32u4::defaultLogHandler(LogLevel logLevel, const char* msg, const char* fileName , int lineNum, const char* module){
+void A32u4::ATmega32u4::defaultLogHandler(LogLevel logLevel, const char* msg, const char* fileName , int lineNum, const char* module, void* userData){
+	MCU_UNUSED(userData);
 	printf("[%s]%s: %s", 
 		A32u4::ATmega32u4::logLevelStrs[logLevel],
 		module != nullptr ? (std::string("[")+module+"]").c_str() : "",
@@ -158,13 +165,16 @@ bool A32u4::ATmega32u4::load(const uint8_t* data, size_t dataLen){
 	bool success = false;
 	if(isElf){
 		success = loadFromELF(data, dataLen);
+		if(!success){
+			MCU_LOG(LogLevel_Error, "Couldn't load program from ELF Data");
+			return false;
+		}
 	}else{
 		success = flash.loadFromHexString((const char*)data);
-	}
-
-	if(!success){
-		logf(LogLevel_Error, "Couldn't load program from data");
-		return false;
+		if(!success){
+			MCU_LOG(LogLevel_Error, "Couldn't load program from Hex Data: ");
+			return false;
+		}
 	}
 
 	return true;
@@ -179,7 +189,7 @@ bool A32u4::ATmega32u4::loadFile(const char* path) {
 		loadFromELFFile(path);
 	}
 	else {
-		logf(LogLevel_Error, "Cant load file with extension %s! Trying to load: %s", ext, path);
+		MCU_LOGF(LogLevel_Error, "Cant load file with extension %s! Trying to load: %s", ext, path);
 		return false;
 	}
 	return true;
@@ -203,18 +213,18 @@ bool A32u4::ATmega32u4::loadFromELF(const uint8_t* data, size_t dataLen) {
 	if (textInd != (size_t)-1 && dataInd != (size_t)-1) {
 		size_t len = elf.sectionContents[textInd].second + elf.sectionContents[dataInd].second;
 		uint8_t* romData = new uint8_t[len];
-		memcpy(romData, &elf.data[0] + elf.sectionContents[textInd].first, elf.sectionContents[textInd].second);
-		memcpy(romData + elf.sectionContents[textInd].second, &elf.data[0] + elf.sectionContents[dataInd].first, elf.sectionContents[dataInd].second);
+		std::memcpy(romData, &elf.data[0] + elf.sectionContents[textInd].first, elf.sectionContents[textInd].second);
+		std::memcpy(romData + elf.sectionContents[textInd].second, &elf.data[0] + elf.sectionContents[dataInd].first, elf.sectionContents[dataInd].second);
 
 		flash.loadFromMemory(romData, len);
 
 		delete[] romData;
 
-		log(LogLevel_DebugOutput, "Successfully loaded Flash content from elf!");
+		MCU_LOG(LogLevel_DebugOutput, "Successfully loaded Flash content from elf!");
 		return true;
 	}
 	else {
-		logf(LogLevel_Error, "Couldn't find required sections for execution: %s %s", textInd == (size_t)-1 ? ".text" : "", dataInd == (size_t)-1 ? ".data" : "");
+		MCU_LOGF(LogLevel_Error, "Couldn't find required sections for execution: %s %s", textInd == (size_t)-1 ? ".text" : "", dataInd == (size_t)-1 ? ".data" : "");
 		return false;
 	}
 }
@@ -223,7 +233,7 @@ bool A32u4::ATmega32u4::loadFromELFFile(const char* path) {
 	bool success = true;
 	std::vector<uint8_t> content = StringUtils::loadFileIntoByteArray(path, &success);
 	if (!success) {
-		logf(LogLevel_Error, "Couldn't load ELF file: %s", path);
+		MCU_LOGF(LogLevel_Error, "Couldn't load ELF file: %s", path);
 		return false;
 	}
 		

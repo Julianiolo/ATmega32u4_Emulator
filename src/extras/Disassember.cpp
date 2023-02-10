@@ -71,7 +71,7 @@ void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const A
 	addrmcu_t nextDataAddr = -1;
 	size_t dataSymbInd = 0;
 	if(info.numOfDataSymbols > 0)
-		nextDataAddr = info.dataSymbol(0).value;
+		nextDataAddr = (addrmcu_t)info.dataSymbol(0).value;
 
 	addrmcu_t lastAddr = 0;
 	for (size_t i = 0; i < disasmData->lines.size(); i++){
@@ -84,14 +84,14 @@ void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const A
 			for(size_t i = 0; i<dataSymb.size; i+=16){
 				std::string bytes;
 				for(size_t j = 0; j<std::min((size_t)16,dataSymb.size-i); j++){
-					uint8_t byte = data->getByte(dataSymb.value+i+j);
+					uint8_t byte = data->getByte((addrmcu_t)(dataSymb.value+i+j));
 					bytes += StringUtils::uIntToHexStr(byte, 2);
 					bytes += ' ';
 				}
 
 				std::string ascii;
 				for(size_t j = 0; j<std::min((size_t)16,dataSymb.size-i); j++){
-					char byte = data->getByte(dataSymb.value+i+j);
+					char byte = data->getByte((addrmcu_t)(dataSymb.value+i+j));
 					if(!isprint(byte)) byte = '.';
 					ascii += byte;
 				}
@@ -107,11 +107,11 @@ void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const A
 			if(dataSymbInd >= info.numOfDataSymbols) {
 				nextDataAddr = -1;
 			}else{
-				nextDataAddr = info.dataSymbol(dataSymbInd).value;
+				nextDataAddr = (addrmcu_t)info.dataSymbol(dataSymbInd).value;
 			}
 			content += "\n";
 
-			lastAddr = dataSymb.value + dataSymb.size;
+			lastAddr = (addrmcu_t)(dataSymb.value + dataSymb.size);
 		}
 
 		if (line.addr - lastAddr > 512) // make big gaps in code stand out

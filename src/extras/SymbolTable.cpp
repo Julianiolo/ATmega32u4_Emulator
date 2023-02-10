@@ -239,14 +239,14 @@ A32u4::SymbolTable::Symbol A32u4::SymbolTable::parseLine(const char* start, cons
 		}
 	}
 
-	size_t tabPos = StringUtils::findCharInStr('\t', start + ptr, end);
-	if (tabPos == (size_t)-1) {
+	const char* const tabPos = StringUtils::findCharInStr('\t', start + ptr, end);
+	if (tabPos == nullptr) {
 		symbol.name = std::string(start + ptr, end);
 		symbol.note = "";
 	}
 	else {
-		symbol.name = std::string(start + ptr, start+ptr+tabPos);
-		symbol.note = std::string(start + ptr + tabPos+1, end);
+		symbol.name = std::string(start + ptr, tabPos);
+		symbol.note = std::string(tabPos + 1, end);
 		size_t nlPos;
 		while ((nlPos = symbol.note.find("\\n")) != std::string::npos)
 			symbol.note.replace(nlPos, 2, "\n");
