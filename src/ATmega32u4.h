@@ -56,7 +56,7 @@ namespace A32u4 {
 			LogLevel_COUNT
 		};
 		typedef int LogLevel;
-		static constexpr const char* logLevelStrs[] = {"None","DebugOutput","Output","Warning","Error"};
+		static constexpr const char* logLevelStrs[] = {"None","Debug","Output","Warning","Error"};
 
 		typedef void (*LogCallB)(LogLevel logLevel, const char* msg, const char* fileName , int lineNum, const char* module, void* userData);
 	private:

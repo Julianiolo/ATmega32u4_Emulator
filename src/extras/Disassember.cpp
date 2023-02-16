@@ -14,7 +14,7 @@
 #include "../components/InstInds.h"
 #include "../components/InstHandler.h"
 
-#define MCU_MODULE "Debugger"
+#define MCU_MODULE "Disassembler"
 
 #define INST_PAR_TYPE_RAWVAL 0
 #define INST_PAR_TYPE_RAWVALDEC 1
@@ -27,9 +27,6 @@
 size_t A32u4::Disassembler::DisasmFile::BranchRoot::addrDist() const {
 	return std::max(start,dest) - std::min(start,dest);
 }
-static bool compareLine(const A32u4::Disassembler::DisasmFile::DisasmData::Line& a, const A32u4::Disassembler::DisasmFile::DisasmData::Line& b) {
-	return a.addr < b.addr;
-}
 
 
 A32u4::Disassembler::DisasmFile::DisasmFile(){
@@ -40,6 +37,16 @@ void A32u4::Disassembler::DisasmFile::addDisasmData(size_t size){
 }
 const A32u4::Disassembler::DisasmFile::DisasmData* A32u4::Disassembler::DisasmFile::getDisasmData() const {
 	return disasmData.get();
+}
+
+bool A32u4::Disassembler::DisasmFile::addrIsActualAddr(addrmcu_t addr) {
+	return addr != Addrs_notAnAddr && addr != Addrs_symbolLabel;
+}
+bool A32u4::Disassembler::DisasmFile::addrIsNotProgram(addrmcu_t addr) {
+	return addr == Addrs_notAnAddr;
+}
+bool A32u4::Disassembler::DisasmFile::addrIsSymbol(addrmcu_t addr) {
+	return addr == Addrs_symbolLabel;
 }
 
 void A32u4::Disassembler::DisasmFile::loadSrc(const char* str, const char* strEnd) {
@@ -63,10 +70,11 @@ bool A32u4::Disassembler::DisasmFile::loadSrcFile(const char* path) {
 
 void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const AdditionalDisasmInfo& info){
 	content.clear();
-	if(!disasmData)
-		throw std::runtime_error("has no disasmData");
+	MCU_ASSERT(disasmData);
 	
-	std::sort(disasmData->lines.begin(),disasmData->lines.end(),compareLine);
+	std::sort(disasmData->lines.begin(), disasmData->lines.end(), [](const DisasmData::Line& a, const DisasmData::Line& b) {
+		return a.addr < b.addr;
+	});
 
 	addrmcu_t nextDataAddr = -1;
 	size_t dataSymbInd = 0;
@@ -77,6 +85,7 @@ void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const A
 	for (size_t i = 0; i < disasmData->lines.size(); i++){
 		auto& line = disasmData->lines[i];
 
+		// draw data blocks
 		while(nextDataAddr != (addrmcu_t)-1 && line.addr*2 > nextDataAddr){
 			auto dataSymb = info.dataSymbol(dataSymbInd);
 			content += StringUtils::format("\n%08x <%s>:\n", dataSymb.value, dataSymb.name.c_str()); //symbol label
@@ -92,7 +101,7 @@ void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const A
 				std::string ascii;
 				for(size_t j = 0; j<std::min((size_t)16,dataSymb.size-i); j++){
 					char byte = data->getByte((addrmcu_t)(dataSymb.value+i+j));
-					if(!isprint(byte)) byte = '.';
+					if(!StringUtils::isprint(byte)) byte = '.';
 					ascii += byte;
 				}
 
@@ -114,7 +123,7 @@ void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const A
 			lastAddr = (addrmcu_t)(dataSymb.value + dataSymb.size);
 		}
 
-		if (line.addr - lastAddr > 512) // make big gaps in code stand out
+		if (line.addr - lastAddr > 512) // make big gaps in program stand out
 			content += "\n     ...\n\n";
 
 		if (info.getSymbolNameFromAddr) {
@@ -155,7 +164,8 @@ void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const A
 
 void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data, const AdditionalDisasmInfo& info){
 	if (!data->isProgramLoaded()) {
-		content = "Could not disassemble because no program is loaded!";
+		MCU_LOG_(ATmega32u4::LogLevel_Error, "Could not disassemble because no program is loaded!");
+		content = "";
 		return;
 	}
 
@@ -177,12 +187,19 @@ void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data, cons
 		disasmRecurse(info.additionalDisasmSeeds[i], data, disasmData.get());
 	}
 
+	auto end0 = std::chrono::high_resolution_clock::now();
+	{
+		double ms = std::chrono::duration_cast<std::chrono::microseconds>(end0 - start).count()/1000.0;
+		MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "walking program took %f ms", ms);
+	}
+
+
 	generateContent(data,info);
 
+	auto end = std::chrono::high_resolution_clock::now();
 	{
-		auto end = std::chrono::high_resolution_clock::now();
 		double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0;
-		MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "disassembly took %f ms", ms);
+		MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "disassembly in total took %f ms", ms);
 	}
 }
 
@@ -438,7 +455,7 @@ void A32u4::Disassembler::DisasmFile::processBranches() {
 
 	for(size_t i = 0; i<branchRoots.size(); i++) {
 		MCU_ASSERT(branchRoots[i].displayDepth != (size_t)-1);
-		if (maxBranchDisplayDepth < branchRoots[i].displayDepth)
+		if (branchRoots[i].displayDepth > maxBranchDisplayDepth && branchRoots[i].displayDepth != (size_t)-3)
 			maxBranchDisplayDepth = branchRoots[i].displayDepth;
 	}
 
@@ -496,6 +513,13 @@ size_t A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_
 		const size_t from = std::min(branchRoot.startLine, branchRoot.destLine);
 		const size_t to = std::max(branchRoot.startLine, branchRoot.destLine);
 
+#if 1
+		if (to - from > maxBranchShowDist) {
+			branchRoot.displayDepth = -3;
+			return -3;
+		}
+#endif
+
 		size_t fromInd = passingBranchesInds[from];
 
 		for (size_t c = fromInd; c < passingBranchesVec.size(); c++) { // go through line chunks
@@ -518,6 +542,8 @@ size_t A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_
 				}
 
 				if(d == (size_t)-2) // currently being calculated, so we skip it
+					continue;
+				if (d == (size_t)-3) // ignored branch
 					continue;
 
 				MCU_ASSERT(d < sizeof(used));
@@ -648,6 +674,36 @@ void A32u4::Disassembler::DisasmFile::DisasmData::addFuncCallAddr(pc_t addr){
 	if(funcCalls.find(addr) == funcCalls.end()){
 		funcCalls.insert(addr);
 	}
+}
+
+
+addrmcu_t A32u4::Disassembler::DisasmFile::getPrevActualAddr(size_t line) const {
+	if (addrs.size() == 0)
+		return 0;
+
+	if (line >= addrs.size())
+		line = addrs.size() - 1;
+
+	while (true) {
+		if (addrIsActualAddr(addrs[line]))
+			return addrs[line];
+
+		if (line == 0)
+			break;
+		line--;
+	}
+	return 0;
+}
+addrmcu_t A32u4::Disassembler::DisasmFile::getNextActualAddr(size_t line) const {
+	const size_t line_orig = line;
+	while (line < lines.size()) {
+		if (addrIsActualAddr(addrs[line]))
+			return addrs[line];
+
+		line++;
+	}
+	// we didnt find anything, so now we search before the given line
+	return getPrevActualAddr(line_orig);
 }
 
 std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
@@ -851,7 +907,7 @@ void A32u4::Disassembler::disasmRecurse(pc_t start, const Flash* data, DisasmFil
 	MCU_ASSERT(start < data->sizeWords());
 	pc_t PC = start;
 	while(true){
-		if (disasmData->disasmed.get(PC) || PC >= data->sizeWords()) {
+		if (PC >= data->sizeWords() || disasmData->disasmed.get(PC)) {
 			//printf("finished at %x from %x\n", PC*2, start*2);
 			return;
 		}

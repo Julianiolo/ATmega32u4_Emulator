@@ -309,7 +309,7 @@ void A32u4::SymbolTable::setupConnections(size_t cnt, bool postProc) {
 
 		// check that there are no duplicate symbolnames (exept "")
 		if(s.name.size() != 0 && symbsNameMap.find(s.name) != symbsNameMap.end()) {
-			if(!s.equals(symbolStorage[symbsNameMap[s.name]],false)) {
+			if(!s.equals(symbolStorage[symbsIdMap[symbsNameMap[s.name]]],false)) {
 				MCU_LOGF(A32u4::ATmega32u4::LogLevel_Warning, "Duplicate Symbol name! %s", s.name.c_str());
 			}else{
 				symbolStorage.erase(symbolStorage.begin() + i);

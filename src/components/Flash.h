@@ -59,7 +59,7 @@ namespace A32u4 {
 		void setByte(addrmcu_t addr, uint8_t val);
 		void setInst(pc_t pc, uint16_t val);
 
-		void loadFromMemory(const uint8_t* data, size_t dataLen);
+		bool loadFromMemory(const uint8_t* data, size_t dataLen);
 		bool loadFromHexFile(const char* path);
 		bool loadFromHexString(const char* str, const char* str_end = 0);
 		void clear();

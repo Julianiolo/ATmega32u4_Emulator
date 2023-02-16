@@ -150,7 +150,7 @@ void A32u4::ATmega32u4::defaultLogHandler(LogLevel logLevel, const char* msg, co
 		msg
 	);
 	if(fileName != nullptr || lineNum != -1) {
-		printf(" [%s:%d]", fileName, lineNum);
+		printf(" [%s:%d]", StringUtils::getFileName(fileName), lineNum);
 	}
 	printf("\n");
 }
@@ -183,10 +183,20 @@ bool A32u4::ATmega32u4::loadFile(const char* path) {
 	const char* ext = StringUtils::getFileExtension(path);
 
 	if (std::strcmp(ext, "hex") == 0) {
-		flash.loadFromHexFile(path);
+		return flash.loadFromHexFile(path);
+	}
+	else if (std::strcmp(ext, "bin") == 0) {
+		bool success = true;
+		std::vector<uint8_t> data = StringUtils::loadFileIntoByteArray(path, &success);
+		if (!success) {
+			MCU_LOGF(LogLevel_Error, "Was not able to open file: \"%s\"", path);
+			return false;
+		}
+		
+		return flash.loadFromMemory(data.size()>0? &data[0] : nullptr, data.size());
 	}
 	else if (std::strcmp(ext, "elf") == 0) {
-		loadFromELFFile(path);
+		return loadFromELFFile(path);
 	}
 	else {
 		MCU_LOGF(LogLevel_Error, "Cant load file with extension %s! Trying to load: %s", ext, path);

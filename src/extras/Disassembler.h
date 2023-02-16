@@ -59,6 +59,7 @@ namespace A32u4 {
 			std::vector<PassingBranchs> passingBranchesVec;
 			std::vector<size_t> passingBranchesInds;  // [linenumber] = ind to pass to passingBranchesVec to get: branchRootInd of all branches passing this address/line
 			size_t maxBranchDisplayDepth = 0;
+			constexpr static size_t maxBranchShowDist = 256;
 			
 			struct DisasmData { // data for disasm process
 				BitVector disasmed;
@@ -74,9 +75,14 @@ namespace A32u4 {
 
 				DisasmData(size_t size);
 			};
+		private:
 			
-			static constexpr uint16_t Addrs_notAnAddr = -1;
-			static constexpr uint16_t Addrs_symbolLabel = -2;
+			static constexpr addrmcu_t Addrs_notAnAddr = -1;
+			static constexpr addrmcu_t Addrs_symbolLabel = -2;
+		public:
+			static bool addrIsActualAddr(addrmcu_t addr);
+			static bool addrIsNotProgram(addrmcu_t addr);
+			static bool addrIsSymbol(addrmcu_t addr);
 
 			struct AdditionalDisasmInfo {
 				// mcu Analytics:
@@ -131,6 +137,9 @@ namespace A32u4 {
 			bool isEmpty() const;
 			size_t getNumLines() const;
 			bool isSelfDisassembled() const;
+
+			addrmcu_t getPrevActualAddr(size_t line) const;
+			addrmcu_t getNextActualAddr(size_t line) const;
 		};
 
 		static std::string disassembleRaw(uint16_t word, uint16_t word2);

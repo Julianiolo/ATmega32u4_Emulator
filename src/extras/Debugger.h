@@ -111,6 +111,7 @@ namespace A32u4 {
 		void continue_();
 		void setBreakpoint(pc_t pc);
 		void clearBreakpoint(pc_t pc);
+		void clearAllBreakpoints();
 		const std::set<uint16_t>& getBreakpointList() const;
 
 		const Breakpoint* getBreakpoints() const;

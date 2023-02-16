@@ -56,9 +56,7 @@ void A32u4::Debugger::reset() {
 	}
 }
 void A32u4::Debugger::resetBreakpoints(){
-	for (int i = 0; i < breakPointArrMaxSize; i++) {
-		breakpoints[i] = 0;
-	}
+	std::fill(breakpoints.begin(), breakpoints.end(), 0);
 }
 
 void A32u4::Debugger::pushPCOnCallStack(pc_t pc, pc_t fromPC) {
@@ -252,6 +250,10 @@ void A32u4::Debugger::clearBreakpoint(pc_t pc) {
 	breakpoints[pc] = 0;
 	if (breakpointList.find(pc) != breakpointList.end())
 		breakpointList.erase(pc);
+}
+void A32u4::Debugger::clearAllBreakpoints() {
+	std::fill(breakpoints.begin(), breakpoints.end(), 0);
+	breakpointList.clear();
 }
 const std::set<uint16_t>& A32u4::Debugger::getBreakpointList() const {
 	return breakpointList;

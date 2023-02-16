@@ -111,7 +111,7 @@ void A32u4::Flash::clear() {
 	hasProgram = false;
 }
 
-void A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
+bool A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 	if (dataLen >= sizeMax) {
 		MCU_LOGF(ATmega32u4::LogLevel_Warning,"%" MCU_PRIuSIZE " bytes is more than fits into the Flash, max is %" MCU_PRIuSIZEMCU " bytes", dataLen, sizeMax);
 		// return; // should we return here?
@@ -119,13 +119,14 @@ void A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 
 	clear();
 
-	memcpy(data, data_, dataLen);
-	size_ = (sizemcu_t)dataLen;
+	std::memcpy(data, data_, std::min(dataLen,(size_t)sizeMax));
+	size_ = (sizemcu_t)std::min(dataLen,(size_t)sizeMax);
 	hasProgram = true;
 
 #if FLASH_USE_INSTIND_CACHE
 	populateInstIndCache();
 #endif
+	return true;
 }
 
 bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
