@@ -17,68 +17,90 @@
 
 A32u4::ATmega32u4* A32u4::ATmega32u4::currLogTarget = nullptr;
 
-A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this), debugger(this), symbolTable(this) {
+A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this)
+#if MCU_INCLUDE_EXTRAS
+,debugger(this)
+,symbolTable(this) 
+#endif
+{
 	activateLog();
 }
 A32u4::ATmega32u4::ATmega32u4(const ATmega32u4& src): 
-logCallB(src.logCallB), wasReset(src.wasReset),
-cpu(src.cpu), dataspace(src.dataspace), flash(src.flash), debugger(src.debugger), symbolTable(src.symbolTable)
+logCallB(src.logCallB), running(src.running),
+cpu(src.cpu), dataspace(src.dataspace), flash(src.flash)
+#if MCU_INCLUDE_EXTRAS
+, debugger(src.debugger)
+, analytics(src.analytics)
+, symbolTable(src.symbolTable)
+#endif
 {
 	setMcu();
 }
 A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
 	logCallB = src.logCallB;
-	wasReset = src.wasReset;
+	running = src.running;
 
 	cpu = src.cpu;
 	dataspace = src.dataspace;
 	flash = src.flash;
+
+#if MCU_INCLUDE_EXTRAS
 	debugger = src.debugger;
 	analytics = src.analytics;
 	symbolTable = src.symbolTable;
+#endif
 	setMcu();
 
 	return *this;
 }
 
 void A32u4::ATmega32u4::getState(std::ostream& output){
-	StreamUtils::write(output, wasReset);
+	StreamUtils::write(output, running);
 
 	cpu.getState(output);
 	dataspace.getState(output);
 	flash.getState(output);
 
+#if MCU_INCLUDE_EXTRAS
 	debugger.getState(output);
 	analytics.getState(output);
 	symbolTable.getState(output);
+#endif
 }
 void A32u4::ATmega32u4::setState(std::istream& input){
-	StreamUtils::read(input, &wasReset);
+	StreamUtils::read(input, &running);
 
 	cpu.setState(input);
 	dataspace.setState(input);
 	flash.setState(input);
 
+#if MCU_INCLUDE_EXTRAS
 	debugger.setState(input);
 	analytics.setState(input);
 	symbolTable.setState(input);
+#endif
 }
 
 void A32u4::ATmega32u4::setMcu() {
 	cpu.mcu = this;
 	dataspace.mcu = this;
-	flash.mcu = this;
+#if MCU_INCLUDE_EXTRAS
 	debugger.mcu = this;
 	symbolTable.mcu = this;
+#endif
 }
 
 void A32u4::ATmega32u4::reset() { //add: reason
 	MCU_LOG(LogLevel_Output, "Reset");
+
+#if MCU_INCLUDE_EXTRAS
 	debugger.reset();
 	analytics.reset();
+#endif
+
 	resetHardware();
 
-	wasReset = true;
+	running = true;
 }
 void A32u4::ATmega32u4::resetHardware() {
 	dataspace.reset();
@@ -90,7 +112,7 @@ void A32u4::ATmega32u4::powerOn() {
 }
 
 void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
-	if (!wasReset)
+	if (!running)
 		abort();
 
 	if(!flash.isProgramLoaded())
@@ -119,7 +141,10 @@ void A32u4::ATmega32u4::log(LogLevel logLevel, const char* msg, const char* file
 	logCallB(logLevel, msg,fileName,lineNum,module,logCallBUserData);
 
 	if (logLevel == LogLevel_Error) {
+		running = false;
+#if MCU_INCLUDE_EXTRAS
 		debugger.halt();
+#endif
 	}
 }
 void A32u4::ATmega32u4::log(LogLevel logLevel, const std::string& msg, const char* fileName, int lineNum, const char* module) {
@@ -199,7 +224,7 @@ bool A32u4::ATmega32u4::loadFile(const char* path) {
 		return loadFromELFFile(path);
 	}
 	else {
-		MCU_LOGF(LogLevel_Error, "Cant load file with extension %s! Trying to load: %s", ext, path);
+		MCU_LOGF(LogLevel_Error, "Can't load file with extension %s! Trying to load: %s", ext, path);
 		return false;
 	}
 	return true;
@@ -215,7 +240,9 @@ bool A32u4::ATmega32u4::loadFromHexFile(const char* path){
 bool A32u4::ATmega32u4::loadFromELF(const uint8_t* data, size_t dataLen) {
 	ELF::ELFFile elf = ELF::parseELFFile(data, dataLen);
 
+#if MCU_INCLUDE_EXTRAS
 	symbolTable.loadFromELF(elf);
+#endif
 
 	size_t textInd = elf.getIndOfSectionWithName(".text");
 	size_t dataInd = elf.getIndOfSectionWithName(".data");
@@ -252,8 +279,29 @@ bool A32u4::ATmega32u4::loadFromELFFile(const char* path) {
 
 bool A32u4::ATmega32u4::operator==(const ATmega32u4& other) const{
 #define _CMP_(x) (x==other.x)
-	return _CMP_(wasReset) &&
-		_CMP_(cpu) && _CMP_(dataspace) && _CMP_(flash)&&
-		_CMP_(debugger) && _CMP_(analytics);
+	return _CMP_(running) && _CMP_(cpu) && _CMP_(dataspace) && _CMP_(flash)
+#if MCU_INCLUDE_EXTRAS
+		&& _CMP_(debugger) && _CMP_(analytics) && _CMP_(symbolTable)
+#endif
+		;
 #undef _CMP_
+}
+
+size_t A32u4::ATmega32u4::sizeBytes() const {
+	size_t sum = 0;
+	sum += sizeof(logCallB);
+	sum += sizeof(logCallBUserData);
+	sum += sizeof(running);
+
+	sum += cpu.sizeBytes();
+	sum += dataspace.sizeBytes();
+	sum += flash.sizeBytes();
+
+#if MCU_INCLUDE_EXTRAS
+	sum += debugger.sizeBytes();
+	sum += analytics.sizeBytes();
+	sum += symbolTable.sizeBytes();
+#endif
+
+	return sum;
 }

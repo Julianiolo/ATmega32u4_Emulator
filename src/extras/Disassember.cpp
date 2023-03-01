@@ -176,12 +176,14 @@ void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data, cons
 	for(addrmcu_t i = 0; i <= 0xa8;i+=4)
 		disasmRecurse(i/2,data, disasmData.get());
 
+#if MCU_INCLUDE_EXTRAS
 	if (info.analytics) {
 		for(size_t i = 0; i < std::min(data->sizeWords(), Analytics::PCHeatArrSize); i++){
 			if(info.analytics->getPCHeat()[i] > 0 && !disasmData.get()->disasmed.get(i))
 				disasmRecurse((pc_t)i, data, disasmData.get());
 		}
 	}
+#endif
 
 	for(size_t i = 0; i<info.additionalDisasmSeeds.size(); i++) {
 		disasmRecurse(info.additionalDisasmSeeds[i], data, disasmData.get());
@@ -675,7 +677,17 @@ void A32u4::Disassembler::DisasmFile::DisasmData::addFuncCallAddr(pc_t addr){
 		funcCalls.insert(addr);
 	}
 }
+size_t A32u4::Disassembler::DisasmFile::DisasmData::sizeBytes() const {
+	size_t sum = 0;
 
+	sum += DataUtils::approxSizeOf(disasmed);
+
+	sum += DataUtils::approxSizeOf(lines, [](const Line& v) {return sizeof(v.addr) + DataUtils::approxSizeOf(v.str) + sizeof(v.inst_ind); });
+
+	sum += DataUtils::approxSizeOf(funcCalls);
+
+	return sum;
+}
 
 addrmcu_t A32u4::Disassembler::DisasmFile::getPrevActualAddr(size_t line) const {
 	if (addrs.size() == 0)
@@ -704,6 +716,41 @@ addrmcu_t A32u4::Disassembler::DisasmFile::getNextActualAddr(size_t line) const 
 	}
 	// we didnt find anything, so now we search before the given line
 	return getPrevActualAddr(line_orig);
+}
+
+size_t A32u4::Disassembler::DisasmFile::PassingBranchs::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += DataUtils::approxSizeOf(passing);
+	sum += sizeof(startLine);
+	sum += DataUtils::approxSizeOf(occupied);
+
+	return sum;
+}
+
+
+size_t A32u4::Disassembler::DisasmFile::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += DataUtils::approxSizeOf(content);
+	sum += DataUtils::approxSizeOf(lines);
+	sum += DataUtils::approxSizeOf(addrs);
+	sum += DataUtils::approxSizeOf(isLineProgram); // [linenumber] = true if line is part of the program, false if not (like data, empty...)
+	sum += DataUtils::approxSizeOf(labels); // [symbAddress] = linenumber
+
+	sum += DataUtils::approxSizeOf(branchRoots, [](const BranchRoot& v) {return sizeof(BranchRoot); });
+	sum += DataUtils::approxSizeOf(branchRootInds); // [linenumber] = ind to branch root object of this line (-1 if line is not a branchroot)
+
+		sum += DataUtils::approxSizeOf(passingBranchesVec[0]);
+
+	sum += DataUtils::approxSizeOf(passingBranchesVec);
+	sum += DataUtils::approxSizeOf(passingBranchesInds);  // [linenumber] = ind to pass to passingBranchesVec to get: branchRootInd of all branches passing this address/line
+	sum += sizeof(maxBranchDisplayDepth);
+
+	if (disasmData)
+		sum += disasmData->sizeBytes();
+
+	return sum;
 }
 
 std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {

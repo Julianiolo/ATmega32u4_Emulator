@@ -1,5 +1,5 @@
-#ifndef _A32u4_DEBUGGER
-#define _A32u4_DEBUGGER
+#if !defined(__A32U4_DEBUGGER_H__) && MCU_INCLUDE_EXTRAS
+#define __A32U4_DEBUGGER_H__
 
 #include <string>
 #include <set>
@@ -47,7 +47,7 @@ namespace A32u4 {
 		std::set<pc_t> breakpointList;
 #define DEBUGGER_STD 1
 #if !DEBUGGER_STD
-#if !USE_HEAP
+#if !MCU_USE_HEAP
 		Breakpoint breakpoints[breakPointArrMaxSize];
 		CallData callStack[addressStackMaxSize];
 		uint8_t addressStackIndicators[addressStackIndicatorsSize];
@@ -57,7 +57,7 @@ namespace A32u4 {
 		uint8_t* addressStackIndicators;
 #endif
 #else
-#if !USE_HEAP
+#if !MCU_USE_HEAP
 		std::array<Breakpoint,breakPointArrMaxSize> breakpoints;
 		std::array<CallData,addressStackMaxSize> callStack;
 		std::array<uint8_t,addressStackIndicatorsSize> addressStackIndicators;
@@ -125,6 +125,13 @@ namespace A32u4 {
 		void setState(std::istream& input);
 
 		bool operator==(const Debugger& other) const;
+		size_t sizeBytes() const;
 	};
 }
+namespace DataUtils {
+	inline size_t approxSizeOf(const A32u4::Debugger& v) {
+		return v.sizeBytes();
+	}
+}
+
 #endif

@@ -1,5 +1,5 @@
-#ifndef _ATMEGA32U4
-#define _ATMEGA32U4
+#ifndef __A32u4_ATMEGA32U4_H__
+#define __A32u4_ATMEGA32U4_H__
 
 #include <iostream>
 
@@ -10,22 +10,27 @@
 #include "components/CPU.h"
 #include "components/DataSpace.h"
 #include "components/Flash.h"
+
+#if MCU_INCLUDE_EXTRAS
 #include "extras/Debugger.h"
 #include "extras/Analytics.h"
 #include "extras/SymbolTable.h"
+#endif
+
+#include "extras/ElfReader.h"
 
 #define MCU_MCUPTR_PREFIX mcu->
 
 #define MCU_LOG(level, msg) MCU_MCUPTR_PREFIX log(level,msg,__FILE__,__LINE__,MCU_MODULE);
-#define MCU_LOGF(level, msg, ...) MCU_MCUPTR_PREFIX logf2(level,MCU_MODULE,__FILE__,__LINE__,msg,##__VA_ARGS__);
+#define MCU_LOGF(level, msg, ...) MCU_MCUPTR_PREFIX logf2(level,MCU_MODULE,__FILE__,__LINE__,msg,__VA_ARGS__);
 #define MCU_LOG_(level, msg) A32u4::ATmega32u4::log_(level,msg,__FILE__,__LINE__,MCU_MODULE);
-#define MCU_LOGF_(level, msg, ...) A32u4::ATmega32u4::logf2_(level,MCU_MODULE,__FILE__,__LINE__,msg,##__VA_ARGS__);
+#define MCU_LOGF_(level, msg, ...) A32u4::ATmega32u4::logf2_(level,MCU_MODULE,__FILE__,__LINE__,msg,__VA_ARGS__);
 
 
-#if RANGE_CHECK
-#if RANGE_CHECK_ERROR
-#define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { MCU_LOGF(ATmega32u4::LogLevel_Error, msg, ##__VA_ARGS__); action;}
-#define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { MCU_LOGF(ATmega32u4::LogLevel_Error, msg, val, val); action;}
+#if MCU_RANGE_CHECK
+#if MCU_RANGE_CHECK_ERROR
+#define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { MCU_LOGF_(ATmega32u4::LogLevel_Error, msg, __VA_ARGS__); action;}
+#define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { MCU_LOGF_(ATmega32u4::LogLevel_Error, msg, val, val); action;}
 #else
 #define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { action;}
 #define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { action;}
@@ -48,15 +53,16 @@ namespace A32u4 {
 			ExecFlags_Analyse = 1<<1
 		};
 		enum {
-			LogLevel_None,
+			LogLevel_None = 0,
 			LogLevel_DebugOutput,
 			LogLevel_Output,
 			LogLevel_Warning,
 			LogLevel_Error,
+			LogLevel_Fatal,
 			LogLevel_COUNT
 		};
 		typedef int LogLevel;
-		static constexpr const char* logLevelStrs[] = {"None","Debug","Output","Warning","Error"};
+		static constexpr const char* logLevelStrs[] = {"None","Debug","Output","Warning","Error","Fatal"};
 
 		typedef void (*LogCallB)(LogLevel logLevel, const char* msg, const char* fileName , int lineNum, const char* module, void* userData);
 	private:
@@ -64,7 +70,7 @@ namespace A32u4 {
 		void* logCallBUserData = nullptr;
 		static ATmega32u4* currLogTarget;
 
-		bool wasReset = false;
+		bool running = false;
 	public:
 		ATmega32u4();
 		ATmega32u4(const ATmega32u4& src);
@@ -74,9 +80,11 @@ namespace A32u4 {
 		A32u4::DataSpace dataspace;
 		A32u4::Flash flash;
 
+#if MCU_INCLUDE_EXTRAS
 		A32u4::Debugger debugger;
 		A32u4::Analytics analytics;
 		A32u4::SymbolTable symbolTable;
+#endif
 
 		void reset();
 
@@ -124,10 +132,16 @@ namespace A32u4 {
 		void setState(std::istream& input);
 		
 		bool operator==(const ATmega32u4& other) const;
+		size_t sizeBytes() const;
 	private:
 		void setMcu();
 	};
 }
 
+namespace DataUtils {
+	inline size_t approxSizeOf(const A32u4::ATmega32u4& v) {
+		return v.sizeBytes();
+	}
+}
 
 #endif

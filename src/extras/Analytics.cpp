@@ -1,9 +1,13 @@
+#include "../config.h"
+
+#if MCU_INCLUDE_EXTRAS
+
 #include "Analytics.h"
 
 #include "StreamUtils.h"
 
 A32u4::Analytics::Analytics()
-#if USE_HEAP
+#if MCU_USE_HEAP
 	: pcCounter(PCHeatArrSize),
 	instCounter(InstHeatArrSize)
 #endif
@@ -83,3 +87,23 @@ bool A32u4::Analytics::operator==(const Analytics& other) const{
 		_CMP_(maxSP) && _CMP_(sleepSum);
 #undef _CMP_
 }
+size_t A32u4::Analytics::sizeBytes() const {
+	size_t sum = 0;
+	
+#if !MCU_USE_HEAP
+	sum += sizeof(pcCounter);
+	sum += sizeof(instCounter);
+#else
+	sum += sizeof(pcCounter) + sizeof(pcCounter[0]) * PCHeatArrSize;
+	sum += sizeof(instCounter) + sizeof(instCounter[0]) * InstHeatArrSize;
+#endif
+
+	sum += sizeof(instTotalCnt);
+
+	sum += sizeof(maxSP);
+	sum += sizeof(sleepSum);
+
+	return sum;
+}
+
+#endif

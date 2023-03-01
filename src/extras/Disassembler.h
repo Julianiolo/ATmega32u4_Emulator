@@ -55,6 +55,8 @@ namespace A32u4 {
 				size_t startLine;
 				static constexpr size_t bitArrSize = 2048;
 				BitArray<bitArrSize> occupied;
+
+				size_t sizeBytes() const;
 			};
 			std::vector<PassingBranchs> passingBranchesVec;
 			std::vector<size_t> passingBranchesInds;  // [linenumber] = ind to pass to passingBranchesVec to get: branchRootInd of all branches passing this address/line
@@ -74,6 +76,8 @@ namespace A32u4 {
 				void addFuncCallAddr(pc_t addr);
 
 				DisasmData(size_t size);
+
+				size_t sizeBytes() const;
 			};
 		private:
 			
@@ -86,7 +90,9 @@ namespace A32u4 {
 
 			struct AdditionalDisasmInfo {
 				// mcu Analytics:
+#if MCU_INCLUDE_EXTRAS
 				const Analytics* analytics = NULL;
+#endif
 
 				// source line info (debug_line)
 				std::function<bool(addrmcu_t addr, std::string* out)> getLineInfoFromAddr = NULL;
@@ -140,6 +146,8 @@ namespace A32u4 {
 
 			addrmcu_t getPrevActualAddr(size_t line) const;
 			addrmcu_t getNextActualAddr(size_t line) const;
+
+			size_t sizeBytes() const;
 		};
 
 		static std::string disassembleRaw(uint16_t word, uint16_t word2);
@@ -153,6 +161,12 @@ namespace A32u4 {
 
 		static void disasmRecurse(pc_t start, const Flash* data, DisasmFile::DisasmData* disasmData);
 	};
+}
+
+namespace DataUtils {
+	inline size_t approxSizeOf(const A32u4::Disassembler::DisasmFile::PassingBranchs& v) {
+		return v.sizeBytes();
+	}
 }
 
 #endif

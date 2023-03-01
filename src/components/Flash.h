@@ -22,9 +22,7 @@ namespace A32u4 {
 		friend class ATmega32u4;
 		friend class CPU;
 
-		ATmega32u4* mcu;
-
-#if !USE_HEAP
+#if !MCU_USE_HEAP
 		uint8_t data[sizeMax];
 #if FLASH_USE_INSTIND_CACHE
 		uint8_t instCache[sizeMax/2];
@@ -76,6 +74,13 @@ namespace A32u4 {
 		void setState(std::istream& input);
 
 		bool operator==(const Flash& other) const;
+		size_t sizeBytes() const;
 	};
 }
+namespace DataUtils {
+	inline size_t approxSizeOf(const A32u4::Flash& v) {
+		return v.sizeBytes();
+	}
+}
+
 #endif

@@ -3,11 +3,13 @@
 
 template<bool debug, bool analyse>
 void A32u4::CPU::execute(uint64_t amt) {
+#if MCU_INCLUDE_EXTRAS
 	if (debug) {
 		if (mcu->debugger.execShouldReturn()) {
 			return;
 		}
 	}
+#endif
 	execute4T<debug, analyse>(amt);
 }
 
@@ -23,10 +25,12 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 			abort();
 		}
 
+#if MCU_INCLUDE_EXTRAS
 		if (mcu->debugger.isHalted() && !mcu->debugger.doStep) {
 			targetCycls = std::max(targetCycls - amt, totalCycls);
 			return;
 		}
+#endif
 
 		if (!CPU_sleep) {
 			if(mcu->dataspace.getTimer0Presc() <= 1){
@@ -91,18 +95,24 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				mcu->dataspace.doTick(timer0);
 				mcu->dataspace.checkForIntr();
 
+#if MCU_INCLUDE_EXTRAS
 				if(analyse){
 					mcu->analytics.sleepSum += sleepCycsLeft;
 				}
+#endif
 				//printf("done: slept for: %llu at %llu\n", sleepCycsLeft, mcu->cpu.totalCycls);
 				sleepCycsLeft = 0;
 			}
 			else {
 				uint64_t skipCycs = targetCycls - totalCycls;
 				sleepCycsLeft -= skipCycs;
+
+#if MCU_INCLUDE_EXTRAS
 				if(analyse){
 					mcu->analytics.sleepSum += skipCycs;
 				}
+#endif
+
 				totalCycls += skipCycs;
 				timer0 += (uint8_t)(sleepCycsLeft / mcu->dataspace.getTimer0PrescDiv());
 				mcu->dataspace.markTimer0Update();

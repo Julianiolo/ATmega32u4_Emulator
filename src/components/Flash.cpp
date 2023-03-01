@@ -13,10 +13,9 @@
 #define MCU_MODULE "Flash"
 
 A32u4::Flash::Flash(ATmega32u4* mcu):
-	mcu(mcu)
-#if USE_HEAP
-	,data(new uint8_t[sizeMax])
-#if USE_INSTCACHE
+#if MCU_USE_HEAP
+	data(new uint8_t[sizeMax])
+#if MCU_USE_INSTCACHE
 	, instCache(new uint8_t[sizeMax / 2])
 #endif
 #endif
@@ -25,17 +24,16 @@ A32u4::Flash::Flash(ATmega32u4* mcu):
 }
 
 A32u4::Flash::~Flash() {
-#if USE_HEAP
+#if MCU_USE_HEAP
 	delete[] data;
 	delete[] instCache;
 #endif
 }
 
 A32u4::Flash::Flash(const Flash& src):
-	mcu(src.mcu)
-#if USE_HEAP
-	,data(new uint8_t[sizeMax])
-#if USE_INSTCACHE
+#if MCU_USE_HEAP
+	data(new uint8_t[sizeMax])
+#if MCU_USE_INSTCACHE
 	, instCache(new uint8_t[sizeMax / 2])
 #endif
 #endif
@@ -44,7 +42,7 @@ A32u4::Flash::Flash(const Flash& src):
 }
 A32u4::Flash& A32u4::Flash::operator=(const Flash& src){
 	std::memcpy(data, src.data, sizeMax);
-#if USE_INSTCACHE
+#if MCU_USE_INSTCACHE
 	std::memcpy(instCache, src.instCache, sizeMax/2);
 #endif
 	size_ = src.size_;
@@ -113,7 +111,7 @@ void A32u4::Flash::clear() {
 
 bool A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 	if (dataLen >= sizeMax) {
-		MCU_LOGF(ATmega32u4::LogLevel_Warning,"%" MCU_PRIuSIZE " bytes is more than fits into the Flash, max is %" MCU_PRIuSIZEMCU " bytes", dataLen, sizeMax);
+		MCU_LOGF_(ATmega32u4::LogLevel_Warning,"%" MCU_PRIuSIZE " bytes is more than fits into the Flash, max is %" MCU_PRIuSIZEMCU " bytes", dataLen, sizeMax);
 		// return; // should we return here?
 	}
 
@@ -141,7 +139,7 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 	for (size_t i = 0; i < strl; i++) {
 		unsigned char c = (unsigned char)str[i];
 		if (c == 0 || c > 127) {
-			MCU_LOGF(ATmega32u4::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character (0x%02x at %" MCU_PRIuSIZE ")", c, i);
+			MCU_LOGF_(ATmega32u4::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character (0x%02x at %" MCU_PRIuSIZE ")", c, i);
 			return false;
 		}
 	}
@@ -160,7 +158,7 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 		//uint8_t type = StringUtils::hexStrToUIntLen<uint8_t>(str + str_ind, 2);
 		//str_ind += 7;
 		for (uint8_t i = 0; i < ByteCount; i++) {
-#if RANGE_CHECK
+#if MCU_RANGE_CHECK
 			if (flashInd >= sizeMax) {
 				abort();
 			}
@@ -184,7 +182,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	{
 		const char* ext = StringUtils::getFileExtension(path);
 		if (std::strcmp(ext, "hex") != 0) {
-			MCU_LOGF(ATmega32u4::LogLevel_Error, "Wrong Extension for loading Flash contents: %s", ext);
+			MCU_LOGF_(ATmega32u4::LogLevel_Error, "Wrong Extension for loading Flash contents: %s", ext);
 			return false;
 		}
 	}
@@ -194,7 +192,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	t.open(path, std::ios::binary);
 	if (!t.is_open()) {
 		t.close();
-		MCU_LOGF(ATmega32u4::LogLevel_Error, "Cannot open file: %s", path);
+		MCU_LOGF_(ATmega32u4::LogLevel_Error, "Cannot open file: %s", path);
 		return false;
 	}
 	t.seekg(0, std::ios::end);
@@ -243,7 +241,32 @@ void A32u4::Flash::setRomState(std::istream& input){
 }
 
 bool A32u4::Flash::operator==(const Flash& other) const{
-	return size_==other.size_ && std::memcmp(data,other.data,sizeMax) == 0;
+	return size_==other.size_ && std::memcmp(data,other.data,sizeMax) == 0 
+#if FLASH_USE_INSTIND_CACHE
+		&& std::memcmp(instCache,other.instCache,sizeMax/2) == 0
+#endif
+		;
+}
+size_t A32u4::Flash::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += sizeof(size_);
+
+	sum += sizeMax;
+#if MCU_USE_HEAP
+	sum += sizeof(data);
+#endif
+
+#if FLASH_USE_INSTIND_CACHE
+	sum += sizeMax / 2;
+#if MCU_USE_HEAP
+	sum += sizeof(instCache);
+#endif
+#endif
+
+	sum += sizeof(hasProgram);
+
+	return sum;
 }
 
 

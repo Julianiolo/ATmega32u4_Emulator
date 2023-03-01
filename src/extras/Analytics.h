@@ -1,5 +1,5 @@
-#ifndef _A32u4_ANALYTICS
-#define _A32u4_ANALYTICS
+#if !defined(__A32U4_ANALYTICS_H__) && MCU_INCLUDE_EXTRAS
+#define __A32U4_ANALYTICS_H__
 
 #include <array>
 #include <vector>
@@ -19,7 +19,7 @@ namespace A32u4 {
 	private:
 		friend class ATmega32u4;
 		friend class InstHandler;
-#if !USE_HEAP
+#if !MCU_USE_HEAP
 		std::array<uint64_t,PCHeatArrSize> pcCounter;
 		std::array<uint64_t,InstHeatArrSize> instCounter;
 #else
@@ -50,6 +50,7 @@ namespace A32u4 {
 		void setState(std::istream& input);
 
 		bool operator==(const Analytics& other) const;
+		size_t sizeBytes() const;
 	};
 }
 

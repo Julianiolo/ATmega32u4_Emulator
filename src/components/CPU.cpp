@@ -62,7 +62,9 @@ void A32u4::CPU::directExecuteInterrupt(uint8_t num) {
 	mcu->dataspace.pushAddrToStack(mcu->cpu.PC);
 
 	pc_t targetPC = num*2;
+#if MCU_INCLUDE_EXTRAS
 	mcu->debugger.pushPCOnCallStack(targetPC, mcu->cpu.PC);
+#endif
 
 	mcu->cpu.PC = targetPC;
 }
@@ -471,6 +473,24 @@ bool A32u4::CPU::operator==(const CPU& other) const{
 		_CMP_(breakOutOfOptim) &&
 		_CMP_(CPU_sleep) && _CMP_(sleepCycsLeft);
 #undef _CMP_
+}
+size_t A32u4::CPU::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += sizeof(mcu);
+
+	sum += sizeof(PC);
+	sum += sizeof(totalCycls) + sizeof(targetCycls);
+
+	sum += sizeof(interruptFlags);
+	sum += sizeof(insideInterrupt);
+
+	sum += sizeof(breakOutOfOptim);
+
+	sum += sizeof(CPU_sleep);
+	sum += sizeof(sleepCycsLeft);
+
+	return sum;
 }
 
 /*

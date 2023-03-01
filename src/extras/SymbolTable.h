@@ -1,5 +1,5 @@
-#ifndef _ABB_SYMBOLTABLE
-#define _ABB_SYMBOLTABLE
+#if !defined(__A32U4_SYMBOLTABLE_H__) && MCU_INCLUDE_EXTRAS
+#define __A32U4_SYMBOLTABLE_H__
 
 #include <string>
 #include <vector>
@@ -7,6 +7,8 @@
 #include <iostream>
 
 #include "ElfReader.h"
+
+
 
 namespace A32u4 {
 	class ATmega32u4;
@@ -58,6 +60,7 @@ namespace A32u4 {
 				Section(const std::string& name);
 
 				bool operator==(const Section& other) const;
+				size_t sizeBytes() const;
 			};
 
 			symb_size_t value;
@@ -84,6 +87,7 @@ namespace A32u4 {
 			bool operator<(const Symbol& rhs) const;
 			bool operator==(const Symbol& other) const;	
 			bool equals(const Symbol& other, bool includeID = true) const;
+			size_t sizeBytes() const;
 		};
 
 		typedef void (*SymbolsPostProcFuncPtr)(Symbol* symbs, size_t len, void* userData);
@@ -154,7 +158,20 @@ namespace A32u4 {
 		void setState(std::istream& input);
 
 		bool operator==(const SymbolTable& other) const;
+		size_t sizeBytes() const;
 	};
+}
+
+namespace DataUtils {
+	inline size_t approxSizeOf(const A32u4::SymbolTable::Symbol::Section& v) {
+		return v.sizeBytes();
+	}
+	inline size_t approxSizeOf(const A32u4::SymbolTable::Symbol& v) {
+		return v.sizeBytes();
+	}
+	inline size_t approxSizeOf(const A32u4::SymbolTable& v) {
+		return v.sizeBytes();
+	}
 }
 
 #endif

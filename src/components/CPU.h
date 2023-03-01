@@ -1,5 +1,5 @@
-#ifndef _A32u4_CPU
-#define _A32u4_CPU
+#ifndef __A32U4_CPU_H__
+#define __A32U4_CPU_H__
 
 #include <iostream> // istream & ostream
 
@@ -70,7 +70,13 @@ namespace A32u4 {
 		void setState(std::istream& input);
 
 		bool operator==(const CPU& other) const;
+		size_t sizeBytes() const;
 	};
+}
+namespace DataUtils {
+	inline size_t approxSizeOf(const A32u4::CPU& v) {
+		return v.sizeBytes();
+	}
 }
 
 #endif

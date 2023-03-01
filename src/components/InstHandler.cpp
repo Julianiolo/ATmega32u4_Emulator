@@ -761,7 +761,9 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RCALL(ATmega32u4* mcu
 
 	mcu->dataspace.pushAddrToStack(mcu->cpu.PC+1);
 
+#if MCU_INCLUDE_EXTRAS
 	mcu->debugger.pushPCOnCallStack(mcu->cpu.PC+k+1, mcu->cpu.PC);
+#endif
 	
 	return inst_effect_t(4,k+1);
 }
@@ -772,7 +774,9 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ICALL(ATmega32u4* mcu
 
 	const uint16_t addr = mcu->dataspace.getZ();
 
+#if MCU_INCLUDE_EXTRAS
 	mcu->debugger.pushPCOnCallStack(addr, mcu->cpu.PC);
+#endif
 
 	mcu->cpu.PC = addr;
 
@@ -785,7 +789,9 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_EICALL(ATmega32u4* mc
 
 	const uint16_t addr = mcu->dataspace.getZ();
 
+#if MCU_INCLUDE_EXTRAS
 	mcu->debugger.pushPCOnCallStack(addr, mcu->cpu.PC);
+#endif
 
 	mcu->cpu.PC = addr;
 
@@ -797,7 +803,9 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CALL(ATmega32u4* mcu,
 
 	mcu->dataspace.pushAddrToStack(mcu->cpu.PC + 2);
 
+#if MCU_INCLUDE_EXTRAS
 	mcu->debugger.pushPCOnCallStack(k, mcu->cpu.PC);
+#endif
 
 	mcu->cpu.PC = k;
 
@@ -1606,7 +1614,9 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_WDR(ATmega32u4* mcu, 
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_BREAK(ATmega32u4* mcu, uint16_t word) noexcept {
 	//TODO
+#if MCU_INCLUDE_EXTRAS
 	mcu->debugger.halt();
+#endif
 
 	return inst_effect_t(1,1);
 }

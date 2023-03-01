@@ -1,3 +1,7 @@
+#include "../config.h"
+
+#if MCU_INCLUDE_EXTRAS
+
 #include "Debugger.h"
 
 #include <iostream>
@@ -5,6 +9,7 @@
 
 #include "StringUtils.h"
 #include "StreamUtils.h"
+#include "DataUtils.h"
 
 #include "../ATmega32u4.h"
 #include "Disassembler.h"
@@ -14,13 +19,13 @@
 A32u4::Debugger::Debugger(ATmega32u4* mcu):
 	mcu(mcu)
 #if !DEBUGGER_STD
-#if USE_HEAP
+#if MCU_USE_HEAP
 	, breakpoints(new Breakpoint[breakPointArrMaxSize]),
 	callStack(new CallData[addressStackMaxSize]),
 	addressStackIndicators(new uint8_t[DataSpace::Consts::ISRAM_size])
 #endif
 #else
-#if USE_HEAP
+#if MCU_USE_HEAP
 	, breakpoints(breakPointArrMaxSize),
 	callStack(addressStackMaxSize),
 	addressStackIndicators(DataSpace::Consts::ISRAM_size)
@@ -32,7 +37,7 @@ A32u4::Debugger::Debugger(ATmega32u4* mcu):
 
 A32u4::Debugger::~Debugger() {
 #if !DEBUGGER_STD
-#if USE_HEAP
+#if MCU_USE_HEAP
 	delete[] breakpoints;
 	delete[] callStack;
 	delete[] addressStackIndicators;
@@ -326,6 +331,35 @@ bool A32u4::Debugger::operator==(const Debugger& other) const{
 #undef _CMP_
 }
 
+size_t A32u4::Debugger::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += sizeof(mcu);
+
+	sum += sizeof(callStackPtr);
+
+	sum += sizeof(halted);
+	sum += sizeof(doStep);
+	sum += sizeof(skipCycs);
+
+	sum += DataUtils::approxSizeOf(breakpointList);
+
+#if !MCU_USE_HEAP
+	sum += sizeof(breakpoints);
+	sum += sizeof(callStack);
+	sum += sizeof(addressStackIndicators);
+#else
+	sum += sizeof(breakpoints) + sizeof(breakpoints[0]) * breakPointArrMaxSize;
+	sum += sizeof(callStack)   + sizeof(callStack[0]) * addressStackMaxSize;
+	sum += sizeof(addressStackIndicators) + sizeof(addressStackIndicators[0]) * addressStackIndicatorsSize;
+#endif
+
+	sum += sizeof(lastSPRecived);
+
+	return sum;
+}
+
+#endif
 
 /*
 

@@ -1,3 +1,7 @@
+#include "../config.h"
+
+#if MCU_INCLUDE_EXTRAS
+
 #include "SymbolTable.h"
 
 #include <algorithm>
@@ -6,6 +10,7 @@
 
 #include "StringUtils.h"
 #include "StreamUtils.h"
+#include "DataUtils.h"
 
 #include "../ATmega32u4.h"
 
@@ -679,6 +684,66 @@ bool A32u4::SymbolTable::operator==(const SymbolTable& other) const{
 		_CMP_(maxRamAddrEnd);
 #undef _CMP_
 }
+
+size_t A32u4::SymbolTable::Symbol::Section::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += DataUtils::approxSizeOf(name);
+
+	return sum;
+}
+
+
+size_t A32u4::SymbolTable::Symbol::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += sizeof(value);
+	sum += sizeof(flags);
+
+	sum += DataUtils::approxSizeOf(flagStr);
+	sum += DataUtils::approxSizeOf(name);
+	sum += DataUtils::approxSizeOf(demangled);
+	sum += DataUtils::approxSizeOf(note);
+
+	sum += sizeof(hasDemangledName);
+
+	sum += sizeof(size);
+
+	sum += DataUtils::approxSizeOf(section);
+
+	sum += sizeof(id);
+
+	sum += sizeof(isHidden);
+
+	sum += sizeof(extraData);
+
+	return sum;
+}
+
+size_t A32u4::SymbolTable::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += sizeof(mcu);
+
+	sum += sizeof(symbolsPostProcFunc);
+	sum += sizeof(symbolsPostProcFuncUserData);
+
+	sum += DataUtils::approxSizeOf(symbolStorage);
+	sum += DataUtils::approxSizeOf(sections);
+
+	sum += DataUtils::approxSizeOf(symbsIdMap);
+	sum += DataUtils::approxSizeOf(symbsNameMap);
+	sum += DataUtils::approxSizeOf(symbolsBySections);
+
+	sum += symbolsRam.capacity() * sizeof(symbolsRam[0]);
+	sum += symbolsRom.capacity() * sizeof(symbolsRom[0]);
+
+	sum += sizeof(maxRamAddrEnd);
+
+	return sum;
+}
+
+#endif
 
 
 /*

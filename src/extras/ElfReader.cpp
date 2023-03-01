@@ -369,7 +369,7 @@ int64_t A32u4::ELF::ELFFile::DWARF::getSleb128(const uint8_t* data, size_t* off)
 	uint8_t b;
 	while (true) {
 		b = data[(*off)++];
-		val |= (b & 0x7f) << shift;
+		val |= (uint64_t)(b & 0x7f) << shift;
 		shift += 7;
 		if ((b & 0x80) == 0)
 			break;
@@ -624,8 +624,81 @@ bool A32u4::ELF::ELFFile::hasInfosLoaded() const {
 	return data.size() > 0;
 }
 
+size_t A32u4::ELF::ELFFile::DWARF::_debug_line::CU::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += sizeof(header);
+
+	sum += DataUtils::approxSizeOf(section);
+
+	sum += DataUtils::approxSizeOf(dirs);
+	sum += DataUtils::approxSizeOf(files);
+
+	sum += DataUtils::approxSizeOf(entrys);
+
+	return sum;
+}
+
+size_t A32u4::ELF::ELFFile::DWARF::_debug_line::File::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += DataUtils::approxSizeOf(name);
+	sum += sizeof(dir);
+	sum += sizeof(time);
+	sum += sizeof(size);
+
+	sum += sizeof(couldFind);
+	sum += DataUtils::approxSizeOf(content);
+	sum += DataUtils::approxSizeOf(lines);
+
+	return sum;
+}
+
+size_t A32u4::ELF::ELFFile::DWARF::_debug_line::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += sizeof(couldFind);
+
+	sum += DataUtils::approxSizeOf(cus);
+
+	sum += DataUtils::approxSizeOf(dirs);
+
+	sum += DataUtils::approxSizeOf(entrys);
+
+	sum += DataUtils::approxSizeOf(files);
+
+	return sum;
+}
+
+size_t A32u4::ELF::ELFFile::DWARF::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += debug_line.sizeBytes();
+
+	return sum;
+}
 
 
+size_t A32u4::ELF::ELFFile::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += dwarf.sizeBytes();
+
+	sum += DataUtils::approxSizeOf(data);
+	sum += sizeof(dataLen);
+
+	sum += sizeof(header);
+	sum += DataUtils::approxSizeOf(programHeaders);
+	sum += DataUtils::approxSizeOf(segmentContents);
+	sum += DataUtils::approxSizeOf(sectionHeaders);
+	sum += DataUtils::approxSizeOf(sectionContents);
+
+	sum += DataUtils::approxSizeOf(symbolTableEntrys);
+	sum += sizeof(stringTableStr);
+	sum += sizeof(shstringTableStr);
+
+	return sum;
+}
 
 
 /*

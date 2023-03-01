@@ -8,8 +8,6 @@
 #include "../ATmega32u4.h"
 #include "../extras/Debugger.h"
 
-#include "CPUTemplates.h" // for addCycles (EEPROM)
-
 #define MCU_MODULE "DataSpace"
 
 void A32u4::DataSpace::doTick(uint8_t& timer) {
@@ -96,7 +94,7 @@ DataSpace:
 */
 
 A32u4::DataSpace::DataSpace(ATmega32u4* mcu) : mcu(mcu), 
-#if USE_HEAP
+#if MCU_USE_HEAP
 data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size])
 #endif
 {
@@ -107,14 +105,14 @@ data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size])
 }
 
 A32u4::DataSpace::~DataSpace() {
-#if USE_HEAP
+#if MCU_USE_HEAP
 	delete[] data;
 	delete[] eeprom;
 #endif
 }
 
 A32u4::DataSpace::DataSpace(const DataSpace& src): 
-#if USE_HEAP
+#if MCU_USE_HEAP
 data(new uint8_t[Consts::data_size]), eeprom(new uint8_t[Consts::eeprom_size])
 #endif
 {
@@ -263,8 +261,10 @@ uint32_t A32u4::DataSpace::getExtendedZ() {
 
 void A32u4::DataSpace::setSP(uint16_t val) {
 	setWordRegRam(Consts::SPL, val);
+#if MCU_INCLUDE_EXTRAS
 	if(mcu->analytics.maxSP > val)
 		mcu->analytics.maxSP = val;
+#endif
 }
 
 void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
@@ -490,7 +490,9 @@ uint8_t A32u4::DataSpace::popByteFromStack() {
 	A32U4_ASSERT_INRANGE2(SP+1, Consts::ISRAM_start, Consts::data_size, return 0, "Stack pointer while pop Byte out of bounds: " MCU_ADDR_FORMAT);
 	uint8_t Byte = data[SP + 1];
 
+#if MCU_INCLUDE_EXTRAS
 	mcu->debugger.registerStackDec(SP + 1);
+#endif
 
 	setSP(SP + 1);
 	return Byte;
@@ -502,7 +504,9 @@ void A32u4::DataSpace::pushAddrToStack(addrmcu_t Addr) {
 	data[SP] = (uint8_t)Addr; //maybe this should be SP-1 and SP-2
 	data[SP - 1] = (uint8_t)(Addr >> 8);
 
+#if MCU_INCLUDE_EXTRAS
 	mcu->debugger.registerAddressBytes(SP);
+#endif
 
 	setSP(SP - 2);
 }
@@ -512,7 +516,9 @@ addrmcu_t A32u4::DataSpace::popAddrFromStack() {
 	uint16_t Addr = data[SP + 2];//maybe this should be SP-1 and SP-2 
 	Addr |= ((uint16_t)data[SP + 1]) << 8;
 
+#if MCU_INCLUDE_EXTRAS
 	mcu->debugger.registerStackDec(SP + 2);
+#endif
 
 	setSP(SP + 2);
 	return Addr;
@@ -903,6 +909,27 @@ bool A32u4::DataSpace::operator==(const DataSpace& other) const{
 		}) &&
 		_CMP_(lastSet);
 #undef _CMP_
+}
+
+size_t A32u4::DataSpace::sizeBytes() const {
+	size_t sum = 0;
+
+	sum += sizeof(mcu);
+
+	sum += Consts::data_size;
+	sum += Consts::eeprom_size;
+#if MCU_USE_HEAP
+	sum += sizeof(data);
+	sum += sizeof(eeprom);
+#endif
+
+	sum += sizeof(SCK_Callback);
+	sum += sizeof(SPI_Byte_Callback);
+
+
+	sum += sizeof(sreg);
+
+	return sum;
 }
 
 

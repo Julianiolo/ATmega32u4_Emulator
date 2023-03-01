@@ -219,6 +219,8 @@ namespace A32u4 {
 							uint32_t column;
 						};
 						std::vector<Entry> entrys;
+
+						size_t sizeBytes() const;
 					};
 					std::vector<CU> cus;
 
@@ -234,6 +236,7 @@ namespace A32u4 {
 						std::vector<size_t> lines;
 
 						bool operator==(const File& f);
+						size_t sizeBytes() const;
 					};
 
 				private:
@@ -250,10 +253,14 @@ namespace A32u4 {
 					size_t getNumEntrys() const;
 
 					size_t getEntryIndByAddr(uint64_t addr);
+
+					size_t sizeBytes() const;
 				} debug_line;
 				static _debug_line parse_debug_line(const uint8_t* data, size_t dataLen, const ELFHeader::Ident& ident);
 				static uint64_t getUleb128(const uint8_t* data, size_t* off);
 				static int64_t getSleb128(const uint8_t* data, size_t* off);
+
+				size_t sizeBytes() const;
 			} dwarf;
 
 			std::vector<uint8_t> data;
@@ -271,6 +278,8 @@ namespace A32u4 {
 
 			size_t getIndOfSectionWithName(const char* name) const;
 			bool hasInfosLoaded() const;
+
+			size_t sizeBytes() const;
 		};
 
 
@@ -291,5 +300,25 @@ namespace A32u4 {
 	};
 }
 
+namespace DataUtils {
+	inline constexpr size_t approxSizeOf(const A32u4::ELF::ELFFile::ProgramHeader& v) {
+		return sizeof(A32u4::ELF::ELFFile::ProgramHeader);
+	}
+	inline constexpr size_t approxSizeOf(const A32u4::ELF::ELFFile::SectionHeader& v) {
+		return sizeof(A32u4::ELF::ELFFile::SectionHeader);
+	}
+	inline constexpr size_t approxSizeOf(const A32u4::ELF::ELFFile::SymbolTableEntry& v) {
+		return sizeof(A32u4::ELF::ELFFile::SymbolTableEntry);
+	}
+	inline constexpr size_t approxSizeOf(const A32u4::ELF::ELFFile::DWARF::_debug_line::CU::Entry& v) {
+		return sizeof(A32u4::ELF::ELFFile::DWARF::_debug_line::CU::Entry);
+	}
+	inline size_t approxSizeOf(const A32u4::ELF::ELFFile::DWARF::_debug_line::File& v) {
+		return v.sizeBytes();
+	}
+	inline size_t approxSizeOf(const A32u4::ELF::ELFFile::DWARF::_debug_line::CU& v) {
+		return v.sizeBytes();
+	}
+}
 
 #endif

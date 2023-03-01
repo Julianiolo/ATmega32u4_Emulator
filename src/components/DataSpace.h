@@ -1,5 +1,5 @@
-#ifndef _A32u4_DATASPACE
-#define _A32u4_DATASPACE
+#ifndef __A32U4_DATASPACE_H__
+#define __A32U4_DATASPACE_H__
 
 #include <stdint.h>
 #include <iostream> // istream & ostream
@@ -28,14 +28,14 @@ namespace A32u4 {
 
 		ATmega32u4* mcu;
 		
-#if !USE_HEAP
+#if !MCU_USE_HEAP
 		uint8_t data[Consts::data_size];
 #else
 		uint8_t* data;
 #endif
 
 		
-#if !USE_HEAP
+#if !MCU_USE_HEAP
 		uint8_t eeprom[Consts::eeprom_size];
 #else
 		uint8_t* eeprom;
@@ -168,7 +168,13 @@ namespace A32u4 {
 		void setState(std::istream& input);
 
 		bool operator==(const DataSpace& other) const;
+		size_t sizeBytes() const;
 	};
+}
+namespace DataUtils {
+	inline size_t approxSizeOf(const A32u4::DataSpace& v) {
+		return v.sizeBytes();
+	}
 }
 
 #endif
