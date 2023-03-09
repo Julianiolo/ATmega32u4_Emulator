@@ -615,19 +615,32 @@ size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(addrmcu_t Addr) const
 		return -1;
 
 	while(from != to){
-		size_t mid = from + ((to-from)/2);
-		const size_t mid_orig = mid;
+		const size_t mid_orig = from + ((to-from)/2);
+		size_t mid = mid_orig;
 
-		uint16_t lineAddr;
+		uint16_t lineAddr = addrs[mid];
 		//while((lineAddr = addrs[mid]) == Addrs_notAnAddr || lineAddr == Addrs_symbolLabel)
 		//	mid++;
+		
+		while (!addrIsActualAddr(lineAddr)) {
+			if (mid >= to) {
+				return -1;
+			}
 
-		size_t cnt = 1;
-		do {
-			mid = mid_orig + ((cnt % 2) ? -(ptrdiff_t)cnt / 2 : cnt / 2);
+			if (mid <= mid_orig) {
+				mid = mid_orig + (mid_orig - mid) + 1;
+			}
+			else {
+				if (mid - mid_orig <= mid_orig) {
+					mid = mid_orig - (mid - mid_orig);
+				}
+				else {
+					mid++;
+				}
+			}
+			// + (cnt/2>mid_orig ? (cnt-mid_orig/2) : ((cnt % 2) ? -(ptrdiff_t)cnt / 2 : cnt / 2));
 			lineAddr = addrs[mid];
-			cnt++;
-		} while (cnt / 2 < to - from && (lineAddr == Addrs_notAnAddr || lineAddr == Addrs_symbolLabel));
+		}
 
 		if(lineAddr == Addr){
 			return mid;
