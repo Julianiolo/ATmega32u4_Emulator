@@ -6,11 +6,12 @@
 
 #include "StringUtils.h"
 #include "StreamUtils.h"
+#include "DataUtils.h"
 
 #include "../ATmega32u4.h"
 #include "InstHandler.h"
 
-#define MCU_MODULE "Flash"
+#define LU_MODULE "Flash"
 
 A32u4::Flash::Flash(ATmega32u4* mcu):
 #if MCU_USE_HEAP
@@ -111,7 +112,7 @@ void A32u4::Flash::clear() {
 
 bool A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 	if (dataLen >= sizeMax) {
-		MCU_LOGF_(ATmega32u4::LogLevel_Warning,"%" MCU_PRIuSIZE " bytes is more than fits into the Flash, max is %" MCU_PRIuSIZEMCU " bytes", dataLen, sizeMax);
+		LU_LOGF_(LogUtils::LogLevel_Warning,"%" DU_PRIuSIZE " bytes is more than fits into the Flash, max is %" MCU_PRIuSIZEMCU " bytes", dataLen, sizeMax);
 		// return; // should we return here?
 	}
 
@@ -139,7 +140,7 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 	for (size_t i = 0; i < strl; i++) {
 		unsigned char c = (unsigned char)str[i];
 		if (c == 0 || c > 127) {
-			MCU_LOGF_(ATmega32u4::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character (0x%02x at %" MCU_PRIuSIZE ")", c, i);
+			LU_LOGF_(LogUtils::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character (0x%02x at %" DU_PRIuSIZE ")", c, i);
 			return false;
 		}
 	}
@@ -182,7 +183,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	{
 		const char* ext = StringUtils::getFileExtension(path);
 		if (std::strcmp(ext, "hex") != 0) {
-			MCU_LOGF_(ATmega32u4::LogLevel_Error, "Wrong Extension for loading Flash contents: %s", ext);
+			LU_LOGF_(LogUtils::LogLevel_Error, "Wrong Extension for loading Flash contents: %s", ext);
 			return false;
 		}
 	}
@@ -192,7 +193,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 	t.open(path, std::ios::binary);
 	if (!t.is_open()) {
 		t.close();
-		MCU_LOGF_(ATmega32u4::LogLevel_Error, "Cannot open file: %s", path);
+		LU_LOGF_(LogUtils::LogLevel_Error, "Cannot open file: %s", path);
 		return false;
 	}
 	t.seekg(0, std::ios::end);

@@ -2,25 +2,25 @@
 
 #include "StringUtils.h"
 #include "StreamUtils.h"
+#include "DataUtils.h"
 
-#define MCU_MODULE "Inst Handler"
+#define LU_MODULE "Inst Handler"
 #include "components/InstHandlerTemplates.h"
-#undef MCU_MODULE
-#define MCU_MODULE "CPU"
+#undef LU_MODULE
+#define LU_MODULE "CPU"
 #include "components/CPUTemplates.h"
-#undef MCU_MODULE
+#undef LU_MODULE
 
-#define MCU_MODULE "ATmega32u4"
+#define LU_MODULE "ATmega32u4"
 
-#undef MCU_MCUPTR_PREFIX
-#define MCU_MCUPTR_PREFIX 
+#undef LU_CONTEXT
+#define LU_CONTEXT (std::pair<LogUtils::LogCallB,void*>{A32u4::ATmega32u4::_log,this})
 
-A32u4::ATmega32u4* A32u4::ATmega32u4::currLogTarget = nullptr;
+
 
 A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this)
 #if MCU_INCLUDE_EXTRAS
 ,debugger(this)
-,symbolTable(this) 
 #endif
 {
 	activateLog();
@@ -31,7 +31,6 @@ cpu(src.cpu), dataspace(src.dataspace), flash(src.flash)
 #if MCU_INCLUDE_EXTRAS
 , debugger(src.debugger)
 , analytics(src.analytics)
-, symbolTable(src.symbolTable)
 #endif
 {
 	setMcu();
@@ -47,7 +46,6 @@ A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
 #if MCU_INCLUDE_EXTRAS
 	debugger = src.debugger;
 	analytics = src.analytics;
-	symbolTable = src.symbolTable;
 #endif
 	setMcu();
 
@@ -64,7 +62,6 @@ void A32u4::ATmega32u4::getState(std::ostream& output){
 #if MCU_INCLUDE_EXTRAS
 	debugger.getState(output);
 	analytics.getState(output);
-	symbolTable.getState(output);
 #endif
 }
 void A32u4::ATmega32u4::setState(std::istream& input){
@@ -77,7 +74,6 @@ void A32u4::ATmega32u4::setState(std::istream& input){
 #if MCU_INCLUDE_EXTRAS
 	debugger.setState(input);
 	analytics.setState(input);
-	symbolTable.setState(input);
 #endif
 }
 
@@ -86,12 +82,22 @@ void A32u4::ATmega32u4::setMcu() {
 	dataspace.mcu = this;
 #if MCU_INCLUDE_EXTRAS
 	debugger.mcu = this;
-	symbolTable.mcu = this;
 #endif
 }
 
+void A32u4::ATmega32u4::activateLog() {
+	LogUtils::activateLogTarget(_log, this);
+}
+
+void A32u4::ATmega32u4::_log(uint8_t logLevel, const char* msg, const char* fileName, int lineNum, const char* module, void* userData) {
+	ATmega32u4* atm = (ATmega32u4*)userData;
+	DU_ASSERT(atm->logCallB);
+
+	atm->logCallB(logLevel, msg, fileName, lineNum, module, atm->logCallBUserData);
+}
+
 void A32u4::ATmega32u4::reset() { //add: reason
-	MCU_LOG(LogLevel_Output, "Reset");
+	LU_LOG(LogUtils::LogLevel_Output, "Reset");
 
 #if MCU_INCLUDE_EXTRAS
 	debugger.reset();
@@ -131,46 +137,20 @@ void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
 			cpu.execute<true, true>(cyclAmt);
 			break;
 		default:
-			MCU_LOG(LogLevel_Error, "Unhandeled Flags: " + StringUtils::uIntToBinStr(flags,8));
+			LU_LOG(LogUtils::LogLevel_Error, "Unhandeled Flags: " + StringUtils::uIntToBinStr(flags,8));
 			break;
 	}
 }
 
-void A32u4::ATmega32u4::log(LogLevel logLevel, const char* msg, const char* fileName, int lineNum, const char* module) {
-	MCU_ASSERT(logCallB != nullptr);
-	logCallB(logLevel, msg,fileName,lineNum,module,logCallBUserData);
 
-	if (logLevel == LogLevel_Error) {
-		running = false;
-#if MCU_INCLUDE_EXTRAS
-		debugger.halt();
-#endif
-	}
-}
-void A32u4::ATmega32u4::log(LogLevel logLevel, const std::string& msg, const char* fileName, int lineNum, const char* module) {
-	log(logLevel, msg.c_str(), fileName, lineNum, module);
-}
-
-void A32u4::ATmega32u4::activateLog() {
-	currLogTarget = this;
-}
-void A32u4::ATmega32u4::log_(LogLevel logLevel, const char* msg, const char* fileName, int lineNum, const char* module) {
-	if (currLogTarget)
-		currLogTarget->log(logLevel, msg, fileName, lineNum, module);
-}
-void A32u4::ATmega32u4::log_(LogLevel logLevel, const std::string& msg, const char* fileName, int lineNum, const char* module){
-	if (currLogTarget)
-		currLogTarget->log(logLevel, msg, fileName, lineNum, module);
-}
-
-void A32u4::ATmega32u4::setLogCallB(LogCallB newLogCallB, void* userData){
+void A32u4::ATmega32u4::setLogCallB(LogUtils::LogCallB newLogCallB, void* userData){
 	logCallB = newLogCallB;
 	logCallBUserData = userData;
 }
-void A32u4::ATmega32u4::defaultLogHandler(LogLevel logLevel, const char* msg, const char* fileName , int lineNum, const char* module, void* userData){
-	MCU_UNUSED(userData);
+void A32u4::ATmega32u4::defaultLogHandler(uint8_t logLevel, const char* msg, const char* fileName , int lineNum, const char* module, void* userData){
+	DU_UNUSED(userData);
 	printf("[%s]%s: %s", 
-		A32u4::ATmega32u4::logLevelStrs[logLevel],
+		LogUtils::logLevelStrs[logLevel],
 		module != nullptr ? (std::string("[")+module+"]").c_str() : "",
 		msg
 	);
@@ -189,15 +169,16 @@ bool A32u4::ATmega32u4::load(const uint8_t* data, size_t dataLen){
 
 	bool success = false;
 	if(isElf){
-		success = loadFromELF(data, dataLen);
+		abort();
+		//success = loadFromELF(data, dataLen);
 		if(!success){
-			MCU_LOG(LogLevel_Error, "Couldn't load program from ELF Data");
+			LU_LOG(LogUtils::LogLevel_Error, "Couldn't load program from ELF Data");
 			return false;
 		}
 	}else{
 		success = flash.loadFromHexString((const char*)data);
 		if(!success){
-			MCU_LOG(LogLevel_Error, "Couldn't load program from Hex Data: ");
+			LU_LOG(LogUtils::LogLevel_Error, "Couldn't load program from Hex Data: ");
 			return false;
 		}
 	}
@@ -214,17 +195,18 @@ bool A32u4::ATmega32u4::loadFile(const char* path) {
 		bool success = true;
 		std::vector<uint8_t> data = StringUtils::loadFileIntoByteArray(path, &success);
 		if (!success) {
-			MCU_LOGF(LogLevel_Error, "Was not able to open file: \"%s\"", path);
+			LU_LOGF(LogUtils::LogLevel_Error, "Was not able to open file: \"%s\"", path);
 			return false;
 		}
 		
 		return flash.loadFromMemory(data.size()>0? &data[0] : nullptr, data.size());
 	}
 	else if (std::strcmp(ext, "elf") == 0) {
-		return loadFromELFFile(path);
+		abort();
+		//return loadFromELFFile(path);
 	}
 	else {
-		MCU_LOGF(LogLevel_Error, "Can't load file with extension %s! Trying to load: %s", ext, path);
+		LU_LOGF(LogUtils::LogLevel_Error, "Can't load file with extension %s! Trying to load: %s", ext, path);
 		return false;
 	}
 	return true;
@@ -237,51 +219,13 @@ bool A32u4::ATmega32u4::loadFromHexFile(const char* path){
 	return flash.loadFromHexFile(path);
 }
 
-bool A32u4::ATmega32u4::loadFromELF(const uint8_t* data, size_t dataLen) {
-	ELF::ELFFile elf = ELF::parseELFFile(data, dataLen);
 
-#if MCU_INCLUDE_EXTRAS
-	symbolTable.loadFromELF(elf);
-#endif
-
-	size_t textInd = elf.getIndOfSectionWithName(".text");
-	size_t dataInd = elf.getIndOfSectionWithName(".data");
-
-	if (textInd != (size_t)-1 && dataInd != (size_t)-1) {
-		size_t len = elf.sectionContents[textInd].second + elf.sectionContents[dataInd].second;
-		uint8_t* romData = new uint8_t[len];
-		std::memcpy(romData, &elf.data[0] + elf.sectionContents[textInd].first, elf.sectionContents[textInd].second);
-		std::memcpy(romData + elf.sectionContents[textInd].second, &elf.data[0] + elf.sectionContents[dataInd].first, elf.sectionContents[dataInd].second);
-
-		flash.loadFromMemory(romData, len);
-
-		delete[] romData;
-
-		MCU_LOG(LogLevel_DebugOutput, "Successfully loaded Flash content from elf!");
-		return true;
-	}
-	else {
-		MCU_LOGF(LogLevel_Error, "Couldn't find required sections for execution: %s %s", textInd == (size_t)-1 ? ".text" : "", dataInd == (size_t)-1 ? ".data" : "");
-		return false;
-	}
-}
-
-bool A32u4::ATmega32u4::loadFromELFFile(const char* path) {
-	bool success = true;
-	std::vector<uint8_t> content = StringUtils::loadFileIntoByteArray(path, &success);
-	if (!success) {
-		MCU_LOGF(LogLevel_Error, "Couldn't load ELF file: %s", path);
-		return false;
-	}
-		
-	return loadFromELF(&content[0], content.size());
-}
 
 bool A32u4::ATmega32u4::operator==(const ATmega32u4& other) const{
 #define _CMP_(x) (x==other.x)
 	return _CMP_(running) && _CMP_(cpu) && _CMP_(dataspace) && _CMP_(flash)
 #if MCU_INCLUDE_EXTRAS
-		&& _CMP_(debugger) && _CMP_(analytics) && _CMP_(symbolTable)
+		&& _CMP_(debugger) && _CMP_(analytics)
 #endif
 		;
 #undef _CMP_
@@ -300,7 +244,6 @@ size_t A32u4::ATmega32u4::sizeBytes() const {
 #if MCU_INCLUDE_EXTRAS
 	sum += debugger.sizeBytes();
 	sum += analytics.sizeBytes();
-	sum += symbolTable.sizeBytes();
 #endif
 
 	return sum;

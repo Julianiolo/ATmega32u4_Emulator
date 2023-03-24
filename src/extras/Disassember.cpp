@@ -14,7 +14,7 @@
 #include "../components/InstInds.h"
 #include "../components/InstHandler.h"
 
-#define MCU_MODULE "Disassembler"
+#define LU_MODULE "Disassembler"
 
 #define INST_PAR_TYPE_RAWVAL 0
 #define INST_PAR_TYPE_RAWVALDEC 1
@@ -24,747 +24,169 @@
 #define INST_PAR_TYPE_OFFSET16 5
 #define INST_PAR_TYPE_REG_OFFSET 6
 
-size_t A32u4::Disassembler::DisasmFile::BranchRoot::addrDist() const {
-	return std::max(start,dest) - std::min(start,dest);
-}
-
-
-A32u4::Disassembler::DisasmFile::DisasmFile(){
+A32u4::Disassembler::DisasmData::DisasmData(size_t size) : disasmed(size) {
 
 }
-void A32u4::Disassembler::DisasmFile::addDisasmData(size_t size){
-	disasmData = std::make_shared<DisasmData>(size);
-}
-const A32u4::Disassembler::DisasmFile::DisasmData* A32u4::Disassembler::DisasmFile::getDisasmData() const {
-	return disasmData.get();
-}
-
-bool A32u4::Disassembler::DisasmFile::addrIsActualAddr(addrmcu_t addr) {
-	return addr != Addrs_notAnAddr && addr != Addrs_symbolLabel;
-}
-bool A32u4::Disassembler::DisasmFile::addrIsNotProgram(addrmcu_t addr) {
-	return addr == Addrs_notAnAddr;
-}
-bool A32u4::Disassembler::DisasmFile::addrIsSymbol(addrmcu_t addr) {
-	return addr == Addrs_symbolLabel;
-}
-
-void A32u4::Disassembler::DisasmFile::loadSrc(const char* str, const char* strEnd) {
-	if (strEnd == NULL)
-		strEnd = str + std::strlen(str);
-
-	content = std::string(str, strEnd);
-	processContent();
-}
-
-bool A32u4::Disassembler::DisasmFile::loadSrcFile(const char* path) {
-	bool success = false;
-	content = StringUtils::loadFileIntoString(path, &success);
-
-	if (!success)
-		return false;
-
-	processContent();
-	return true;
-}
-
-void A32u4::Disassembler::DisasmFile::generateContent(const Flash* data, const AdditionalDisasmInfo& info){
-	content.clear();
-	MCU_ASSERT(disasmData);
-	
-	std::sort(disasmData->lines.begin(), disasmData->lines.end(), [](const DisasmData::Line& a, const DisasmData::Line& b) {
-		return a.addr < b.addr;
-	});
-
-	addrmcu_t nextDataAddr = -1;
-	size_t dataSymbInd = 0;
-	if(info.numOfDataSymbols > 0)
-		nextDataAddr = (addrmcu_t)info.dataSymbol(0).value;
-
-	addrmcu_t lastAddr = 0;
-	for (size_t i = 0; i < disasmData->lines.size(); i++){
-		auto& line = disasmData->lines[i];
-
-		// draw data blocks
-		while(nextDataAddr != (addrmcu_t)-1 && line.addr*2 > nextDataAddr){
-			auto dataSymb = info.dataSymbol(dataSymbInd);
-			content += StringUtils::format("\n%08x <%s>:\n", dataSymb.value, dataSymb.name.c_str()); //symbol label
-
-			for(size_t i = 0; i<dataSymb.size; i+=16){
-				std::string bytes;
-				for(size_t j = 0; j<std::min((size_t)16,dataSymb.size-i); j++){
-					uint8_t byte = data->getByte((addrmcu_t)(dataSymb.value+i+j));
-					bytes += StringUtils::uIntToHexStr(byte, 2);
-					bytes += ' ';
-				}
-
-				std::string ascii;
-				for(size_t j = 0; j<std::min((size_t)16,dataSymb.size-i); j++){
-					char byte = data->getByte((addrmcu_t)(dataSymb.value+i+j));
-					if(!StringUtils::isprint(byte)) byte = '.';
-					ascii += byte;
-				}
-
-				// bytes padd amt = (2+1)*16=48
-				content += StringUtils::format(
-					"%8x:\t%-48s    %s\n",
-					dataSymb.value+i, bytes.c_str(), ascii.c_str()
-				);
-			}
-
-			dataSymbInd++;
-			if(dataSymbInd >= info.numOfDataSymbols) {
-				nextDataAddr = -1;
-			}else{
-				nextDataAddr = (addrmcu_t)info.dataSymbol(dataSymbInd).value;
-			}
-			content += "\n";
-
-			lastAddr = (addrmcu_t)(dataSymb.value + dataSymb.size);
-		}
-
-		if (line.addr - lastAddr > 512) // make big gaps in program stand out
-			content += "\n     ...\n\n";
-
-		if (info.getSymbolNameFromAddr) {
-			std::string name;
-			if (info.getSymbolNameFromAddr(line.addr*2, false, &name)) {
-				content += StringUtils::format("\n%08x <%s>:\n", line.addr*2, name.c_str());
-				goto skip;
-			}
-		}
-		if (disasmData.get()->funcCalls.find(line.addr) != disasmData.get()->funcCalls.end()) {
-			// has a function
-			content += StringUtils::format("\n%08x <func@%x>:\n", line.addr*2, line.addr*2);
-		}
-		skip:
-			
-
-		if (info.getLineInfoFromAddr != nullptr) {
-			std::string add;
-			if (info.getLineInfoFromAddr(line.addr * 2, &add))
-				content += add + "\n";
-		}
-
-		content += line.str + "\n";
-
-		switch(line.inst_ind){
-			case IND_RET:
-				MCU_FALLTHROUGH;
-			case IND_RETI:
-				content += "\n";
-				break;
-		}
-
-		lastAddr = line.addr;
-	}
-	
-	processContent();
-}
-
-void A32u4::Disassembler::DisasmFile::disassembleBinFile(const Flash* data, const AdditionalDisasmInfo& info){
-	if (!data->isProgramLoaded()) {
-		MCU_LOG_(ATmega32u4::LogLevel_Error, "Could not disassemble because no program is loaded!");
-		content = "";
-		return;
-	}
-
-	auto start = std::chrono::high_resolution_clock::now();
-
-	if(!disasmData)
-		addDisasmData(data->sizeWords());
-	for(addrmcu_t i = 0; i <= 0xa8;i+=4)
-		disasmRecurse(i/2,data, disasmData.get());
-
-#if MCU_INCLUDE_EXTRAS
-	if (info.analytics) {
-		for(size_t i = 0; i < std::min(data->sizeWords(), Analytics::PCHeatArrSize); i++){
-			if(info.analytics->getPCHeat()[i] > 0 && !disasmData.get()->disasmed.get(i))
-				disasmRecurse((pc_t)i, data, disasmData.get());
-		}
-	}
-#endif
-
-	for(size_t i = 0; i<info.additionalDisasmSeeds.size(); i++) {
-		disasmRecurse(info.additionalDisasmSeeds[i], data, disasmData.get());
-	}
-
-	auto end0 = std::chrono::high_resolution_clock::now();
-	{
-		double ms = std::chrono::duration_cast<std::chrono::microseconds>(end0 - start).count()/1000.0;
-		MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "walking program took %f ms", ms);
-	}
-
-
-	generateContent(data,info);
-
-	auto end = std::chrono::high_resolution_clock::now();
-	{
-		double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0;
-		MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "disassembly in total took %f ms", ms);
-	}
-}
-
-uint16_t A32u4::Disassembler::DisasmFile::generateAddrFromLine(const char* start, const char* end) {
-	if (start + 8 > end || *start != ' ' || start[8] != ':') {
-		if (*start == '0' && start[8] == ' ' && isValidHexAddr(start,start+8))
-			return Addrs_symbolLabel;
-		else
-			return Addrs_notAnAddr;
-	}
-
-	if(!isValidHexAddr(start,start+8))
-		return Addrs_notAnAddr;
-
-	return (uint16_t)StringUtils::hexStrToUIntLen<uint64_t>(start, 8);
-}
-bool A32u4::Disassembler::DisasmFile::isValidHexAddr(const char* start, const char* end) {
-	static constexpr char validHexDigits[] = {' ','0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
-	for(const char* it = start; it < end; it++) {
-		char c = *it;
-		if(c >= 'A' && c <= 'Z') {
-			c += ('a'-'A');
-		}
-		for(int i = 0; i<17;i++){
-			if(c == validHexDigits[i])
-				goto continue_outer;
-		}
-		return false;
-	continue_outer:
-		;
-	}
-	if(*(end-1) == ' ')
-		return false;
-	return true;
-}
-void A32u4::Disassembler::DisasmFile::addAddrToList(const char* start, const char* end, size_t lineInd) {
-	bool isProgramLine = end - start > 22 && start[22] == '\t';
-	isLineProgram.push_back(isProgramLine);
-
-	uint16_t addr = generateAddrFromLine(start, end);
-	MCU_ASSERT(!isProgramLine || (addr % 2 == 0 || addr == Addrs_notAnAddr || addr == Addrs_symbolLabel)); // addresses should always be round, since they refer to 2*PC
-	if(lineInd >= addrs.size()){
-		addrs.resize(lineInd);
-	}
-	addrs[lineInd-1] = addr;
-
-	if (addr == Addrs_symbolLabel) {
-		// should never be bigger than 2 bytes
-		addrmcu_t symbAddr = (addrmcu_t)StringUtils::hexStrToUIntLen<uint64_t>(start, 8);
-		labels[symbAddr] = lineInd-1;
-	}
-}
-
-void A32u4::Disassembler::DisasmFile::processBranches() {
-	maxBranchDisplayDepth = 0;
-	branchRoots.clear();
-	branchRootInds.clear();
-
-	branchRootInds.resize(lines.size(), -1);
-	
-	{
-		auto start0 = std::chrono::high_resolution_clock::now();
-		std::vector<std::vector<size_t>> passingBranches(lines.size()); // raw representation, that later gets compressed into passingBranchesInds and passingBranchesVec; [lineno] = vector of inds of passing branches
-		for (size_t i = 0; i < lines.size(); i++) {
-			if (!isLineProgram[i])
-				continue;
-
-			addrmcu_t addr = addrs[i];
-			if (addr != Addrs_notAnAddr && addr != Addrs_symbolLabel) {
-				addrmcu_t dest;
-				// get dest address
-				{
-					const char* lineStart = content.c_str() + lines[i];
-					//const char* line_end = content.c_str() + ((i + 1 < lines.size()) ? lines[i] : content.size());
-
-					uint16_t word = ( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart,   2)) |
-						( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3, 2) << 8);
-					uint16_t word2 = 0;
-					if(*(lineStart+FileConsts::instBytesStart+3+3) != ' ') {
-						word2 =		( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3+3,   2)) |
-							( StringUtils::hexStrToUIntLen<uint16_t>(lineStart+FileConsts::instBytesStart+3+3+3, 2) << 8);
-					}
-
-					pc_t destPC = Disassembler::getJumpDests(word,word2,addr/2);
-					if (destPC == (pc_t)-1)
-						continue; // instruction doesn't jump anywhere
-					dest = destPC * 2;
-				}
-
-				size_t destLine = getLineIndFromAddr(dest);
-
-				if (destLine == (decltype(destLine))-1 || addrs[destLine]%2 == 1) // for whatever reason, sometimes programs have illegal jumps like negative addresses or odd addresses
-					continue;
-
-				MCU_ASSERT(addrs[destLine] == dest);
-
-				size_t branchRootInd = branchRoots.size();
-				branchRootInds[i] = branchRootInd;
-
-				branchRoots.push_back(BranchRoot());
-				BranchRoot& branchRoot = branchRoots.back();
-				branchRoot.start = addr;
-				branchRoot.dest = dest;
-				branchRoot.startLine = i;
-				branchRoot.destLine = destLine;
-
-
-
-				size_t from = std::min(i, destLine);
-				size_t to = std::max(i, destLine);
-
-				for (size_t l = from; l <= to; l++) {
-					auto& passing = passingBranches[l];
-					passing.push_back(branchRootInd);
-				}
-
-				branchRoot.displayDepth = -1;
-			}
-		}
-		auto end0 = std::chrono::high_resolution_clock::now();
-		
-		{
-			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end0 - start0).count()/1000.0;
-			MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "branch init took: %f ms", ms);
-		}
-
-
-		// now we compress passingBranches into passingBranchesInds and passingBranchesVec
-
-		auto start1 = std::chrono::high_resolution_clock::now();
-
-		passingBranchesInds.clear();
-		passingBranchesVec.clear();
-		passingBranchesInds.resize(lines.size(), -1);
-
-		std::vector<size_t>* last = nullptr;
-		for (size_t i = 0; i < passingBranches.size(); i++) {
-			if (!last || passingBranches[i].size() != last->size() || passingBranches[i] != *last) {
-				PassingBranchs pb;
-				pb.passing = passingBranches[i];
-				pb.startLine = i;
-				passingBranchesVec.push_back(pb);
-				last = &passingBranches[i];
-			}
-			passingBranchesInds[i] = passingBranchesVec.size() - 1;
-		}
-
-		auto end1 = std::chrono::high_resolution_clock::now();
-		{
-			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start1).count()/1000.0;
-			MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, 
-				"branch comp took: %f ms; %" MCU_PRIuSIZE "=>%" MCU_PRIuSIZE " [%" MCU_PRIuSIZE " bs,%" MCU_PRIuSIZE " lines]", 
-				ms, 
-				passingBranches.size(), passingBranchesVec.size(),
-				branchRoots.size(), lines.size()
-			);
-		}
-	}
-	
-	#if 1
-	{
-		auto start = std::chrono::high_resolution_clock::now();
-		#if 0
-		for(size_t i = 0; i<passingBranchesVec.size(); i++) {
-			processBranchesRecurse(i);
-		}
-		#else
-		for(size_t i = 0; i<branchRoots.size(); i++) {
-			processBranchesRecurse(i);
-		}
-		#endif
-		auto end = std::chrono::high_resolution_clock::now();
-		{
-			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0;
-			MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "branch recursion took: %f ms", ms);
-		}
-	}
-	#else
-	{	
-		auto start = std::chrono::high_resolution_clock::now();
-		std::vector<size_t> branchsSorted(branchRoots.size());
-		for(size_t i = 0; i<branchsSorted.size(); i++) {
-			branchsSorted[i] = i;
-		}
-
-		std::sort(branchsSorted.begin(), branchsSorted.end(), [&](size_t a, size_t b) {
-			return branchRoots[a].addrDist() < branchRoots[b].addrDist();
-		});
-
-		std::map<addrmcu_t,size_t> destMap;
-		for(size_t i = 0; i< branchsSorted.size(); i++) {
-			BranchRoot& branchRoot = branchRoots[branchsSorted[i]];
-
-			const size_t from = std::min(branchRoot.startLine, branchRoot.destLine);
-			const size_t to = std::max(branchRoot.startLine, branchRoot.destLine);
-			
-			const size_t fromInd = passingBranchesInds[from];
-
-			{
-				auto res = destMap.find(branchRoot.dest);
-				if(res != destMap.end()) {
-					branchRoot.displayDepth = res->second;
-					goto skip;
-				}
-			}
-
-			{
-
-				BitArray<PassingBranchs::bitArrSize> occupied;
-				size_t toInd = passingBranchesVec.size()-1;
-				for (size_t c = fromInd; c < passingBranchesVec.size(); c++) { // go through line chunks
-					PassingBranchs& pb = passingBranchesVec[c];
-
-					if (pb.startLine > to) {
-						toInd = c+1;
-						break;
-					}
-
-					occupied |= pb.occupied;
-				}
-				
-				size_t minFreePlace = occupied.getLBC();
-				MCU_ASSERT(minFreePlace != (size_t)-1); // check that not every bit is set already
-				branchRoot.displayDepth = minFreePlace;
-
-				destMap[branchRoot.dest] = branchRoot.displayDepth;
-			}
-
-		skip:
-			for(size_t j = fromInd; j<passingBranchesVec.size(); j++) {
-				PassingBranchs& subPb = passingBranchesVec[j];
-				if (subPb.startLine > to) {
-					break;
-				}
-				subPb.occupied.setBitTo(branchRoot.displayDepth, true);
-			}
-		}
-
-		size_t test[512];
-		std::memset(test, 0, sizeof(test));
-		for(size_t i = 0; i<branchRoots.size(); i++) {
-			MCU_ASSERT(branchRoots[i].displayDepth < 512);
-			test[branchRoots[i].displayDepth] = branchRoots[i].dest;
-		}
-
-		auto end = std::chrono::high_resolution_clock::now();
-		{
-			double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0;
-			MCU_LOG_M(ATmega32u4::LogLevel_DebugOutput, StringUtils::format("branch calc took: %f ms", ms), "Disassembler");
-		}
-	}
-	#endif
-
-	for(size_t i = 0; i<branchRoots.size(); i++) {
-		MCU_ASSERT(branchRoots[i].displayDepth != (size_t)-1);
-		if (branchRoots[i].displayDepth > maxBranchDisplayDepth && branchRoots[i].displayDepth != (size_t)-3)
-			maxBranchDisplayDepth = branchRoots[i].displayDepth;
-	}
-
-	MCU_LOGF_(ATmega32u4::LogLevel_DebugOutput, "branch max Display Depth is %" MCU_PRIuSIZE, maxBranchDisplayDepth);
-}
-#if 0
-const BitArray<256>& A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_t depth) {
-	PassingBranchs& pb = passingBranchesVec[ind];
-	for(size_t i = 0; i<pb.passing.size(); i++) {
-		BranchRoot& branch = branchRoots[pb.passing[i]];
-		if(branch.displayDepth == (size_t)-1) {
-			branch.displayDepth = -2;
-			const size_t from = std::min(branch.startLine, branch.destLine);
-			const size_t to = std::max(branch.startLine, branch.destLine);
-			size_t fromInd = passingBranchesInds[from];
-
-			BitArray<256> occupied;
-			size_t toInd = passingBranchesVec.size()-1;
-			for(size_t j = fromInd; j<passingBranchesVec.size(); j++) {
-				PassingBranchs& subPb = passingBranchesVec[j];
-				if (subPb.startLine > to) {
-					toInd = j+1;
-					break;
-				}
-
-				occupied |= processBranchesRecurse(j, depth+1);
-			}
-
-			size_t minFreePlace = occupied.getLBC();
-			MCU_ASSERT(minFreePlace != (size_t)-1); // check that not every bit is set already
-			branch.displayDepth = minFreePlace;
-
-			for(size_t j = fromInd; j<toInd; j++) {
-				PassingBranchs& subPb = passingBranchesVec[j];
-				subPb.occupied.setBitTo(minFreePlace, true);
-			}
-		}
-	}
-	return pb.occupied;
-}
-#else
-size_t A32u4::Disassembler::DisasmFile::processBranchesRecurse(size_t ind, size_t depth) {
-	auto& branchRoot = branchRoots[ind];
-	//if(branchRoot.displayDepth == (size_t)-2) // currently being calculated [we dont need to check that bc the if bolow already does]
-	//	return -2;
-	if(branchRoot.displayDepth != (size_t)-1) // already calculated or currently beeing calculated
-		return branchRoot.displayDepth;
-
-	{
-		bool used[256];
-		branchRoot.displayDepth = -2;
-
-		std::memset(used, 0, sizeof(used));
-
-		const size_t from = std::min(branchRoot.startLine, branchRoot.destLine);
-		const size_t to = std::max(branchRoot.startLine, branchRoot.destLine);
-
-#if 1
-		if (to - from > maxBranchShowDist) {
-			branchRoot.displayDepth = -3;
-			return -3;
-		}
-#endif
-
-		size_t fromInd = passingBranchesInds[from];
-
-		for (size_t c = fromInd; c < passingBranchesVec.size(); c++) { // go through line chunks
-			PassingBranchs& pb = passingBranchesVec[c];
-
-			if (pb.startLine > to)
-				break;
-
-			for(size_t i = 0; i< pb.passing.size(); i++) {
-				auto& nextBranchRoot = branchRoots[pb.passing[i]];
-				if (nextBranchRoot.destLine == branchRoot.destLine || nextBranchRoot.displayDepth == (size_t)-2) {
-					continue;
-				}
-
-				size_t d;
-				if(nextBranchRoot.displayDepth == (size_t)-1){
-					d = processBranchesRecurse(pb.passing[i], depth+1);
-				}else{
-					d = nextBranchRoot.displayDepth;
-				}
-
-				if(d == (size_t)-2) // currently being calculated, so we skip it
-					continue;
-				if (d == (size_t)-3) // ignored branch
-					continue;
-
-				MCU_ASSERT(d < sizeof(used));
-
-				used[d] = true;
-			}
-		}
-
-		size_t min = -1;
-		for(size_t i = 0; i<sizeof(used); i++) {
-			if(!used[i]) {
-				min = i;
-				break;
-			}
-		}
-
-		branchRoot.displayDepth = min;
-
-		return branchRoot.displayDepth;
-	}
-}
-#endif
-
-void A32u4::Disassembler::DisasmFile::processContent() {
-	size_t lineInd = 1;
-	lines.clear();
-	lines.push_back(0);
-	addrs.clear();
-	isLineProgram.clear();
-
-	const char* str = content.c_str();
-	size_t i = 0;
-	for(; i < content.size(); i++) {
-		if(str[i] == '\n'){
-			lines.push_back(i+1);
-
-			addAddrToList(str + lines[lineInd - 1], str + i, lineInd);
-
-			lineInd++;
-		}
-	}
-	addAddrToList(str + lines[lineInd - 1], str + content.size(), lineInd);
-	//lineInd++;
-
-	lines.resize(lineInd);
-	addrs.resize(lineInd);
-
-	processBranches();
-
-	for (size_t i = 0; i < lines.size(); i++) {
-		addrmcu_t addr = addrs[i];
-		if (addr != Addrs_notAnAddr && addr != Addrs_symbolLabel) {
-
-		}
-	}
-}
-
-size_t A32u4::Disassembler::DisasmFile::getLineIndFromAddr(addrmcu_t Addr) const{
-	if(isEmpty())
-		return -1;
-
-	size_t from = 0;
-	size_t to = lines.size()-1;
-	while (to > 0 && (addrs[to] == Addrs_notAnAddr || addrs[to] == Addrs_symbolLabel))
-		to--;
-	if (addrs[to] < Addr || to == (decltype(to))-1)
-		return -1;
-
-	while(from != to){
-		const size_t mid_orig = from + ((to-from)/2);
-		size_t mid = mid_orig;
-
-		uint16_t lineAddr = addrs[mid];
-		//while((lineAddr = addrs[mid]) == Addrs_notAnAddr || lineAddr == Addrs_symbolLabel)
-		//	mid++;
-		
-		while (!addrIsActualAddr(lineAddr)) {
-			if (mid >= to) {
-				return -1;
-			}
-
-			if (mid <= mid_orig) {
-				mid = mid_orig + (mid_orig - mid) + 1;
-			}
-			else {
-				if (mid - mid_orig <= mid_orig) {
-					mid = mid_orig - (mid - mid_orig);
-				}
-				else {
-					mid++;
-				}
-			}
-			// + (cnt/2>mid_orig ? (cnt-mid_orig/2) : ((cnt % 2) ? -(ptrdiff_t)cnt / 2 : cnt / 2));
-			lineAddr = addrs[mid];
-		}
-
-		if(lineAddr == Addr){
-			return mid;
-		}
-		else {
-			if (lineAddr < Addr) {
-				if (mid == from) {
-					if (addrs[to] == Addr) {
-						return to;
-					}
-					else {
-						return -1;
-					}
-				}
-					
-				from = mid;
-			}else{
-				if (mid == to) {
-					if (mid_orig == to)
-						return from;
-					else
-						to = mid_orig;
-				}
-				else {
-					to = mid;
-				}
-			}
-		}
-	}
-	return from;
-}
-bool A32u4::Disassembler::DisasmFile::isEmpty() const {
-	return content.size() == 0;
-}
-size_t A32u4::Disassembler::DisasmFile::getNumLines() const {
-	return lines.size();
-}
-bool A32u4::Disassembler::DisasmFile::isSelfDisassembled() const {
-	return disasmData.get() != nullptr;
-}
-
-A32u4::Disassembler::DisasmFile::DisasmData::DisasmData(size_t size) : disasmed(size){
-
-}
-void A32u4::Disassembler::DisasmFile::DisasmData::addFuncCallAddr(pc_t addr){
+void A32u4::Disassembler::DisasmData::addFuncCallAddr(pc_t addr){
 	if(funcCalls.find(addr) == funcCalls.end()){
 		funcCalls.insert(addr);
 	}
 }
-size_t A32u4::Disassembler::DisasmFile::DisasmData::sizeBytes() const {
-	size_t sum = 0;
 
-	sum += DataUtils::approxSizeOf(disasmed);
-
-	sum += DataUtils::approxSizeOf(lines, [](const Line& v) {return sizeof(v.addr) + DataUtils::approxSizeOf(v.str) + sizeof(v.inst_ind); });
-
-	sum += DataUtils::approxSizeOf(funcCalls);
-
-	return sum;
-}
-
-addrmcu_t A32u4::Disassembler::DisasmFile::getPrevActualAddr(size_t line) const {
-	if (addrs.size() == 0)
-		return 0;
-
-	if (line >= addrs.size())
-		line = addrs.size() - 1;
-
-	while (true) {
-		if (addrIsActualAddr(addrs[line]))
-			return addrs[line];
-
-		if (line == 0)
-			break;
-		line--;
+std::string A32u4::Disassembler::disassembleBinFile(const Flash& data, const AdditionalDisasmInfo& info){
+	if (!data.isProgramLoaded()) {
+		LU_LOG_(LogUtils::LogLevel_Error, "Could not disassemble because no program is loaded!");
+		return "";
 	}
-	return 0;
-}
-addrmcu_t A32u4::Disassembler::DisasmFile::getNextActualAddr(size_t line) const {
-	const size_t line_orig = line;
-	while (line < lines.size()) {
-		if (addrIsActualAddr(addrs[line]))
-			return addrs[line];
 
-		line++;
+	auto start = std::chrono::high_resolution_clock::now();
+
+	DisasmData disasmData(data.sizeWords());
+
+	for(addrmcu_t i = 0; i <= 0xa8;i+=4)
+		disasmRecurse(i/2, data, disasmData);
+
+#if MCU_INCLUDE_EXTRAS
+	if (info.analytics) {
+		for(size_t i = 0; i < std::min(data.sizeWords(), Analytics::PCHeatArrSize); i++){
+			if (info.analytics->getPCCntRaw()[i] > 0 && !disasmData.disasmed[i])
+				disasmRecurse((pc_t)i, data, disasmData);
+		}
 	}
-	// we didnt find anything, so now we search before the given line
-	return getPrevActualAddr(line_orig);
+#endif
+
+	if (info.additionalDisasmSeeds) {
+		for(size_t i = 0; i<info.additionalDisasmSeeds->size(); i++) {
+			disasmRecurse((*info.additionalDisasmSeeds)[i]/2, data, disasmData);
+		}
+	}
+	
+
+	auto end0 = std::chrono::high_resolution_clock::now();
+	{
+		double ms = std::chrono::duration_cast<std::chrono::microseconds>(end0 - start).count()/1000.0;
+		LU_LOGF_(LogUtils::LogLevel_DebugOutput, "walking program took %f ms", ms);
+	}
+
+	// generate content
+	std::string content;
+	{
+		std::sort(disasmData.lines.begin(), disasmData.lines.end(), [](const DisasmData::Line& a, const DisasmData::Line& b) {
+			return a.addr < b.addr;
+		});
+
+		size_t funcSymbInd = 0;
+		size_t dataSymbInd = 0;
+
+		size_t currSrcLinesInd = 0;
+
+		addrmcu_t lastAddr = 0;
+		for (size_t i = 0; i < disasmData.lines.size(); i++){
+			auto& line = disasmData.lines[i];
+
+			// draw data blocks
+			if (info.dataSymbs) {
+				while(dataSymbInd < info.dataSymbs->size() && line.addr * 2 > std::get<1>((*info.dataSymbs)[dataSymbInd])) {
+					const std::string& dataSymbName = std::get<0>((*info.dataSymbs)[dataSymbInd]);
+					uint32_t dataSymbValue = std::get<1>((*info.dataSymbs)[dataSymbInd]);
+					uint32_t dataSymbSize = std::get<2>((*info.dataSymbs)[dataSymbInd]);
+
+
+					content += StringUtils::format("\n%08x <%s>:\n", dataSymbValue, dataSymbName.c_str()); //symbol label
+
+					for(size_t i = 0; i<dataSymbSize; i+=16){
+						std::string bytes;
+						for(size_t j = 0; j<std::min((size_t)16,dataSymbSize-i); j++){
+							uint8_t byte = data.getByte((addrmcu_t)(dataSymbValue+i+j));
+							bytes += StringUtils::uIntToHexStr(byte, 2);
+							bytes += ' ';
+						}
+
+						std::string ascii;
+						for(size_t j = 0; j<std::min((size_t)16,dataSymbSize-i); j++){
+							char byte = data.getByte((addrmcu_t)(dataSymbValue+i+j));
+							if(!StringUtils::isprint(byte)) byte = '.';
+							ascii += byte;
+						}
+
+						// bytes padd amt = (2+1)*16=48
+						content += StringUtils::format(
+							"%8x:\t%-48s    %s\n",
+							dataSymbValue+i, bytes.c_str(), ascii.c_str()
+						);
+					}
+
+					dataSymbInd++;
+					content += "\n";
+
+					lastAddr = (addrmcu_t)(dataSymbValue + dataSymbSize);
+				}
+			}
+			
+
+			if (line.addr - lastAddr > 512) // make big gaps in program stand out
+				content += "\n     ...\n\n";
+
+			if (info.funcSymbs) {
+				while (funcSymbInd < info.funcSymbs->size() && (*info.funcSymbs)[funcSymbInd].first < line.addr * 2) {
+					funcSymbInd++;
+				}
+
+				if (funcSymbInd < info.funcSymbs->size() && (*info.funcSymbs)[funcSymbInd].first == line.addr * 2) {
+					content += StringUtils::format("\n%08x <%s>:\n", line.addr*2, (*info.funcSymbs)[funcSymbInd].second.c_str());
+					goto skip;
+				}
+			}
+			if (disasmData.funcCalls.find(line.addr) != disasmData.funcCalls.end()) {
+				// has a function
+				content += StringUtils::format("\n%08x <func@%x>:\n", line.addr*2, line.addr*2);
+			}
+		skip:
+
+			if (info.srcLines) {
+				while (currSrcLinesInd < info.srcLines->size() && info.srcLines->at(currSrcLinesInd).first < line.addr*2) {
+					currSrcLinesInd++;
+				}
+
+				if (currSrcLinesInd < info.srcLines->size() && info.srcLines->at(currSrcLinesInd).first == line.addr*2) {
+					content += info.srcLines->at(currSrcLinesInd).second + '\n';
+				}
+			}
+
+			content += line.str + "\n";
+
+			switch(line.inst_ind){
+				case IND_RET:
+					DU_FALLTHROUGH;
+				case IND_RETI:
+					content += "\n";
+					break;
+			}
+
+			lastAddr = line.addr;
+		}
+
+		
+	}
+
+	auto end = std::chrono::high_resolution_clock::now();
+	{
+		double ms = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count()/1000.0;
+		LU_LOGF_(LogUtils::LogLevel_DebugOutput, "disassembly in total took %f ms", ms);
+	}
+
+	return content;
 }
 
-size_t A32u4::Disassembler::DisasmFile::PassingBranchs::sizeBytes() const {
-	size_t sum = 0;
-
-	sum += DataUtils::approxSizeOf(passing);
-	sum += sizeof(startLine);
-	sum += DataUtils::approxSizeOf(occupied);
-
-	return sum;
-}
 
 
-size_t A32u4::Disassembler::DisasmFile::sizeBytes() const {
-	size_t sum = 0;
 
-	sum += DataUtils::approxSizeOf(content);
-	sum += DataUtils::approxSizeOf(lines);
-	sum += DataUtils::approxSizeOf(addrs);
-	sum += DataUtils::approxSizeOf(isLineProgram); // [linenumber] = true if line is part of the program, false if not (like data, empty...)
-	sum += DataUtils::approxSizeOf(labels); // [symbAddress] = linenumber
 
-	sum += DataUtils::approxSizeOf(branchRoots, [](const BranchRoot& v) {return sizeof(BranchRoot); });
-	sum += DataUtils::approxSizeOf(branchRootInds); // [linenumber] = ind to branch root object of this line (-1 if line is not a branchroot)
 
-		sum += DataUtils::approxSizeOf(passingBranchesVec[0]);
 
-	sum += DataUtils::approxSizeOf(passingBranchesVec);
-	sum += DataUtils::approxSizeOf(passingBranchesInds);  // [linenumber] = ind to pass to passingBranchesVec to get: branchRootInd of all branches passing this address/line
-	sum += sizeof(maxBranchDisplayDepth);
 
-	if (disasmData)
-		sum += disasmData->sizeBytes();
 
-	return sum;
-}
+
 
 std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
 	switch (type)
@@ -963,26 +385,26 @@ pc_t A32u4::Disassembler::getJumpDests(uint16_t word, uint16_t word2, pc_t pc) {
 	return -1;
 }
 
-void A32u4::Disassembler::disasmRecurse(pc_t start, const Flash* data, DisasmFile::DisasmData* disasmData){
-	MCU_ASSERT(start < data->sizeWords());
+void A32u4::Disassembler::disasmRecurse(pc_t start, const Flash& data, DisasmData& disasmData){
+	DU_ASSERT(start < data.sizeWords());
 	pc_t PC = start;
 	while(true){
-		if (PC >= data->sizeWords() || disasmData->disasmed.get(PC)) {
+		if (PC >= data.sizeWords() || disasmData.disasmed[PC]) {
 			//printf("finished at %x from %x\n", PC*2, start*2);
 			return;
 		}
 
-		uint16_t word = data->getInst(PC);
+		uint16_t word = data.getInst(PC);
 		uint16_t word2 = 0;
 		uint8_t Inst_ind = InstHandler::getInstInd3(word);
 		bool is2word = InstHandler::is2WordInst(word);
 		if(is2word)
-			word2 = data->getInst(PC+1);
+			word2 = data.getInst(PC+1);
 
 		std::string disasm = disassemble(word, word2, PC);
 		//std::cout << disasm << std::endl;
-		disasmData->lines.push_back({ PC, disasm, Inst_ind });
-		disasmData->disasmed.set(PC,true);
+		disasmData.lines.push_back({ PC, disasm, Inst_ind });
+		disasmData.disasmed[PC] = true;
 
 		switch(Inst_ind){
 			case IND_JMP:
@@ -1021,7 +443,7 @@ void A32u4::Disassembler::disasmRecurse(pc_t start, const Flash* data, DisasmFil
 			{
 				uint32_t k = InstHandler::getLongAddr(word, word2);
 				disasmRecurse(k, data, disasmData);
-				disasmData->addFuncCallAddr(k);
+				disasmData.addFuncCallAddr(k);
 				break;
 			}
 			case IND_RCALL:
@@ -1029,7 +451,7 @@ void A32u4::Disassembler::disasmRecurse(pc_t start, const Flash* data, DisasmFil
 				int16_t k = InstHandler::getk12_c_sin(word);
 				if (k != 0) {
 					disasmRecurse(PC+k+1, data, disasmData);
-					disasmData->addFuncCallAddr(PC+k+1);
+					disasmData.addFuncCallAddr(PC+k+1);
 				}
 				
 				break;

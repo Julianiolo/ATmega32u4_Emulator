@@ -49,7 +49,7 @@ uint16_t A32u4::Analytics::findMostUsedPCCnt() {
 	return maxInd;
 }
 
-const uint64_t* A32u4::Analytics::getPCHeat() const{
+const uint64_t* A32u4::Analytics::getPCCntRaw() const{
 	return &pcCounter[0];
 }
 const uint64_t* A32u4::Analytics::getInstHeat() const{
@@ -60,7 +60,7 @@ uint64_t A32u4::Analytics::getTotalInstCnt() const {
 	return instTotalCnt;
 }
 
-void A32u4::Analytics::resetPCHeat(){
+void A32u4::Analytics::resetPCCnt(){
 	for(uint16_t i = 0; i<PCHeatArrSize;i++){
 		pcCounter[i] = 0;
 	}

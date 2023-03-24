@@ -24,7 +24,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mc
 	if (debug) {
 		if (mcu->debugger.printDisassembly) {
 			uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
-			MCU_LOG(ATmega32u4::LogLevel_Output, Disassembler::disassemble(word, word2, mcu->cpu.PC));
+			LU_LOG(LogUtils::LogLevel_Output, Disassembler::disassemble(word, word2, mcu->cpu.PC));
 		}
 	}
 #endif
@@ -53,7 +53,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstRawT(ATmega32u4*
 	if (debug) {
 		if (mcu->debugger.printDisassembly) {
 			uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
-			MCU_LOG(ATmega32u4::LogLevel_Output, Disassembler::disassemble(word, word2, mcu->cpu.PC));
+			LU_LOG(LogUtils::LogLevel_Output, Disassembler::disassemble(word, word2, mcu->cpu.PC));
 		}
 	}
 #endif

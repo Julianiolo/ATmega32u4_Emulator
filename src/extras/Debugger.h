@@ -109,6 +109,7 @@ namespace A32u4 {
 		void halt();
 		void step();
 		void continue_();
+
 		void setBreakpoint(pc_t pc);
 		void clearBreakpoint(pc_t pc);
 		void clearAllBreakpoints();
@@ -117,8 +118,8 @@ namespace A32u4 {
 		const Breakpoint* getBreakpoints() const;
 		const CallData* getCallStack() const;
 		uint16_t getCallStackPointer() const;
-		uint16_t getPCAt(uint16_t stackInd) const;
-		uint16_t getFromPCAt(uint16_t stackInd) const;
+		uint16_t getStackPCAt(uint16_t stackInd) const;
+		uint16_t getStackFromPCAt(uint16_t stackInd) const;
 		const uint8_t* getAddressStackIndicators() const;
 
 		void getState(std::ostream& output);

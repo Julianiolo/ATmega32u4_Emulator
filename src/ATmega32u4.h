@@ -14,23 +14,17 @@
 #if MCU_INCLUDE_EXTRAS
 #include "extras/Debugger.h"
 #include "extras/Analytics.h"
-#include "extras/SymbolTable.h"
 #endif
 
-#include "extras/ElfReader.h"
 
-#define MCU_MCUPTR_PREFIX mcu->
+#include "LogUtils.h"
 
-#define MCU_LOG(level, msg) MCU_MCUPTR_PREFIX log(level,msg,__FILE__,__LINE__,MCU_MODULE);
-#define MCU_LOGF(level, msg, ...) MCU_MCUPTR_PREFIX logf2(level,MCU_MODULE,__FILE__,__LINE__,msg,__VA_ARGS__);
-#define MCU_LOG_(level, msg) A32u4::ATmega32u4::log_(level,msg,__FILE__,__LINE__,MCU_MODULE);
-#define MCU_LOGF_(level, msg, ...) A32u4::ATmega32u4::logf2_(level,MCU_MODULE,__FILE__,__LINE__,msg,__VA_ARGS__);
-
+#define LU_CONTEXT {A32u4::ATmega32u4::_log,mcu}
 
 #if MCU_RANGE_CHECK
 #if MCU_RANGE_CHECK_ERROR
-#define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { MCU_LOGF_(ATmega32u4::LogLevel_Error, msg, __VA_ARGS__); action;}
-#define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { MCU_LOGF_(ATmega32u4::LogLevel_Error, msg, val, val); action;}
+#define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { LU_LOGF_(LogUtils::LogLevel_Error, msg, __VA_ARGS__); action;}
+#define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { LU_LOGF_(LogUtils::LogLevel_Error, msg, val, val); action;}
 #else
 #define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { action;}
 #define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { action;}
@@ -52,23 +46,9 @@ namespace A32u4 {
 			ExecFlags_Debug =   1<<0,
 			ExecFlags_Analyse = 1<<1
 		};
-		enum {
-			LogLevel_None = 0,
-			LogLevel_DebugOutput,
-			LogLevel_Output,
-			LogLevel_Warning,
-			LogLevel_Error,
-			LogLevel_Fatal,
-			LogLevel_COUNT
-		};
-		typedef int LogLevel;
-		static constexpr const char* logLevelStrs[] = {"None","Debug","Output","Warning","Error","Fatal"};
-
-		typedef void (*LogCallB)(LogLevel logLevel, const char* msg, const char* fileName , int lineNum, const char* module, void* userData);
 	private:
-		LogCallB logCallB = defaultLogHandler;
+		LogUtils::LogCallB logCallB = defaultLogHandler;
 		void* logCallBUserData = nullptr;
-		static ATmega32u4* currLogTarget;
 
 		bool running = false;
 	public:
@@ -83,7 +63,6 @@ namespace A32u4 {
 #if MCU_INCLUDE_EXTRAS
 		A32u4::Debugger debugger;
 		A32u4::Analytics analytics;
-		A32u4::SymbolTable symbolTable;
 #endif
 
 		void reset();
@@ -99,34 +78,13 @@ namespace A32u4 {
 
 		bool loadFromHex(const uint8_t* data, size_t dataLen);
 		bool loadFromHexFile(const char* path);
-		bool loadFromELF(const uint8_t* data, size_t dataLen);
-		bool loadFromELFFile(const char* path);
-
-		void log(LogLevel logLevel, const char* msg, const char* fileName = NULL, int lineNum = -1, const char* module = NULL);
-		void log(LogLevel logLevel, const std::string& msg, const char* fileName = NULL, int lineNum = -1, const char* module = NULL);
-		template<typename ... Args>
-		void logf(LogLevel logLevel, const char* msg, Args ... args) {
-			log(logLevel, StringUtils::format(msg, args ...));
-		}
-		template<typename ... Args>
-		void logf2(LogLevel logLevel, const char* module, const char* fileName, int lineNum, const char* msg, Args ... args) {
-			log(logLevel, StringUtils::format(msg, args ...), fileName, lineNum, module);
-		}
 
 		void activateLog();
-		static void log_(LogLevel logLevel, const char* msg, const char* fileName = NULL, int lineNum = -1, const char* module = NULL);
-		static void log_(LogLevel logLevel, const std::string& msg, const char* fileName = NULL, int lineNum = -1, const char* module = NULL);
-		template<typename ... Args>
-		static void logf_(LogLevel logLevel, const char* msg, Args ... args) {
-			log_(logLevel, StringUtils::format(msg, args ...));
-		}
-		template<typename ... Args>
-		static void logf2_(LogLevel logLevel, const char* module, const char* fileName, int lineNum, const char* msg, Args ... args) {
-			log_(logLevel, StringUtils::format(msg, args ...), fileName, lineNum, module);
-		}
 
-		void setLogCallB(LogCallB newLogCallB, void* userData);
-		static void defaultLogHandler(LogLevel logLevel, const char* msg, const char* fileName , int lineNum, const char* module, void* userData);
+		static void _log(uint8_t logLevel, const char* msg, const char* fileName, int lineNum, const char* module, void* userData);
+
+		void setLogCallB(LogUtils::LogCallB newLogCallB, void* userData);
+		static void defaultLogHandler(uint8_t logLevel, const char* msg, const char* fileName , int lineNum, const char* module, void* userData);
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);

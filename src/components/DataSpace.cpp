@@ -4,11 +4,12 @@
 
 #include "../utils/bitMacros.h"
 #include "StreamUtils.h"
+#include "DataUtils.h"
 
 #include "../ATmega32u4.h"
 #include "../extras/Debugger.h"
 
-#define MCU_MODULE "DataSpace"
+#define LU_MODULE "DataSpace"
 
 void A32u4::DataSpace::doTick(uint8_t& timer) {
 #if 1
@@ -154,23 +155,23 @@ MCU_INLINE uint8_t& A32u4::DataSpace::getByteRefAtAddr(uint16_t addr) {
 	A32U4_ASSERT_INRANGE(addr, 0, Consts::data_size, return data[0], "getByteRef addr out of bounds: %" MCU_PRIuADDR, addr);
 	return data[addr];
 }
-MCU_INLINE uint8_t& A32u4::DataSpace::getGPRegRef(uint8_t ind) {
+MCU_INLINE uint8_t& A32u4::DataSpace::getGPRegRef(regind_t ind) {
 	A32U4_ASSERT_INRANGE(ind, 0, Consts::GPRs_size, return data[0], "General Purpouse Register Index out of bounds: %" PRIu8, ind);
 	return data[ind];
 }
-MCU_INLINE uint8_t A32u4::DataSpace::getGPReg(uint8_t ind) const {
+MCU_INLINE uint8_t A32u4::DataSpace::getGPReg(regind_t ind) const {
 	A32U4_ASSERT_INRANGE(ind, 0, Consts::GPRs_size, return 0, "General Purpouse Register Index out of bounds: %" PRIu8, ind);
 	return data[ind];
 }
-MCU_INLINE void A32u4::DataSpace::setGPReg(uint8_t ind, reg_t val) {
+MCU_INLINE void A32u4::DataSpace::setGPReg(regind_t ind, reg_t val) {
 	A32U4_ASSERT_INRANGE(ind, 0, Consts::GPRs_size, return, "General Purpouse Register Index out of bounds: %" PRIu8, ind);
 	data[ind] = val;
 }
 
-MCU_INLINE uint8_t A32u4::DataSpace::getGPReg_(uint8_t ind) const {
+MCU_INLINE uint8_t A32u4::DataSpace::getGPReg_(regind_t ind) const {
 	return data[ind];
 }
-MCU_INLINE void A32u4::DataSpace::setGPReg_(uint8_t ind, reg_t val) {
+MCU_INLINE void A32u4::DataSpace::setGPReg_(regind_t ind, reg_t val) {
 	data[ind] = val;
 }
 
@@ -275,7 +276,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
 			}
 			if (onlyOne) break;
-			else MCU_FALLTHROUGH;
+			else DU_FALLTHROUGH;
 		}
 
 		case Consts::PLLCSR: {
@@ -283,14 +284,14 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
 			}
 			if (onlyOne) break;
-			else MCU_FALLTHROUGH;
+			else DU_FALLTHROUGH;
 		}
 
 		case Consts::TCNT0: {
 			data[Consts::TCNT0] += (uint8_t)((mcu->cpu.totalCycls - lastSet.Timer0Update) / DataSpace::timerPresc[getTimer0Presc()]);
 			markTimer0Update();
 			if (onlyOne) break;
-			else MCU_FALLTHROUGH;
+			else DU_FALLTHROUGH;
 		}
 
 		case Consts::SREG: {
@@ -305,7 +306,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			val |= (sreg[Consts::SREG_I] != 0) << Consts::SREG_I;
 			data[Consts::SREG] = val;
 			if (onlyOne) break;
-			else MCU_FALLTHROUGH;
+			else DU_FALLTHROUGH;
 		}
 		
 		case Consts::ADCSRA: {
@@ -313,7 +314,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				data[Consts::ADCSRA] &= ~(1<<Consts::ADCSRA_ADSC);
 			}
 			if (onlyOne) break;
-			else MCU_FALLTHROUGH;
+			else DU_FALLTHROUGH;
 		}
 		
 		case Consts::ADCH: {
@@ -327,7 +328,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				}
 			}
 			if (onlyOne) break;
-			else MCU_FALLTHROUGH;
+			else DU_FALLTHROUGH;
 		}
 		case Consts::ADCL: {
 			//TODO: maybe lock changing of ADC value
@@ -340,7 +341,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				}
 			}
 			if (onlyOne) break;
-			//else MCU_FALLTHROUGH;
+			//else DU_FALLTHROUGH;
 		}
 	}
 }

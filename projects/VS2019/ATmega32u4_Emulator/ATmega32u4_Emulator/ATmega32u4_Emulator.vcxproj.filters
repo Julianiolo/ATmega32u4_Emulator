@@ -48,12 +48,6 @@
     <ClCompile Include="..\..\..\..\src\extras\Disassember.cpp">
       <Filter>Source Files\extras</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\src\extras\ElfReader.cpp">
-      <Filter>Source Files\extras</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\src\extras\SymbolTable.cpp">
-      <Filter>Source Files\extras</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\ATmega32u4.h">
@@ -96,12 +90,6 @@
       <Filter>Source Files\extras</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\extras\Disassembler.h">
-      <Filter>Source Files\extras</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\extras\ElfReader.h">
-      <Filter>Source Files\extras</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\src\extras\SymbolTable.h">
       <Filter>Source Files\extras</Filter>
     </ClInclude>
   </ItemGroup>

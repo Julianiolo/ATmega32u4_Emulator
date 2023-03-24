@@ -10,11 +10,12 @@
 #include "StringUtils.h"
 #include "StreamUtils.h"
 #include "DataUtils.h"
+#include "DataUtilsSize.h"
 
 #include "../ATmega32u4.h"
 #include "Disassembler.h"
 
-#define MCU_MODULE "Debugger"
+#define LU_MODULE "Debugger"
 
 A32u4::Debugger::Debugger(ATmega32u4* mcu):
 	mcu(mcu)
@@ -126,7 +127,7 @@ void A32u4::Debugger::doHaltActionsLog(){
 	uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
 
 	if (!halted) {
-		MCU_LOGF(ATmega32u4::LogLevel_Output, "Halted at : %s", Disassembler::disassemble(word, word2, mcu->cpu.PC).c_str()); // + stringExtras::intToHex(PC * 2,4)
+		LU_LOGF(LogUtils::LogLevel_Output, "Halted at : %s", Disassembler::disassemble(word, word2, mcu->cpu.PC).c_str()); // + stringExtras::intToHex(PC * 2,4)
 	}
 	halted = true;
 	printDisassembly = true;
@@ -144,18 +145,18 @@ void A32u4::Debugger::doHaltActionsLog(){
 			break;
 		}
 		else if (input == "sk" || input == "stack") {
-			MCU_LOG(ATmega32u4::LogLevel_Output, debugStackToString());
+			LU_LOG(LogUtils::LogLevel_Output, debugStackToString());
 		}
 		else if (input == "R" || input == "RAll") {
-			MCU_LOG(ATmega32u4::LogLevel_Output, AllRegsToStr());
+			LU_LOG(LogUtils::LogLevel_Output, AllRegsToStr());
 		}
 		else if (input.substr(0, 1) == "R") {
 			int ind = std::stoi(input.substr(1, input.length()));;
 			if (ind < 32) {
-				MCU_LOG(ATmega32u4::LogLevel_Output, regToStr(ind));
+				LU_LOG(LogUtils::LogLevel_Output, regToStr(ind));
 			}
 			else {
-				MCU_LOGF(ATmega32u4::LogLevel_Output, "%s is out of Range of the Register (R0-R31)", input.c_str());
+				LU_LOGF(LogUtils::LogLevel_Output, "%s is out of Range of the Register (R0-R31)", input.c_str());
 			}
 		}
 		else if (input.substr(0, 2) == "io") {
@@ -163,10 +164,10 @@ void A32u4::Debugger::doHaltActionsLog(){
 
 			if (addr < DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size) {
 				uint8_t ioVal = mcu->dataspace.getIOAt((uint8_t)addr);
-				MCU_LOGF(ATmega32u4::LogLevel_Output, "%d: 0x%02h > %d", addr, ioVal, ioVal); // (input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str());
+				LU_LOGF(LogUtils::LogLevel_Output, "%d: 0x%02h > %d", addr, ioVal, ioVal); // (input + ": 0x" + stringExtras::intToHex(ioVal, 2) + " > " + std::to_string(ioVal)).c_str());
 			}
 			else {
-				MCU_LOGF(ATmega32u4::LogLevel_Output, "%s is out of Range of the IO space (0-%u)", input.c_str(), DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size);
+				LU_LOGF(LogUtils::LogLevel_Output, "%s is out of Range of the IO space (0-%u)", input.c_str(), DataSpace::Consts::io_size + DataSpace::Consts::ext_io_size);
 			}
 		}
 		else if (input == "e" || input == "exit") {
@@ -174,10 +175,10 @@ void A32u4::Debugger::doHaltActionsLog(){
 			// maybe this should also be removed
 		}
 		else if (input == "h" || input == "help") {
-			MCU_LOG(ATmega32u4::LogLevel_Output, getHelp());
+			LU_LOG(LogUtils::LogLevel_Output, getHelp());
 		}
 		else {
-			MCU_LOG(ATmega32u4::LogLevel_Output, "Invalid command, try help");
+			LU_LOG(LogUtils::LogLevel_Output, "Invalid command, try help");
 		}
 	}
 }
@@ -273,10 +274,10 @@ const A32u4::Debugger::CallData* A32u4::Debugger::getCallStack() const {
 uint16_t A32u4::Debugger::getCallStackPointer() const {
 	return callStackPtr;
 }
-uint16_t A32u4::Debugger::getPCAt(uint16_t stackInd) const {
+uint16_t A32u4::Debugger::getStackPCAt(uint16_t stackInd) const {
 	return callStack[stackInd].to;
 }
-uint16_t A32u4::Debugger::getFromPCAt(uint16_t stackInd) const {
+uint16_t A32u4::Debugger::getStackFromPCAt(uint16_t stackInd) const {
 	return callStack[stackInd].from;
 }
 const uint8_t* A32u4::Debugger::getAddressStackIndicators() const {

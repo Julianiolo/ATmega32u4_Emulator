@@ -108,8 +108,8 @@ namespace A32u4 {
 		void updateCache();
 
 
-		uint8_t getGPReg_(uint8_t ind) const;
-		void setGPReg_(uint8_t ind, reg_t val);
+		uint8_t getGPReg_(regind_t ind) const;
+		void setGPReg_(regind_t ind, reg_t val);
 
 		uint16_t getADCVal();
 
@@ -137,9 +137,9 @@ namespace A32u4 {
 	public:
 		void setSPIByteCallB(SPIByteCallB func);
 
-		uint8_t& getGPRegRef(uint8_t ind);
-		uint8_t getGPReg(uint8_t ind) const;
-		void setGPReg(uint8_t ind, reg_t val);
+		uint8_t& getGPRegRef(regind_t ind);
+		uint8_t getGPReg(regind_t ind) const;
+		void setGPReg(regind_t ind, reg_t val);
 
 		uint16_t getX() const;
 		uint16_t getY() const;

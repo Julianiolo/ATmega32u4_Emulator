@@ -38,13 +38,14 @@ namespace A32u4 {
 		addrmcu_t maxSP = ADDRMCU_T_MAX;
 		uint64_t sleepSum = 0;
 
-		uint64_t getPCCnt(uint16_t addr) const;
 		uint16_t findMostUsedPCCnt();
 
-		const uint64_t* getPCHeat() const;
+		uint64_t getPCCnt(uint16_t addr) const;
+		const uint64_t* getPCCntRaw() const;
+		void resetPCCnt();
+
 		const uint64_t* getInstHeat() const;
 		uint64_t getTotalInstCnt() const;
-		void resetPCHeat();
 
 		void getState(std::ostream& output);
 		void setState(std::istream& input);
