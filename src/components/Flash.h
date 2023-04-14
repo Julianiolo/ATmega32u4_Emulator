@@ -11,8 +11,6 @@
 #define FLASH_USE_INSTIND_CACHE 1
 
 namespace A32u4 {
-	class ATmega32u4;
-
 	class Flash {
 	public:
 		static constexpr sizemcu_t sizeMax = 32768;
@@ -37,7 +35,7 @@ namespace A32u4 {
 		sizemcu_t size_ = sizeMax;
 		bool hasProgram = false;
 
-		Flash(ATmega32u4* mcu);
+		Flash();
 		~Flash();
 
 		Flash(const Flash& src);

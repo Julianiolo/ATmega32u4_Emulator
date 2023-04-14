@@ -11,35 +11,28 @@
 
 #define LU_MODULE "DataSpace"
 
-void A32u4::DataSpace::doTick(uint8_t& timer) {
-#if 1
-	if (isBitSetNB(mcu->dataspace.data[DataSpace::Consts::PRR0], 5)) {
-#else
-	if (isBitSetNB(REF_PRR0, 5)) {
-#endif
+void A32u4::DataSpace::doTick() {
+	if (isBitSetNB(data[DataSpace::Consts::PRR0], 5)) {
 		return;
 	}
-	timer++;
-	if (timer == 0) {
-		mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+	uint8_t timer0 = data[DataSpace::Consts::TCNT0];
+	timer0++;
+	data[DataSpace::Consts::TCNT0] = timer0;
+	if (timer0 == 0) {
+		data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
 		//printf("OVERFLOW at %llu\n", mcu->cpu.totalCycls);
 	}
 
 	markTimer0Update();
 }
 void A32u4::DataSpace::doTicks(uint8_t num) {
-#if 1
-	if (isBitSetNB(mcu->dataspace.data[DataSpace::Consts::PRR0], 5)) {
-#else
-	if (isBitSetNB(REF_PRR0, 5)) {
-#endif
+	if (isBitSetNB(data[DataSpace::Consts::PRR0], 5)) {
 		return;
 	}
 
-	uint8_t& timer0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
-	uint8_t tim_copy = timer0;
-	timer0 += num;
-	if (timer0 < tim_copy) {
+	const uint8_t timer0 = data[DataSpace::Consts::TCNT0];
+	const uint8_t timer0plus = timer0 + num;
+	if (timer0plus < timer0) {
 		mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
 		//printf("OVERFLOW at %llu\n", mcu->cpu.totalCycls);
 	}
@@ -48,12 +41,12 @@ void A32u4::DataSpace::doTicks(uint8_t num) {
 }
 
 void A32u4::DataSpace::checkForIntr() {
-	if (mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)) {
+	if (data[A32u4::DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)) {
 		//std::cout << mcu->cpu.totalCycls << std::endl;
-		if (mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TIMSK0) & (1 << DataSpace::Consts::TIMSK0_TOIE0)) {
-			if (mcu->dataspace.sreg[DataSpace::Consts::SREG_I]) {
+		if (data[DataSpace::Consts::TIMSK0] & (1 << DataSpace::Consts::TIMSK0_TOIE0)) {
+			if (sreg[DataSpace::Consts::SREG_I]) {
 				//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
-				mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
+				data[A32u4::DataSpace::Consts::TIFR0] &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
 				mcu->cpu.directExecuteInterrupt(23);
 				//printf("int at %llu\n", mcu->cpu.totalCycls);
 			}
@@ -151,10 +144,6 @@ void A32u4::DataSpace::resetIO() {
 	setSP(Consts::SP_initaddr);
 }
 
-MCU_INLINE uint8_t& A32u4::DataSpace::getByteRefAtAddr(uint16_t addr) {
-	A32U4_ASSERT_INRANGE(addr, 0, Consts::data_size, return data[0], "getByteRef addr out of bounds: %" MCU_PRIuADDR, addr);
-	return data[addr];
-}
 MCU_INLINE uint8_t& A32u4::DataSpace::getGPRegRef(regind_t ind) {
 	A32U4_ASSERT_INRANGE(ind, 0, Consts::GPRs_size, return data[0], "General Purpouse Register Index out of bounds: %" PRIu8, ind);
 	return data[ind];
@@ -182,6 +171,10 @@ uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
 		update_Get(addr, true);
 	}
 
+#if MCU_RW_RECORD
+	mcu->analytics.ramRead(addr);
+#endif
+
 	return data[addr];
 }
 void A32u4::DataSpace::setByteAt(uint16_t addr, uint8_t val) {
@@ -189,7 +182,13 @@ void A32u4::DataSpace::setByteAt(uint16_t addr, uint8_t val) {
 
 	uint8_t oldVal = data[addr];
 	data[addr] = val;
-	update_Set(addr, val, oldVal);
+	if (addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size && addr >= Consts::GPRs_size) { //only io needs updates
+		update_Set(addr, val, oldVal);
+	}
+
+#if MCU_RW_RECORD
+	mcu->analytics.ramWrite(addr);
+#endif
 }
 uint8_t A32u4::DataSpace::getIOAt(uint8_t ind) {
 	return getByteAt(ind + Consts::io_start);
@@ -201,18 +200,19 @@ void A32u4::DataSpace::setIOAt(uint8_t ind, uint8_t val) {
 uint8_t A32u4::DataSpace::getRegBit(uint16_t id, uint8_t bit) {
 	A32U4_ASSERT_INRANGE2(id, 0, Consts::data_size, return 0, "getRegBit Index out of bounds: " MCU_ADDR_FORMAT);
 
-	return (getByteRefAtAddr(id) & (1 << bit)) != 0;
+	return (getByteAt(id) & (1 << bit)) != 0;
 }
 void A32u4::DataSpace::setRegBit(uint16_t id, uint8_t bit, bool val) {
 	A32U4_ASSERT_INRANGE2(id, 0, Consts::data_size, return, "setRegBit Index out of bounds: " MCU_ADDR_FORMAT);
 
-	uint8_t& byte = getByteRefAtAddr(id);;
+	uint8_t byte = getByteAt(id);
 	if (val) {
 		byte |= 1 << bit;
 	}
 	else {
 		byte &= ~(1 << bit);
 	}
+	setByteAt(id, byte);
 }
 
 MCU_INLINE uint16_t A32u4::DataSpace::getWordReg(uint8_t id) const {
@@ -257,7 +257,7 @@ MCU_INLINE void A32u4::DataSpace::setZ(uint16_t word) {
 }
 
 uint32_t A32u4::DataSpace::getExtendedZ() {
-	return ((uint32_t)getByteRefAtAddr(Consts::RAMPZ) << 16) | getZ();
+	return ((uint32_t)data[Consts::RAMPZ] << 16) | getZ();
 }
 
 void A32u4::DataSpace::setSP(uint16_t val) {
@@ -347,49 +347,47 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 }
 
 void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
-	if (Addr <= Consts::io_start+Consts::io_size+Consts::ext_io_size && Addr >= Consts::GPRs_size) { //only io needs updates
-		switch (Addr) {
-			case Consts::EECR:
-				return setEECR(val, oldVal);
+	switch (Addr) {
+		case Consts::EECR:
+			setEECR(val, oldVal);
 
-			case Consts::PLLCSR:
-				setPLLCSR(val, oldVal);
-				break;
+		case Consts::PLLCSR:
+			setPLLCSR(val, oldVal);
+			break;
 
-			case Consts::SPDR:
-				setSPDR();
-				break;
+		case Consts::SPDR:
+			setSPDR();
+			break;
 
-			case Consts::TCCR0B:
-				setTCCR0B(val);
-				break;
+		case Consts::TCCR0B:
+			setTCCR0B(val);
+			break;
 
-			case Consts::TIFR0:
-				checkForIntr();
-				break;
+		case Consts::TIFR0:
+			checkForIntr();
+			break;
 
-			case Consts::SREG:
-				updateSREGCache();
-				if((val & (1<<Consts::SREG_I)) && (data[Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)))
-					mcu->cpu.breakOutOfOptim = true; // we need to break out of Optimisation to check if an interrupt can now occur (Global Interrupt Enable)
-				break;
+		case Consts::SREG:
+			updateSREGCache();
+			if((val & (1<<Consts::SREG_I)) && (data[Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)))
+				mcu->cpu.breakOutOfOptim = true; // we need to break out of Optimisation to check if an interrupt can now occur (Global Interrupt Enable)
+			break;
 
-			case Consts::TCNT0:
-				printf("TIMER!\n");
-				abort();
-				break;
+		case Consts::TCNT0:
+			printf("TIMER!\n");
+			abort();
+			break;
 
-			case Consts::ADCSRA:
-				if (oldVal & (1 << Consts::ADCSRA_ADSC) && !(val & (1 << Consts::ADCSRA_ADSC))) { // ADCSRA_ADSC has been set to 0
-					data[Consts::ADCSRA] &= ~(1 << 1 << Consts::ADCSRA_ADSC); // clear again => should have no effect
+		case Consts::ADCSRA:
+			if (oldVal & (1 << Consts::ADCSRA_ADSC) && !(val & (1 << Consts::ADCSRA_ADSC))) { // ADCSRA_ADSC has been set to 0
+				data[Consts::ADCSRA] &= ~(1 << 1 << Consts::ADCSRA_ADSC); // clear again => should have no effect
+			}
+			if (!(oldVal & (1 << Consts::ADCSRA_ADSC)) && (val & (1 << Consts::ADCSRA_ADSC))) { // ADCSRA_ADSC has been set to 1 => start conversion
+				if (val & (1 << Consts::ADCSRA_ADEN)) { // check if adc is enabled
+					lastSet.ADCSRA_ADSC = mcu->cpu.totalCycls;
 				}
-				if (!(oldVal & (1 << Consts::ADCSRA_ADSC)) && (val & (1 << Consts::ADCSRA_ADSC))) { // ADCSRA_ADSC has been set to 1 => start conversion
-					if (val & (1 << Consts::ADCSRA_ADEN)) { // check if adc is enabled
-						lastSet.ADCSRA_ADSC = mcu->cpu.totalCycls;
-					}
-				}
-				break;
-		}
+			}
+			break;
 	}
 }
 
@@ -485,6 +483,12 @@ void A32u4::DataSpace::pushByteToStack(uint8_t val) {
 	A32U4_ASSERT_INRANGE2(SP, Consts::ISRAM_start, Consts::data_size, return, "Stack pointer while push Byte out of bounds: " MCU_ADDR_FORMAT);
 	data[SP] = val;
 	setSP(SP - 1);
+
+#if MCU_INCLUDE_EXTRAS
+#if MCU_RW_RECORD
+	mcu->analytics.ramWrite(SP);
+#endif
+#endif
 }
 uint8_t A32u4::DataSpace::popByteFromStack() {
 	uint16_t SP = getWordRegRam(Consts::SPL);
@@ -493,9 +497,14 @@ uint8_t A32u4::DataSpace::popByteFromStack() {
 
 #if MCU_INCLUDE_EXTRAS
 	mcu->debugger.registerStackDec(SP + 1);
+
+#if MCU_RW_RECORD
+	mcu->analytics.ramRead(SP+1);
+#endif
 #endif
 
 	setSP(SP + 1);
+
 	return Byte;
 }
 
@@ -507,6 +516,11 @@ void A32u4::DataSpace::pushAddrToStack(addrmcu_t Addr) {
 
 #if MCU_INCLUDE_EXTRAS
 	mcu->debugger.registerAddressBytes(SP);
+
+#if MCU_RW_RECORD
+	mcu->analytics.ramWrite(SP);
+	mcu->analytics.ramWrite(SP-1);
+#endif
 #endif
 
 	setSP(SP - 2);
@@ -519,6 +533,11 @@ addrmcu_t A32u4::DataSpace::popAddrFromStack() {
 
 #if MCU_INCLUDE_EXTRAS
 	mcu->debugger.registerStackDec(SP + 2);
+
+#if MCU_RW_RECORD
+	mcu->analytics.ramRead(SP + 2);
+	mcu->analytics.ramRead(SP + 1);
+#endif
 #endif
 
 	setSP(SP + 2);
@@ -865,6 +884,11 @@ void A32u4::DataSpace::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t re
 #endif
 }
 #endif
+
+void A32u4::DataSpace::loadDataFromMemory(const uint8_t* data_, size_t len) {
+	std::memcpy(data, data_, std::min((size_t)Consts::data_size, len));
+	updateCache();
+}
 
 void A32u4::DataSpace::getState(std::ostream& output){
 	update_Get(0xFFFF, false);

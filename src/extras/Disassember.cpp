@@ -178,16 +178,6 @@ std::string A32u4::Disassembler::disassembleBinFile(const Flash& data, const Add
 	return content;
 }
 
-
-
-
-
-
-
-
-
-
-
 std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
 	switch (type)
 	{
@@ -208,7 +198,7 @@ std::string A32u4::Disassembler::getParamStr(uint16_t val, uint8_t type) {
 		return "." + getSignInt((int16_t)val*(int32_t)2);
 
 	case INST_PAR_TYPE_REG_OFFSET:
-		return std::to_string(val);
+		return val > 0 ? std::string("+") + std::to_string(val) : "";
 
 	default:
 		return "ERROR: " + std::to_string(type);
@@ -227,7 +217,7 @@ std::string A32u4::Disassembler::disassemble(uint16_t word, uint16_t word2, uint
 std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 	uint8_t Inst_ind = InstHandler::getInstInd3(word);
 	if (Inst_ind >= IND_COUNT_)
-		return StringUtils::format(".word 0x%04x", word);
+		return StringUtils::format(".word\t0x%04x", word);
 	InstHandler::Inst_ELEM inst = InstHandler::instList[Inst_ind];
 
 	std::string out = inst.name;
@@ -236,7 +226,7 @@ std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 	switch (Inst_ind) {
 		case IND_EOR:
 			if (inst.par1(word) == inst.par2(word)) {
-				out = "CLR R" + std::to_string(inst.par1(word));
+				out = "clr\tR" + std::to_string(inst.par1(word));
 				goto end_params;
 			}
 			else {
@@ -254,7 +244,7 @@ std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 			break;
 
 		case IND_LPM_0:
-			out += " R0, Z"; break;
+			out += "R0, Z"; break;
 
 		default:
 		sw1_def:
@@ -386,7 +376,11 @@ pc_t A32u4::Disassembler::getJumpDests(uint16_t word, uint16_t word2, pc_t pc) {
 }
 
 void A32u4::Disassembler::disasmRecurse(pc_t start, const Flash& data, DisasmData& disasmData){
-	DU_ASSERT(start < data.sizeWords());
+	if (start >= data.sizeWords()) {
+		LU_LOGF_(LogUtils::LogLevel_Error,"Reached illegal address while disassembling: 0x%" MCU_PRIxPC " (max is 0x%" MCU_PRIxPC ")", start, data.sizeWords());
+		return;
+	}
+
 	pc_t PC = start;
 	while(true){
 		if (PC >= data.sizeWords() || disasmData.disasmed[PC]) {

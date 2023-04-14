@@ -18,7 +18,7 @@
 
 
 
-A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this)
+A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this)
 #if MCU_INCLUDE_EXTRAS
 ,debugger(this)
 #endif
@@ -117,28 +117,18 @@ void A32u4::ATmega32u4::powerOn() {
 	dataspace.setRegBit(A32u4::DataSpace::Consts::MCUSR, A32u4::DataSpace::Consts::MCUSR_PORF, true);
 }
 
-void A32u4::ATmega32u4::execute(uint64_t cyclAmt, uint8_t flags) {
+void A32u4::ATmega32u4::execute(uint64_t cyclAmt, bool debug) {
 	if (!running)
 		abort();
 
 	if(!flash.isProgramLoaded())
 		return;
-	switch (flags) {
-		case ExecFlags_None:
-			cpu.execute<false,false>(cyclAmt);
-			break;
-		case ExecFlags_Debug:
-			cpu.execute<true, false>(cyclAmt);
-			break;
-		case ExecFlags_Analyse:
-			cpu.execute<false, true>(cyclAmt);
-			break;
-		case ExecFlags_Debug | ExecFlags_Analyse:
-			cpu.execute<true, true>(cyclAmt);
-			break;
-		default:
-			LU_LOG(LogUtils::LogLevel_Error, "Unhandeled Flags: " + StringUtils::uIntToBinStr(flags,8));
-			break;
+
+	if (!debug) {
+		cpu.execute<false>(cyclAmt);
+	}
+	else {
+		cpu.execute<true>(cyclAmt);
 	}
 }
 
@@ -192,10 +182,12 @@ bool A32u4::ATmega32u4::loadFile(const char* path) {
 		return flash.loadFromHexFile(path);
 	}
 	else if (std::strcmp(ext, "bin") == 0) {
-		bool success = true;
-		std::vector<uint8_t> data = StringUtils::loadFileIntoByteArray(path, &success);
-		if (!success) {
-			LU_LOGF(LogUtils::LogLevel_Error, "Was not able to open file: \"%s\"", path);
+		std::vector<uint8_t> data;
+		try {
+			data = StringUtils::loadFileIntoByteArray(path);
+		}
+		catch (const std::runtime_error& e) {
+			LU_LOGF(LogUtils::LogLevel_Error, "Couldn't open file: \"%s\"", e.what());
 			return false;
 		}
 		

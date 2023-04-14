@@ -40,12 +40,6 @@
 
 namespace A32u4 {
 	class ATmega32u4 {
-	public:
-		enum {
-			ExecFlags_None =       0,
-			ExecFlags_Debug =   1<<0,
-			ExecFlags_Analyse = 1<<1
-		};
 	private:
 		LogUtils::LogCallB logCallB = defaultLogHandler;
 		void* logCallBUserData = nullptr;
@@ -71,7 +65,7 @@ namespace A32u4 {
 
 		void powerOn();
 
-		void execute(uint64_t cyclAmt, uint8_t flags);
+		void execute(uint64_t cyclAmt, bool debug);
 
 		bool load(const uint8_t* data, size_t dataLen);
 		bool loadFile(const char* path);

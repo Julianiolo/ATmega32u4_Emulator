@@ -3,10 +3,10 @@
 
 #include "../extras/Disassembler.h"
 
-template<bool debug, bool analyse>
+template<bool debug>
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleCurrentInstT(ATmega32u4* mcu) noexcept {
 #if MCU_INCLUDE_EXTRAS
-	if (debug) {
+	if constexpr (debug) {
 		if (mcu->debugger.checkBreakpoints()) {
 			return inst_effect_t(0,0);
 		}
@@ -15,13 +15,13 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleCurrentInstT(ATmega3
 
 	uint16_t word = mcu->flash.getInst(mcu->cpu.PC);
 
-	return handleInstT<debug,analyse>(mcu,word);
+	return handleInstT<debug>(mcu,word);
 }
 
-template<bool debug, bool analyse>
+template<bool debug>
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mcu, uint16_t word) noexcept {
 #if MCU_INCLUDE_EXTRAS
-	if (debug) {
+	if constexpr (debug) {
 		if (mcu->debugger.printDisassembly) {
 			uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
 			LU_LOG(LogUtils::LogLevel_Output, Disassembler::disassemble(word, word2, mcu->cpu.PC));
@@ -32,7 +32,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mc
 	uint8_t ind = mcu->flash.getInstInd(mcu->cpu.PC);
 
 #if MCU_INCLUDE_EXTRAS
-	if (analyse) {
+	if constexpr (debug) {
 		mcu->analytics.addData(ind, mcu->cpu.PC);
 	}
 #endif
@@ -47,10 +47,10 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mc
 #endif
 }
 
-template<bool debug, bool analyse>
+template<bool debug>
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstRawT(ATmega32u4* mcu, uint16_t word) noexcept {
 #if MCU_INCLUDE_EXTRAS
-	if (debug) {
+	if constexpr (debug) {
 		if (mcu->debugger.printDisassembly) {
 			uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
 			LU_LOG(LogUtils::LogLevel_Output, Disassembler::disassemble(word, word2, mcu->cpu.PC));
@@ -61,7 +61,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstRawT(ATmega32u4*
 	uint8_t ind = getInstInd(word);
 
 #if MCU_INCLUDE_EXTRAS
-	if (analyse) {
+	if constexpr (debug) {
 		mcu->analytics.addData(ind, mcu->cpu.PC);
 	}
 #endif

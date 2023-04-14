@@ -8,3 +8,4 @@
 #define MCU_USE_INST_EXEC_ALG 1
 
 #define MCU_INCLUDE_EXTRAS 1
+#define MCU_RW_RECORD 0

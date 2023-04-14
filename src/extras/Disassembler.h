@@ -36,7 +36,7 @@ namespace A32u4 {
 
 			const std::vector<std::tuple<std::string, uint32_t, uint32_t>>* dataSymbs = nullptr; // [name, value, size]
 
-			const std::vector<addrmcu_t>* additionalDisasmSeeds = nullptr;
+			const std::vector<uint32_t>* additionalDisasmSeeds = nullptr;
 
 			inline AdditionalDisasmInfo(){} // needed, bc else clang throws error??
 		};

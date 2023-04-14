@@ -13,7 +13,7 @@
 
 #define LU_MODULE "Flash"
 
-A32u4::Flash::Flash(ATmega32u4* mcu):
+A32u4::Flash::Flash():
 #if MCU_USE_HEAP
 	data(new uint8_t[sizeMax])
 #if MCU_USE_INSTCACHE
@@ -233,6 +233,7 @@ void A32u4::Flash::getRomState(std::ostream& output) {
 }
 void A32u4::Flash::setRomState(std::istream& input){
 	StreamUtils::read(input, &size_);
+	DU_ASSERTEX(size_ <= sizeMax, StringUtils::format("Flash size read from state is too big: %" DU_PRIuSIZE, (size_t)size_));
 	input.read((char*)data, sizeMax);
 
 #if FLASH_USE_INSTIND_CACHE

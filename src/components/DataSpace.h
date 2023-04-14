@@ -68,9 +68,6 @@ namespace A32u4 {
 
 		void reset();
 		void resetIO();
-
-		uint8_t& getByteRefAtAddr(uint16_t addr);
-
 		
 		uint8_t getByteAt(uint16_t Addr);
 		void setByteAt(uint16_t Addr, uint8_t val);
@@ -116,7 +113,7 @@ namespace A32u4 {
 
 		// Timer stuff
 		static constexpr uint16_t timerPresc[] = {1,1,8,64,256,1024};
-		void doTick(uint8_t& timer);
+		void doTick();
 		void doTicks(uint8_t num);
 		void checkForIntr();
 		uint8_t getTimer0Presc() const;
@@ -156,6 +153,7 @@ namespace A32u4 {
 		void setDataByte(addrmcu_t Addr, uint8_t byte);
 		void setBitTo(addrmcu_t Addr, uint8_t bit, bool val);
 		void setBitsTo(addrmcu_t Addr, uint8_t mask, uint8_t bits);
+		void loadDataFromMemory(const uint8_t* data, size_t len);
 
 		addrmcu_t getSP() const;
 

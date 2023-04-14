@@ -21,14 +21,14 @@ namespace A32u4 {
 			inst_effect_t(uint8_t addToCycs, int16_t addToPC) : addToCycs(addToCycs), addToPC(addToPC) {}
 		};
 
-		template<bool debug,bool analyse>
+		template<bool debug>
 		static inst_effect_t handleInstRawT(ATmega32u4* mcu, uint16_t word) noexcept;
 
 	private:
-		template<bool debug,bool analyse>
+		template<bool debug>
 		static inst_effect_t handleCurrentInstT(ATmega32u4* mcu) noexcept;
 
-		template<bool debug,bool analyse>
+		template<bool debug>
 		static inst_effect_t handleInstT(ATmega32u4* mcu, uint16_t word) noexcept;
 
 		static inst_effect_t callInstSwitch(uint8_t ind,ATmega32u4* mcu, uint16_t word);

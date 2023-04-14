@@ -5,11 +5,13 @@
 #include "Analytics.h"
 
 #include "StreamUtils.h"
+#include "DataUtilsSize.h"
 
 A32u4::Analytics::Analytics()
 #if MCU_USE_HEAP
 	: pcCounter(PCHeatArrSize),
-	instCounter(InstHeatArrSize)
+	instCounter(InstHeatArrSize),
+	ramReadBuf(DataSpace::Consts::data_size), ramWriteBuf(DataSpace::Consts::data_size)
 #endif
 {
 
@@ -31,6 +33,42 @@ void A32u4::Analytics::addData(uint8_t instInd, uint16_t PC) {
 	instCounter[instInd]++;
 	pcCounter[PC]++;
 	instTotalCnt++;
+}
+
+
+void A32u4::Analytics::ramRead(addrmcu_t addr) {
+	ramReadBuf[addr]++;
+}
+void A32u4::Analytics::ramWrite(addrmcu_t addr) {
+	ramWriteBuf[addr]++;
+}
+
+void A32u4::Analytics::eepromRead(addrmcu_t addr) {
+
+}
+void A32u4::Analytics::eepromWrite(addrmcu_t addr) {
+
+}
+
+void A32u4::Analytics::romRead(addrmcu_t addr) {
+
+}
+void A32u4::Analytics::romWrite(addrmcu_t addr) {
+
+}
+
+
+const uint64_t* A32u4::Analytics::getRamRead() const {
+	return &ramReadBuf[0];
+}
+const uint64_t* A32u4::Analytics::getRamWrite() const {
+	return &ramWriteBuf[0];
+}
+void A32u4::Analytics::clearRamRead() {
+	std::memset(&ramReadBuf[0], 0, ramReadBuf.size());
+}
+void A32u4::Analytics::clearRamWrite() {
+	std::memset(&ramWriteBuf[0], 0, ramWriteBuf.size());
 }
 
 uint64_t A32u4::Analytics::getPCCnt(uint16_t addr) const {
@@ -93,9 +131,15 @@ size_t A32u4::Analytics::sizeBytes() const {
 #if !MCU_USE_HEAP
 	sum += sizeof(pcCounter);
 	sum += sizeof(instCounter);
+
+	sum += sizeof(ramReadBuf);
+	sum += sizeof(ramWriteBuf);
 #else
-	sum += sizeof(pcCounter) + sizeof(pcCounter[0]) * PCHeatArrSize;
-	sum += sizeof(instCounter) + sizeof(instCounter[0]) * InstHeatArrSize;
+	sum += DataUtils::approxSizeOf(pcCounter);
+	sum += DataUtils::approxSizeOf(instCounter);
+
+	sum += DataUtils::approxSizeOf(ramReadBuf);
+	sum += DataUtils::approxSizeOf(ramWriteBuf);
 #endif
 
 	sum += sizeof(instTotalCnt);

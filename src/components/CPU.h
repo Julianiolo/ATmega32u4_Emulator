@@ -36,9 +36,9 @@ namespace A32u4 {
 
 		CPU(ATmega32u4* mcu_);
 
-		template<bool debug, bool analyse>
+		template<bool debug>
 		void execute(uint64_t amt);
-		template<bool debug, bool analyse>
+		template<bool debug>
 		void execute4T(uint64_t amt);
 
 		void queueInterrupt(uint16_t addr);
