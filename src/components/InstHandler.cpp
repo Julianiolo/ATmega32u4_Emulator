@@ -1545,6 +1545,8 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ELPM_dpostInc(ATmega3
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SPM(ATmega32u4* mcu, uint16_t word) noexcept {
 	//TODO
+	DU_UNUSED(mcu);
+	DU_UNUSED(word);
 
 	return inst_effect_t(0,1);
 }
@@ -1610,11 +1612,14 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SLEEP(ATmega32u4* mcu
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_WDR(ATmega32u4* mcu, uint16_t word) noexcept {
 	//TODO
+	DU_UNUSED(mcu);
+	DU_UNUSED(word);
 
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_BREAK(ATmega32u4* mcu, uint16_t word) noexcept {
 	//TODO
+	DU_UNUSED(word);
 #if MCU_INCLUDE_EXTRAS
 	mcu->debugger.halt();
 #endif

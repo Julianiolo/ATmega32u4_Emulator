@@ -350,6 +350,7 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 	switch (Addr) {
 		case Consts::EECR:
 			setEECR(val, oldVal);
+			break;
 
 		case Consts::PLLCSR:
 			setPLLCSR(val, oldVal);
@@ -374,8 +375,12 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 			break;
 
 		case Consts::TCNT0:
-			printf("TIMER!\n");
-			abort();
+			markTimer0Update();
+			if (val < oldVal) {
+				mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+				mcu->cpu.breakOutOfOptim = true;
+			}
+			//mcu->debugger.halt();
 			break;
 
 		case Consts::ADCSRA:
