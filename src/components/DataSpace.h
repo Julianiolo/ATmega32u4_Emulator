@@ -55,6 +55,8 @@ namespace A32u4 {
 
 			void resetAll();
 			bool operator==(const LastSet& other) const;
+			size_t sizeBytes() const;
+			size_t hash() const noexcept;
 		} lastSet;
 
 		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
@@ -167,6 +169,7 @@ namespace A32u4 {
 
 		bool operator==(const DataSpace& other) const;
 		size_t sizeBytes() const;
+		uint32_t hash() const noexcept;
 	};
 }
 namespace DataUtils {
@@ -174,5 +177,11 @@ namespace DataUtils {
 		return v.sizeBytes();
 	}
 }
+template<>
+struct std::hash<A32u4::DataSpace>{
+    inline std::size_t operator()(const A32u4::DataSpace& v) const noexcept{
+        return v.hash();
+    }
+};
 
 #endif

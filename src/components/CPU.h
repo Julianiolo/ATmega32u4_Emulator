@@ -71,6 +71,7 @@ namespace A32u4 {
 
 		bool operator==(const CPU& other) const;
 		size_t sizeBytes() const;
+		uint32_t hash() const noexcept;
 	};
 }
 namespace DataUtils {
@@ -78,5 +79,12 @@ namespace DataUtils {
 		return v.sizeBytes();
 	}
 }
+
+template<>
+struct std::hash<A32u4::CPU>{
+    inline std::size_t operator()(const A32u4::CPU& cpu) const noexcept{
+        return (size_t)cpu.hash();
+    }
+};
 
 #endif

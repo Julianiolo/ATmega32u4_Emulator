@@ -150,4 +150,10 @@ size_t A32u4::Analytics::sizeBytes() const {
 	return sum;
 }
 
+uint32_t A32u4::Analytics::hash() const noexcept{
+	uint32_t h = 0;
+	return h;
+}
+
+
 #endif

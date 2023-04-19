@@ -222,9 +222,11 @@ bool A32u4::Flash::isProgramLoaded() const {
 
 void A32u4::Flash::getState(std::ostream& output){
 	getRomState(output);
+	StreamUtils::write(output, hasProgram);
 }
 void A32u4::Flash::setState(std::istream& input){
 	setRomState(input);
+	StreamUtils::read(input, &hasProgram);
 }
 
 void A32u4::Flash::getRomState(std::ostream& output) {
@@ -239,7 +241,6 @@ void A32u4::Flash::setRomState(std::istream& input){
 #if FLASH_USE_INSTIND_CACHE
 	populateInstIndCache();
 #endif
-	hasProgram = true;
 }
 
 bool A32u4::Flash::operator==(const Flash& other) const{
@@ -254,7 +255,6 @@ size_t A32u4::Flash::sizeBytes() const {
 
 	sum += sizeof(size_);
 
-	sum += sizeMax;
 #if MCU_USE_HEAP
 	sum += sizeof(data);
 #endif
@@ -269,6 +269,13 @@ size_t A32u4::Flash::sizeBytes() const {
 	sum += sizeof(hasProgram);
 
 	return sum;
+}
+uint32_t A32u4::Flash::hash() const noexcept{
+	uint32_t h = 0;
+	DU_HASHC(h,size_);
+	DU_HASHCB(h, data, sizeMax);
+	DU_HASHC(h,hasProgram);
+	return h;
 }
 
 

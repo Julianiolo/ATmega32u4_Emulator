@@ -151,30 +151,6 @@ void A32u4::ATmega32u4::defaultLogHandler(uint8_t logLevel, const char* msg, con
 }
 
 
-bool A32u4::ATmega32u4::load(const uint8_t* data, size_t dataLen){
-	bool isElf = false;
-	if(dataLen >= 4 && std::memcmp(data, "\x7f" "ELF", 4) == 0){ // check for magic number
-		isElf = true;
-	}
-
-	bool success = false;
-	if(isElf){
-		abort();
-		//success = loadFromELF(data, dataLen);
-		if(!success){
-			LU_LOG(LogUtils::LogLevel_Error, "Couldn't load program from ELF Data");
-			return false;
-		}
-	}else{
-		success = flash.loadFromHexString((const char*)data);
-		if(!success){
-			LU_LOG(LogUtils::LogLevel_Error, "Couldn't load program from Hex Data: ");
-			return false;
-		}
-	}
-
-	return true;
-}
 bool A32u4::ATmega32u4::loadFile(const char* path) {
 	const char* ext = StringUtils::getFileExtension(path);
 
@@ -193,24 +169,12 @@ bool A32u4::ATmega32u4::loadFile(const char* path) {
 		
 		return flash.loadFromMemory(data.size()>0? &data[0] : nullptr, data.size());
 	}
-	else if (std::strcmp(ext, "elf") == 0) {
-		abort();
-		//return loadFromELFFile(path);
-	}
 	else {
 		LU_LOGF(LogUtils::LogLevel_Error, "Can't load file with extension %s! Trying to load: %s", ext, path);
 		return false;
 	}
 	return true;
 }
-
-bool A32u4::ATmega32u4::loadFromHex(const uint8_t* data, size_t dataLen){
-	return flash.loadFromHexString((const char*)data, (const char*)data+dataLen);
-}
-bool A32u4::ATmega32u4::loadFromHexFile(const char* path){
-	return flash.loadFromHexFile(path);
-}
-
 
 
 bool A32u4::ATmega32u4::operator==(const ATmega32u4& other) const{

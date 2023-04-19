@@ -21,8 +21,9 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 		breakOutOfOptim = false;
 		cnt++;
 		if(cnt >= amt*2) {
-			printf("WTF %" PRIu64 " %" PRIu64 " %" PRIu64 " %d %" PRIu64 "\n",totalCycls,targetCycls,amt,(int)CPU_sleep,cycsToNextTimerInt());
-			abort();
+			LU_LOGF(LogUtils::LogLevel_Error,"WTF %" PRIu64 " %" PRIu64 " %" PRIu64 " %d %" PRIu64, totalCycls,targetCycls,amt,(int)CPU_sleep,cycsToNextTimerInt());
+			mcu->debugger.halt();
+			return;
 		}
 
 #if MCU_INCLUDE_EXTRAS

@@ -67,11 +67,7 @@ namespace A32u4 {
 
 		void execute(uint64_t cyclAmt, bool debug);
 
-		bool load(const uint8_t* data, size_t dataLen);
 		bool loadFile(const char* path);
-
-		bool loadFromHex(const uint8_t* data, size_t dataLen);
-		bool loadFromHexFile(const char* path);
 
 		void activateLog();
 

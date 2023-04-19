@@ -73,6 +73,7 @@ namespace A32u4 {
 
 		bool operator==(const Flash& other) const;
 		size_t sizeBytes() const;
+		uint32_t hash() const noexcept;
 	};
 }
 namespace DataUtils {
@@ -80,5 +81,12 @@ namespace DataUtils {
 		return v.sizeBytes();
 	}
 }
+
+template<>
+struct std::hash<A32u4::Flash>{
+    inline std::size_t operator()(const A32u4::Flash& v) const noexcept{
+        return (size_t)v.hash();
+    }
+};
 
 #endif

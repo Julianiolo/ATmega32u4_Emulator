@@ -1,7 +1,10 @@
 #include "CPU.h"
 
+#include <functional>
+
 #include "../utils/bitMacros.h"
 #include "StreamUtils.h"
+#include "DataUtils.h"
 
 #include "../ATmega32u4.h"
 #include "CPUTemplates.h"
@@ -492,6 +495,20 @@ size_t A32u4::CPU::sizeBytes() const {
 
 	return sum;
 }
+uint32_t A32u4::CPU::hash() const noexcept{
+	uint32_t h = 0;
+	DU_HASHC(h,PC);
+	DU_HASHC(h,PC);
+	DU_HASHC(h,totalCycls);
+	DU_HASHC(h,targetCycls);
+	DU_HASHC(h,interruptFlags);
+	DU_HASHC(h,insideInterrupt);
+	DU_HASHC(h,breakOutOfOptim);
+	DU_HASHC(h,CPU_sleep);
+	DU_HASHC(h,sleepCycsLeft);
+	return h;
+}
+
 
 /*
 void A32u4::CPU::setFlags_HVNZC_ADD(uint8_t a, uint8_t b, uint8_t res) {

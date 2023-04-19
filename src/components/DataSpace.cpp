@@ -80,6 +80,24 @@ bool A32u4::DataSpace::LastSet::operator==(const LastSet& other) const{
 #undef _CMP_
 }
 
+size_t A32u4::DataSpace::LastSet::sizeBytes() const {
+	size_t sum = 0;
+	sum += sizeof(EECR_EEMPE);
+	sum += sizeof(PLLCSR_PLLE);
+	sum += sizeof(ADCSRA_ADSC);
+	sum += sizeof(Timer0Update);
+	return sum;
+}
+size_t A32u4::DataSpace::LastSet::hash() const noexcept{
+	size_t h = 0;
+	DU_HASHC(h,EECR_EEMPE);
+	DU_HASHC(h,PLLCSR_PLLE);
+	DU_HASHC(h,ADCSRA_ADSC);
+	DU_HASHC(h,Timer0Update);
+	return h;
+}
+
+
 
 /*
 
@@ -956,10 +974,26 @@ size_t A32u4::DataSpace::sizeBytes() const {
 	sum += sizeof(SCK_Callback);
 	sum += sizeof(SPI_Byte_Callback);
 
-
 	sum += sizeof(sreg);
 
+	sum += lastSet.sizeBytes();
+
 	return sum;
+}
+uint32_t A32u4::DataSpace::hash() const noexcept{
+	uint32_t h = 0;
+	DU_HASHCB(h, data, Consts::data_size);
+	DU_HASHCB(h, eeprom, Consts::eeprom_size);
+	DU_HASHC(h,SCK_Callback);
+	DU_HASHC(h,SPI_Byte_Callback);
+	{
+		uint8_t buf[sizeof(sreg)];
+		for(size_t i = 0; i<sizeof(sreg); i++)
+			buf[i] = !!sreg[i];
+		DU_HASHCB(h, buf, sizeof(sreg));
+	}
+	DU_HASH_COMB(h, lastSet.hash());
+	return h;
 }
 
 
