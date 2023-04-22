@@ -152,6 +152,17 @@ size_t A32u4::Analytics::sizeBytes() const {
 
 uint32_t A32u4::Analytics::hash() const noexcept{
 	uint32_t h = 0;
+	DU_HASHCC(h, pcCounter);
+	DU_HASHCC(h, instCounter);
+
+	DU_HASHCC(h, ramReadBuf);
+	DU_HASHCC(h, ramWriteBuf);
+
+	DU_HASHC(h, instTotalCnt);
+
+	DU_HASHC(h, maxSP);
+	DU_HASHC(h, sleepSum);
+
 	return h;
 }
 

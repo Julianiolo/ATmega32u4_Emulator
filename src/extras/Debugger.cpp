@@ -360,6 +360,27 @@ size_t A32u4::Debugger::sizeBytes() const {
 	return sum;
 }
 
+uint32_t A32u4::Debugger::hash() const noexcept {
+	uint32_t h = 0;
+	DU_HASHC(h, callStackPtr);
+
+	DU_HASHC(h, halted);
+	DU_HASHC(h, doStep);
+	DU_HASHC(h, skipCycs);
+
+	for (auto b : breakpointList) {
+		DU_HASHC(h, b);
+	}
+
+	DU_HASHCC(h, breakpoints);
+	DU_HASHCC(h, callStack);
+	DU_HASHCC(h, addressStackIndicators);
+
+	DU_HASHC(h, lastSPRecived);
+
+	return h;
+}
+
 #endif
 
 /*

@@ -77,4 +77,11 @@ namespace A32u4 {
 	};
 }
 
+template<>
+struct std::hash<A32u4::Analytics>{
+	inline std::size_t operator()(const A32u4::Analytics& v) const noexcept{
+		return v.hash();
+	}
+};
+
 #endif

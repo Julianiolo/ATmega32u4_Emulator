@@ -7,7 +7,11 @@
 #include "DataUtils.h"
 
 #include "../ATmega32u4.h"
+#define LU_MODULE "CPU"
 #include "CPUTemplates.h"
+#undef LU_MODULE
+
+#define LU_MODULE "CPU"
 
 #define FAST_FLAGSET 1
 #define fastBitSet(cond,val,mask) (-(cond) ^ (val)) & (mask)
@@ -454,6 +458,8 @@ void A32u4::CPU::getState(std::ostream& output){
 
 	StreamUtils::write(output, CPU_sleep);
 	StreamUtils::write(output, sleepCycsLeft);
+
+	StreamUtils::write(output, hash());
 }
 void A32u4::CPU::setState(std::istream& input){
 	StreamUtils::read(input, &PC);
@@ -467,6 +473,11 @@ void A32u4::CPU::setState(std::istream& input){
 
 	StreamUtils::read(input, &CPU_sleep);
 	StreamUtils::read(input, &sleepCycsLeft);
+
+	uint32_t hash_;
+	StreamUtils::read(input, &hash_);
+	if (hash_ != hash())
+		LU_LOG(LogUtils::LogLevel_Warning, "CPU read state hash does not match");
 }
 
 bool A32u4::CPU::operator==(const CPU& other) const{

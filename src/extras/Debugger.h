@@ -127,6 +127,7 @@ namespace A32u4 {
 
 		bool operator==(const Debugger& other) const;
 		size_t sizeBytes() const;
+		uint32_t hash() const noexcept;
 	};
 }
 namespace DataUtils {
