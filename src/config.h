@@ -9,3 +9,6 @@
 
 #define MCU_INCLUDE_EXTRAS 1
 #define MCU_RW_RECORD 0
+
+#define MCU_WRITE_HASH 1
+#define MCU_CHECK_HASH (MCU_WRITE_HASH && 1)

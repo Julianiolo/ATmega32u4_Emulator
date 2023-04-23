@@ -88,7 +88,7 @@ size_t A32u4::DataSpace::LastSet::sizeBytes() const {
 	sum += sizeof(Timer0Update);
 	return sum;
 }
-size_t A32u4::DataSpace::LastSet::hash() const noexcept{
+uint32_t A32u4::DataSpace::LastSet::hash() const noexcept{
 	size_t h = 0;
 	DU_HASHC(h,EECR_EEMPE);
 	DU_HASHC(h,PLLCSR_PLLE);
@@ -923,6 +923,9 @@ void A32u4::DataSpace::getState(std::ostream& output){
 	StreamUtils::write(output, lastSet.PLLCSR_PLLE);
 	StreamUtils::write(output, lastSet.ADCSRA_ADSC);
 	StreamUtils::write(output, lastSet.Timer0Update);
+#if MCU_WRITE_HASH
+	StreamUtils::write(output, hash());
+#endif
 }
 void A32u4::DataSpace::setState(std::istream& input){
 	setRamState(input);
@@ -932,6 +935,7 @@ void A32u4::DataSpace::setState(std::istream& input){
 	StreamUtils::read(input, &lastSet.PLLCSR_PLLE);
 	StreamUtils::read(input, &lastSet.ADCSRA_ADSC);
 	StreamUtils::read(input, &lastSet.Timer0Update);
+	A32U4_CHECK_HASH("DataSpace");
 }
 
 void A32u4::DataSpace::getRamState(std::ostream& output){

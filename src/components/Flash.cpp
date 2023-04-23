@@ -27,7 +27,9 @@ A32u4::Flash::Flash():
 A32u4::Flash::~Flash() {
 #if MCU_USE_HEAP
 	delete[] data;
+#if MCU_USE_INSTCACHE
 	delete[] instCache;
+#endif
 #endif
 }
 
@@ -131,52 +133,10 @@ bool A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 	clear();
 
-	if (str_end == nullptr){
-		str_end = str + std::strlen(str);
-	}
-	size_t strl = str_end-str;
+	auto res = StringUtils::parseHexFileStr(str, str_end);
+	if(res.size() > 0)
+		std::memcpy(data, &res[0], res.size());
 
-	// sanity check (check for non ascii characters)
-	for (size_t i = 0; i < strl; i++) {
-		unsigned char c = (unsigned char)str[i];
-		if (c == 0 || c > 127) {
-			LU_LOGF_(LogUtils::LogLevel_Warning, "Couldn't load Program from Hex, because it contained a non ASCII character (0x%02x at %" DU_PRIuSIZE ")", c, i);
-			return false;
-		}
-	}
-
-	size_t str_ind = 0;
-	uint16_t flashInd = 0;
-	while (str_ind < strl) {
-		if (str_ind >= strl) {
-			abort();
-		}
-		str_ind += 1;
-		uint8_t ByteCount = StringUtils::hexStrToUIntLen<uint8_t>(str + str_ind, 2);
-		str_ind += 2;
-		//uint32_t Addr = ((StringUtils::hexStrToUIntLen<uint32_t>(str + str_ind, 2)<<8) | StringUtils::hexStrToUIntLen<uint32_t>(str + str_ind + 2, 2));
-		str_ind += 4;
-		//uint8_t type = StringUtils::hexStrToUIntLen<uint8_t>(str + str_ind, 2);
-		//str_ind += 7;
-		for (uint8_t i = 0; i < ByteCount; i++) {
-#if MCU_RANGE_CHECK
-			if (flashInd >= sizeMax) {
-				abort();
-			}
-#endif
-			data[flashInd++] = StringUtils::hexStrToUIntLen<uint8_t>(str + (str_ind+=2), 2);
-		}
-		str_ind += 4; //skip checksum
-		while (str_ind<strl && (str[str_ind] == '\n' || str[str_ind] == '\r')) {
-			str_ind++;
-		}
-	}
-
-	hasProgram = true;
-	size_ = flashInd;
-#if FLASH_USE_INSTIND_CACHE
-	populateInstIndCache();
-#endif
 	return true;
 }
 bool A32u4::Flash::loadFromHexFile(const char* path) {
@@ -187,23 +147,10 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 			return false;
 		}
 	}
-	
-	std::ifstream t;
-	size_t len;
-	t.open(path, std::ios::binary);
-	if (!t.is_open()) {
-		t.close();
-		LU_LOGF_(LogUtils::LogLevel_Error, "Cannot open file: %s", path);
-		return false;
-	}
-	t.seekg(0, std::ios::end);
-	len = (size_t)t.tellg();
-	t.seekg(0, std::ios::beg);
-	char* buffer = new char[len];
-	t.read(buffer, len);
-	t.close();
-	loadFromHexString(buffer, buffer+len);
-	delete[] buffer;
+
+	std::string content = StringUtils::loadFileIntoString(path);
+	loadFromHexString(content.c_str(), content.c_str() + content.size());
+
 	return true;
 }
 void A32u4::Flash::populateInstIndCache(){
@@ -220,15 +167,6 @@ bool A32u4::Flash::isProgramLoaded() const {
 	return hasProgram;
 }
 
-void A32u4::Flash::getState(std::ostream& output){
-	getRomState(output);
-	StreamUtils::write(output, hasProgram);
-}
-void A32u4::Flash::setState(std::istream& input){
-	setRomState(input);
-	StreamUtils::read(input, &hasProgram);
-}
-
 void A32u4::Flash::getRomState(std::ostream& output) {
 	StreamUtils::write(output, size_);
 	output.write((const char*)data, sizeMax);
@@ -241,6 +179,21 @@ void A32u4::Flash::setRomState(std::istream& input){
 #if FLASH_USE_INSTIND_CACHE
 	populateInstIndCache();
 #endif
+}
+
+void A32u4::Flash::getState(std::ostream& output){
+	getRomState(output);
+
+	StreamUtils::write(output, hasProgram);
+#if MCU_WRITE_HASH
+	StreamUtils::write(output, hash());
+#endif
+}
+void A32u4::Flash::setState(std::istream& input){
+	setRomState(input);
+
+	StreamUtils::read(input, &hasProgram);
+	A32U4_CHECK_HASH("Flash");
 }
 
 bool A32u4::Flash::operator==(const Flash& other) const{

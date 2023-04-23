@@ -7,6 +7,10 @@
 #include "StreamUtils.h"
 #include "DataUtilsSize.h"
 
+#include "../ATmega32u4.h"
+
+#define LU_MODULE "Analytics"
+
 A32u4::Analytics::Analytics()
 #if MCU_USE_HEAP
 	: pcCounter(PCHeatArrSize),
@@ -117,6 +121,7 @@ void A32u4::Analytics::setState(std::istream& input){
 
 	StreamUtils::read(input, &maxSP);
 	StreamUtils::read(input, &sleepSum);
+	A32U4_CHECK_HASH("Analytics");
 }
 
 bool A32u4::Analytics::operator==(const Analytics& other) const{

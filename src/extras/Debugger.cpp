@@ -302,6 +302,10 @@ void A32u4::Debugger::getState(std::ostream& output){
 	output.write((const char*)&breakpoints[0], breakPointArrMaxSize);
 	output.write((const char*)&callStack[0], addressStackMaxSize);
 	output.write((const char*)&addressStackIndicators[0], addressStackIndicatorsSize);
+
+#if MCU_WRITE_HASH
+	StreamUtils::write(output, hash());
+#endif
 }
 void A32u4::Debugger::setState(std::istream& input){
 	StreamUtils::read(input, &callStackPtr);
@@ -313,6 +317,8 @@ void A32u4::Debugger::setState(std::istream& input){
 	input.read((char*)&breakpoints[0], breakPointArrMaxSize);
 	input.read((char*)&callStack[0], addressStackMaxSize);
 	input.read((char*)&addressStackIndicators[0], addressStackIndicatorsSize);
+
+	A32U4_CHECK_HASH("Debugger");
 
 	updateBreakpointListFromArr();
 }

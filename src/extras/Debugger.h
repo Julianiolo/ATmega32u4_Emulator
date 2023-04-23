@@ -136,4 +136,11 @@ namespace DataUtils {
 	}
 }
 
+template<>
+struct std::hash<A32u4::Debugger>{
+	inline std::size_t operator()(const A32u4::Debugger& v) const noexcept{
+		return (size_t)v.hash();
+	}
+};
+
 #endif

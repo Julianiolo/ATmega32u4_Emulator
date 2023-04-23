@@ -23,7 +23,7 @@ A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this)
 ,debugger(this)
 #endif
 {
-	activateLog();
+
 }
 A32u4::ATmega32u4::ATmega32u4(const ATmega32u4& src): 
 logCallB(src.logCallB), running(src.running),
@@ -50,31 +50,6 @@ A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
 	setMcu();
 
 	return *this;
-}
-
-void A32u4::ATmega32u4::getState(std::ostream& output){
-	StreamUtils::write(output, running);
-
-	cpu.getState(output);
-	dataspace.getState(output);
-	flash.getState(output);
-
-#if MCU_INCLUDE_EXTRAS
-	debugger.getState(output);
-	analytics.getState(output);
-#endif
-}
-void A32u4::ATmega32u4::setState(std::istream& input){
-	StreamUtils::read(input, &running);
-
-	cpu.setState(input);
-	dataspace.setState(input);
-	flash.setState(input);
-
-#if MCU_INCLUDE_EXTRAS
-	debugger.setState(input);
-	analytics.setState(input);
-#endif
 }
 
 void A32u4::ATmega32u4::setMcu() {
@@ -176,6 +151,37 @@ bool A32u4::ATmega32u4::loadFile(const char* path) {
 	return true;
 }
 
+void A32u4::ATmega32u4::getState(std::ostream& output){
+	StreamUtils::write(output, running);
+
+	cpu.getState(output);
+	dataspace.getState(output);
+	flash.getState(output);
+
+#if MCU_INCLUDE_EXTRAS
+	debugger.getState(output);
+	analytics.getState(output);
+#endif
+
+#if MCU_WRITE_HASH
+	StreamUtils::write(output, hash());
+#endif
+}
+void A32u4::ATmega32u4::setState(std::istream& input){
+	StreamUtils::read(input, &running);
+
+	cpu.setState(input);
+	dataspace.setState(input);
+	flash.setState(input);
+
+#if MCU_INCLUDE_EXTRAS
+	debugger.setState(input);
+	analytics.setState(input);
+#endif
+
+	A32U4_CHECK_HASH("ATmega32u4");
+}
+
 
 bool A32u4::ATmega32u4::operator==(const ATmega32u4& other) const{
 #define _CMP_(x) (x==other.x)
@@ -203,4 +209,18 @@ size_t A32u4::ATmega32u4::sizeBytes() const {
 #endif
 
 	return sum;
+}
+
+uint32_t A32u4::ATmega32u4::hash() const noexcept {
+	uint32_t h = 0;
+	DU_HASHC(h, cpu);
+	DU_HASHC(h, dataspace);
+	DU_HASHC(h, flash);
+
+#if MCU_INCLUDE_EXTRAS
+	DU_HASHC(h, analytics);
+	DU_HASHC(h, debugger);
+#endif
+
+	return h;
 }

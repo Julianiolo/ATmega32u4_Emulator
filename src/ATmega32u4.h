@@ -36,7 +36,11 @@
 
 #define MCU_ADDR_FORMAT "%" MCU_PRIuADDR "(0x%" MCU_PRIxADDR ")"
 
-//#define A32U4_ADDR_ERR_STR(A_msg,A_addr) "%s%u => 0x%4x @PC:%", MCU_PRIuPC, A_msg, A_addr, A_addr, mcu->cpu.PC
+#if MCU_CHECK_HASH
+#define A32U4_CHECK_HASH(_module_) uint32_t hash_; StreamUtils::read(input, &hash_); if (hash_ != hash()) { LU_LOG_(LogUtils::LogLevel_Warning, _module_ " read state hash does not match"); }
+#else
+#define A32U4_CHECK_HASH(_module_) 
+#endif
 
 namespace A32u4 {
 	class ATmega32u4 {
@@ -81,6 +85,7 @@ namespace A32u4 {
 		
 		bool operator==(const ATmega32u4& other) const;
 		size_t sizeBytes() const;
+		uint32_t hash() const noexcept;
 	private:
 		void setMcu();
 	};
@@ -91,5 +96,12 @@ namespace DataUtils {
 		return v.sizeBytes();
 	}
 }
+
+template<>
+struct std::hash<A32u4::ATmega32u4>{
+	inline std::size_t operator()(const A32u4::ATmega32u4& v) const noexcept{
+		return (size_t)v.hash();
+	}
+};
 
 #endif

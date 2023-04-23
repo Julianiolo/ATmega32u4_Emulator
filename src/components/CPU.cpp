@@ -459,7 +459,9 @@ void A32u4::CPU::getState(std::ostream& output){
 	StreamUtils::write(output, CPU_sleep);
 	StreamUtils::write(output, sleepCycsLeft);
 
+#if MCU_WRITE_HASH
 	StreamUtils::write(output, hash());
+#endif
 }
 void A32u4::CPU::setState(std::istream& input){
 	StreamUtils::read(input, &PC);
@@ -474,10 +476,7 @@ void A32u4::CPU::setState(std::istream& input){
 	StreamUtils::read(input, &CPU_sleep);
 	StreamUtils::read(input, &sleepCycsLeft);
 
-	uint32_t hash_;
-	StreamUtils::read(input, &hash_);
-	if (hash_ != hash())
-		LU_LOG(LogUtils::LogLevel_Warning, "CPU read state hash does not match");
+	A32U4_CHECK_HASH("CPU");
 }
 
 bool A32u4::CPU::operator==(const CPU& other) const{

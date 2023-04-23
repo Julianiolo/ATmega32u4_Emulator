@@ -56,7 +56,7 @@ namespace A32u4 {
 			void resetAll();
 			bool operator==(const LastSet& other) const;
 			size_t sizeBytes() const;
-			size_t hash() const noexcept;
+			uint32_t hash() const noexcept;
 		} lastSet;
 
 		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
