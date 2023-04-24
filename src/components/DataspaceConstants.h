@@ -35,9 +35,14 @@ static constexpr addrmcu_t SPDR = 0x4E, SPSR = 0x4D, SPCR = 0x4C;
 static constexpr uint8_t SPSR_SPIF = 7;
 
 static constexpr addrmcu_t PRR0 = 0x64; //Power Reduction Register
+static constexpr uint8_t PRR0_PRTIM0 = 5;
+static constexpr addrmcu_t PRR1 = 0x65;
+static constexpr uint8_t PRR1_PRTIM3 = 3;
 static constexpr addrmcu_t TCCR0A = 0x44, TCCR0B = 0x45, TCNT0 = 0x46, TIFR0 = 0x35, TIMSK0 = 0x6E;
 static constexpr uint8_t TIFR0_TOV0 = 0;
 static constexpr uint8_t TIMSK0_TOIE0 = 0;
+static constexpr addrmcu_t TCCR3B = 0x91, TCNT3L = 0x94, TCNT3H = 0x95, TIFR3 = 0x38;
+static constexpr uint8_t TIFR3_TOV3 = 0;
 
 static constexpr addrmcu_t SMCR = 0x53;
 

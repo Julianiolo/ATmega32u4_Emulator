@@ -45,8 +45,6 @@ namespace A32u4 {
 		void executeInterrupts();
 		void directExecuteInterrupt(uint8_t num);
 
-		uint64_t cycsToNextTimerInt();
-
 		void setFlags_NZ(uint8_t res);
 		void setFlags_NZ(uint16_t res);
 		void setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t res);

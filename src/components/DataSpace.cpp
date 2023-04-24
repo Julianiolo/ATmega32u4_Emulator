@@ -11,72 +11,19 @@
 
 #define LU_MODULE "DataSpace"
 
-void A32u4::DataSpace::doTick() {
-	if (isBitSetNB(data[DataSpace::Consts::PRR0], 5)) {
-		return;
-	}
-	uint8_t timer0 = data[DataSpace::Consts::TCNT0];
-	timer0++;
-	data[DataSpace::Consts::TCNT0] = timer0;
-	if (timer0 == 0) {
-		data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
-		//printf("OVERFLOW at %llu\n", mcu->cpu.totalCycls);
-	}
-
-	markTimer0Update();
-}
-void A32u4::DataSpace::doTicks(uint8_t num) {
-	if (isBitSetNB(data[DataSpace::Consts::PRR0], 5)) {
-		return;
-	}
-
-	const uint8_t timer0 = data[DataSpace::Consts::TCNT0];
-	const uint8_t timer0plus = timer0 + num;
-	if (timer0plus < timer0) {
-		mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
-		//printf("OVERFLOW at %llu\n", mcu->cpu.totalCycls);
-	}
-
-	markTimer0Update();
-}
-
-void A32u4::DataSpace::checkForIntr() {
-	if (data[A32u4::DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)) {
-		//std::cout << mcu->cpu.totalCycls << std::endl;
-		if (data[DataSpace::Consts::TIMSK0] & (1 << DataSpace::Consts::TIMSK0_TOIE0)) {
-			if (sreg[DataSpace::Consts::SREG_I]) {
-				//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
-				data[A32u4::DataSpace::Consts::TIFR0] &= ~(1 << DataSpace::Consts::TIFR0_TOV0);
-				mcu->cpu.directExecuteInterrupt(23);
-				//printf("int at %llu\n", mcu->cpu.totalCycls);
-			}
-		}
-	}
-}
-uint8_t A32u4::DataSpace::getTimer0Presc() const {
-	return mcu->dataspace.data[DataSpace::Consts::TCCR0B] & 0b111;
-}
-uint16_t A32u4::DataSpace::getTimer0PrescDiv() const {
-	return DataSpace::timerPresc[getTimer0Presc()];
-}
-void A32u4::DataSpace::markTimer0Update() { 
-	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
-	uint64_t diff = mcu->cpu.totalCycls - lastSet.Timer0Update;
-	diff = (diff / getTimer0PrescDiv()) * getTimer0PrescDiv();
-	lastSet.Timer0Update += diff;
-}
-
 
 void A32u4::DataSpace::LastSet::resetAll() {
 	EECR_EEMPE = 0;
 	PLLCSR_PLLE = 0;
 	ADCSRA_ADSC = 0;
 	Timer0Update = 0;
+	Timer3Update = 0;
 }
 
 bool A32u4::DataSpace::LastSet::operator==(const LastSet& other) const{
 #define _CMP_(x) (x==other.x)
-	return _CMP_(EECR_EEMPE) && _CMP_(PLLCSR_PLLE) && _CMP_(ADCSRA_ADSC) && _CMP_(Timer0Update);
+	return _CMP_(EECR_EEMPE) && _CMP_(PLLCSR_PLLE) && _CMP_(ADCSRA_ADSC) && 
+	_CMP_(Timer0Update) && _CMP_(Timer3Update);
 #undef _CMP_
 }
 
@@ -86,6 +33,7 @@ size_t A32u4::DataSpace::LastSet::sizeBytes() const {
 	sum += sizeof(PLLCSR_PLLE);
 	sum += sizeof(ADCSRA_ADSC);
 	sum += sizeof(Timer0Update);
+	sum += sizeof(Timer3Update);
 	return sum;
 }
 uint32_t A32u4::DataSpace::LastSet::hash() const noexcept{
@@ -94,16 +42,11 @@ uint32_t A32u4::DataSpace::LastSet::hash() const noexcept{
 	DU_HASHC(h,PLLCSR_PLLE);
 	DU_HASHC(h,ADCSRA_ADSC);
 	DU_HASHC(h,Timer0Update);
+	DU_HASHC(h,Timer3Update);
 	return h;
 }
 
-
-
-/*
-
-DataSpace:
-
-*/
+// ##### DataSpace #####
 
 A32u4::DataSpace::DataSpace(ATmega32u4* mcu) : mcu(mcu), 
 #if MCU_USE_HEAP
@@ -162,6 +105,98 @@ void A32u4::DataSpace::resetIO() {
 	setSP(Consts::SP_initaddr);
 }
 
+void A32u4::DataSpace::doTicks(uint8_t num) {
+	if (isBitSetNB(data[Consts::PRR0], 5)) {
+		return;
+	}
+
+	const uint8_t timer0 = data[Consts::TCNT0];
+	const uint8_t timer0plus = timer0 + num;
+	if (timer0plus < timer0) {
+		mcu->dataspace.data[Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+		//printf("OVERFLOW at %llu\n", mcu->cpu.totalCycls);
+	}
+	data[Consts::TCNT0] = timer0plus;
+
+
+	markTimer0Update();
+}
+void A32u4::DataSpace::updateTimers(){
+	if (!isBitSetNB(data[Consts::PRR0], Consts::PRR0_PRTIM0)) {
+		const uint8_t timer0 = data[Consts::TCNT0];
+		const uint8_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer0Update) / getTimer0PrescDiv();
+		const uint8_t timer0Next = timer0 + addAmt;
+		if(timer0Next < timer0) { // overflow
+			data[Consts::TIFR0] |= (1 << Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+		}
+		data[Consts::TCNT0] = timer0Next;
+		markTimer0Update();
+	}
+	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM3)) {
+		const uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
+		const uint16_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer3Update) / getTimer3PrescDiv();
+		const uint16_t timer3Next = timer3 + addAmt;
+		if(timer3Next < timer3) { // overflow
+			//data[Consts::TIFR3] |= (1 << Consts::TIFR3_TOV3);
+		}
+		setWordRegRam_(Consts::TCNT3L, timer3Next);
+		markTimer3Update();
+	}
+	checkForIntr();
+}
+
+void A32u4::DataSpace::checkForIntr() {
+	if(!sreg[Consts::SREG_I]) // check if interrupts are disabled
+		return;
+
+	if (data[Consts::TIFR0] & (1 << Consts::TIFR0_TOV0)) {
+		if (data[Consts::TIMSK0] & (1 << Consts::TIMSK0_TOIE0)) {
+			//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
+			data[Consts::TIFR0] &= ~(1 << Consts::TIFR0_TOV0);
+			mcu->cpu.directExecuteInterrupt(23);
+		}
+	}
+}
+uint8_t A32u4::DataSpace::getTimer0Presc() const {
+	return mcu->dataspace.data[DataSpace::Consts::TCCR0B] & 0b111;
+}
+uint8_t A32u4::DataSpace::getTimer3Presc() const {
+	return mcu->dataspace.data[DataSpace::Consts::TCCR3B] & 0b111;
+}
+uint16_t A32u4::DataSpace::getTimer0PrescDiv() const {
+	return DataSpace::timerPresc[getTimer0Presc()];
+}
+uint16_t A32u4::DataSpace::getTimer3PrescDiv() const {
+	return DataSpace::timerPresc[getTimer3Presc()];
+}
+void A32u4::DataSpace::markTimer0Update() { 
+	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
+	uint64_t diff = mcu->cpu.totalCycls - lastSet.Timer0Update;
+	diff = (diff / getTimer0PrescDiv()) * getTimer0PrescDiv();
+	lastSet.Timer0Update += diff;
+}
+void A32u4::DataSpace::markTimer3Update() { 
+	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
+	uint64_t diff = mcu->cpu.totalCycls - lastSet.Timer3Update;
+	diff = (diff / getTimer3PrescDiv()) * getTimer3PrescDiv();
+	lastSet.Timer3Update += diff;
+}
+uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
+	uint64_t amt = -1;
+	{ // timer0
+		uint8_t timer0 = data[DataSpace::Consts::TCNT0];
+		uint64_t nextOverflow = lastSet.Timer0Update + (256-timer0)*getTimer0PrescDiv();
+		amt = std::min(amt, nextOverflow - mcu->cpu.totalCycls);
+	}
+	if(0){ // timer3
+		uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
+		uint64_t nextOverflow = lastSet.Timer3Update + (0x10000-timer3)*getTimer3PrescDiv();
+		amt = std::min(amt, nextOverflow - mcu->cpu.totalCycls);
+	}
+	return amt;
+}
+
+
 MCU_INLINE uint8_t& A32u4::DataSpace::getGPRegRef(regind_t ind) {
 	A32U4_ASSERT_INRANGE(ind, 0, Consts::GPRs_size, return data[0], "General Purpouse Register Index out of bounds: %" PRIu8, ind);
 	return data[ind];
@@ -182,6 +217,13 @@ MCU_INLINE void A32u4::DataSpace::setGPReg_(regind_t ind, reg_t val) {
 	data[ind] = val;
 }
 
+MCU_INLINE uint16_t A32u4::DataSpace::getWordRegRam_(uint16_t id) const {
+	return ((uint16_t)data[id + 1] << 8) | data[id];
+}
+MCU_INLINE void A32u4::DataSpace::setWordRegRam_(uint16_t id, uint16_t val) {
+	data[id + 1] = val >> 8;
+	data[id] = (uint8_t)val;
+}
 uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
 	A32U4_ASSERT_INRANGE2(addr, 0, Consts::data_size, return 0, "Data get Index out of bounds: " MCU_ADDR_FORMAT);
 
@@ -567,7 +609,7 @@ addrmcu_t A32u4::DataSpace::popAddrFromStack() {
 	return Addr;
 }
 
-void A32u4::DataSpace::setSPIByteCallB(SPIByteCallB func) {
+void A32u4::DataSpace::setSPIByteCallB(std::function<void(uint8_t)> func) {
 	SPI_Byte_Callback = func;
 }
 uint8_t* A32u4::DataSpace::getEEPROM() {
@@ -988,8 +1030,6 @@ uint32_t A32u4::DataSpace::hash() const noexcept{
 	uint32_t h = 0;
 	DU_HASHCB(h, data, Consts::data_size);
 	DU_HASHCB(h, eeprom, Consts::eeprom_size);
-	DU_HASHC(h,SCK_Callback);
-	DU_HASHC(h,SPI_Byte_Callback);
 	{
 		uint8_t buf[sizeof(sreg)];
 		for(size_t i = 0; i<sizeof(sreg); i++)

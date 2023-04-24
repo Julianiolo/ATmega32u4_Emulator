@@ -21,7 +21,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 		breakOutOfOptim = false;
 		cnt++;
 		if(cnt >= amt*2) {
-			LU_LOGF(LogUtils::LogLevel_Error,"WTF %" PRIu64 " %" PRIu64 " %" PRIu64 " %d %" PRIu64, totalCycls,targetCycls,amt,(int)CPU_sleep,cycsToNextTimerInt());
+			LU_LOGF(LogUtils::LogLevel_Error,"WTF %" PRIu64 " %" PRIu64 " %" PRIu64 " %d %" PRIu64, totalCycls,targetCycls,amt,(int)CPU_sleep,mcu->dataspace.cycsToNextTimerInt());
 			mcu->debugger.halt();
 			return;
 		}
@@ -48,14 +48,12 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				}
 			}
 			else{
-				uint64_t cycsToNextInt = cycsToNextTimerInt();
+				uint64_t cycsToNextInt = mcu->dataspace.cycsToNextTimerInt();
 				
-				bool doTimerTick = true;
 				uint64_t currTargetCycs = totalCycls + cycsToNextInt;
 				
 				if (currTargetCycs > targetCycls) {
 					currTargetCycs = targetCycls;
-					doTimerTick = false;
 				}
 
 				while(totalCycls < currTargetCycs && !breakOutOfOptim) {
@@ -64,35 +62,30 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 					PC += res.addToPC;
 				}
 
-				if (totalCycls >= currTargetCycs && doTimerTick) {
-					mcu->dataspace.data[DataSpace::Consts::TCNT0] = 255;
-					mcu->dataspace.doTick();
-				}
-				else {
-					mcu->dataspace.data[DataSpace::Consts::TCNT0] += (uint8_t)((totalCycls - mcu->dataspace.lastSet.Timer0Update) / mcu->dataspace.getTimer0PrescDiv());
-				}
-				mcu->dataspace.markTimer0Update();
-				mcu->dataspace.checkForIntr();
+				mcu->dataspace.updateTimers();
 			}
 		}
-		else {
+		else { // sleeping
+			DU_ASSERT(totalCycls < targetCycls);
 #if !SLEEP_SKIP
 			addCycles((uint8_t)1);
 			mcu->dataspace.timers.update();
 #else
 			if (sleepCycsLeft == 0) {
-				sleepCycsLeft = cycsToNextTimerInt();
+				sleepCycsLeft = mcu->dataspace.cycsToNextTimerInt();
+				if(sleepCycsLeft == 0) {
+					printf("");
+				}
 				//printf("entering sleep for: %llu, with t:%d at %llu\n", sleepCycsLeft, mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0), mcu->cpu.totalCycls);
 			}
 
 			if (sleepCycsLeft <= (targetCycls - totalCycls) ) {
 				// done sleeping
-				mcu->dataspace.data[DataSpace::Consts::TCNT0] = 255;
-
 				totalCycls += sleepCycsLeft;
 
-				mcu->dataspace.doTick();
-				mcu->dataspace.checkForIntr();
+				mcu->dataspace.updateTimers();
+				if(mcu->dataspace.data[DataSpace::Consts::TCNT0] != 0 || !(mcu->dataspace.data[DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)))
+					printf("AAAAAAA");
 
 #if MCU_INCLUDE_EXTRAS
 				if(debug){
@@ -113,9 +106,8 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 #endif
 
 				totalCycls += skipCycs;
-				mcu->dataspace.data[DataSpace::Consts::TCNT0] += (uint8_t)(sleepCycsLeft / mcu->dataspace.getTimer0PrescDiv());
-				mcu->dataspace.markTimer0Update();
-				//printf("slept for: %llu, continuing later\n", sleepCycsLeft);
+				//mcu->dataspace.updateTimers();
+				//printf("slept for: %llu, %llu left, continuing later\n", skipCycs, sleepCycsLeft);
 			}
 #endif
 		}

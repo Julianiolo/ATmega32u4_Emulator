@@ -76,25 +76,6 @@ void A32u4::CPU::directExecuteInterrupt(uint8_t num) {
 	mcu->cpu.PC = targetPC;
 }
 
-uint64_t A32u4::CPU::cycsToNextTimerInt() {
-#if 0
-	const uint8_t& REF_TIMER0 = mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0);
-	uint8_t ticksLeftT0 = 255 - REF_TIMER0;
-
-	uint16_t prescCycsT0 = DataSpace::Timers::presc[mcu->dataspace.timers.timer0_presc_cache];
-	return (uint64_t)ticksLeftT0 * prescCycsT0 + (prescCycsT0 - (totalCycls%prescCycsT0));
-#else
-	uint64_t amt = -1;
-	{
-		uint8_t timer0 = mcu->dataspace.data[DataSpace::Consts::TCNT0];
-		uint64_t nextOverflow = mcu->dataspace.lastSet.Timer0Update + (256-timer0)*mcu->dataspace.getTimer0PrescDiv();
-		amt = std::min(amt, nextOverflow - totalCycls);
-	}
-	return amt;
-
-#endif
-}
-
 /*
 
 	Status Register: SREG

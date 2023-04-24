@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <iostream> // istream & ostream
 #include <cstring> // for NULL
+#include <functional> // for std::function
 
 #include "../A32u4Types.h"
 #include "../config.h"
@@ -15,7 +16,6 @@ namespace A32u4 {
 
 	class DataSpace {
 	public:
-		typedef void (*SPIByteCallB)(uint8_t data);
 		struct Consts {
 #include "DataspaceConstants.h"
 		};
@@ -27,22 +27,17 @@ namespace A32u4 {
 		friend class InstHandler;
 
 		ATmega32u4* mcu;
-		
+
 #if !MCU_USE_HEAP
 		uint8_t data[Consts::data_size];
-#else
-		uint8_t* data;
-#endif
-
-		
-#if !MCU_USE_HEAP
 		uint8_t eeprom[Consts::eeprom_size];
 #else
+		uint8_t* data;
 		uint8_t* eeprom;
 #endif
 
-		void (*SCK_Callback)() = NULL;
-		SPIByteCallB SPI_Byte_Callback = NULL;
+		std::function<void(void)> SCK_Callback = nullptr;
+		std::function<void(uint8_t)> SPI_Byte_Callback = NULL;
 
 
 		uint8_t sreg[8] = {0,0,0,0,0,0,0,0};
@@ -52,6 +47,7 @@ namespace A32u4 {
 			uint64_t PLLCSR_PLLE = 0;
 			uint64_t ADCSRA_ADSC = 0;
 			uint64_t Timer0Update = 0;
+			uint64_t Timer3Update = 0;
 
 			void resetAll();
 			bool operator==(const LastSet& other) const;
@@ -107,20 +103,27 @@ namespace A32u4 {
 		void updateCache();
 
 
+		// internal
 		uint8_t getGPReg_(regind_t ind) const;
 		void setGPReg_(regind_t ind, reg_t val);
+		uint16_t getWordRegRam_(uint16_t id) const;
+		void setWordRegRam_(uint16_t id, uint16_t val);
 
 		uint16_t getADCVal();
 
 
 		// Timer stuff
 		static constexpr uint16_t timerPresc[] = {1,1,8,64,256,1024};
-		void doTick();
 		void doTicks(uint8_t num);
+		void updateTimers();
 		void checkForIntr();
 		uint8_t getTimer0Presc() const;
+		uint8_t getTimer3Presc() const;
 		uint16_t getTimer0PrescDiv() const;
+		uint16_t getTimer3PrescDiv() const;
 		void markTimer0Update();
+		void markTimer3Update();
+		uint64_t cycsToNextTimerInt();
 
 
 		void setFlags_NZ(uint8_t res);
@@ -134,7 +137,7 @@ namespace A32u4 {
 		void setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res);
 		void setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res);
 	public:
-		void setSPIByteCallB(SPIByteCallB func);
+		void setSPIByteCallB(std::function<void(uint8_t)> func);
 
 		uint8_t& getGPRegRef(regind_t ind);
 		uint8_t getGPReg(regind_t ind) const;
