@@ -124,9 +124,9 @@ void A32u4::DataSpace::doTicks(uint8_t num) {
 void A32u4::DataSpace::updateTimers(){
 	if (!isBitSetNB(data[Consts::PRR0], Consts::PRR0_PRTIM0)) {
 		const uint8_t timer0 = data[Consts::TCNT0];
-		const uint8_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer0Update) / getTimer0PrescDiv();
+		const uint32_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer0Update) / getTimer0PrescDiv();
 		const uint8_t timer0Next = timer0 + addAmt;
-		if(timer0Next < timer0) { // overflow
+		if(timer0Next < timer0 || addAmt >= 256) { // overflow
 			data[Consts::TIFR0] |= (1 << Consts::TIFR0_TOV0); // set TOV0 in TIFR0
 		}
 		data[Consts::TCNT0] = timer0Next;
@@ -134,10 +134,26 @@ void A32u4::DataSpace::updateTimers(){
 	}
 	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM3)) {
 		const uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
-		const uint16_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer3Update) / getTimer3PrescDiv();
+		const uint32_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer3Update) / getTimer3PrescDiv();
 		const uint16_t timer3Next = timer3 + addAmt;
-		if(timer3Next < timer3) { // overflow
-			//data[Consts::TIFR3] |= (1 << Consts::TIFR3_TOV3);
+		const uint16_t target = getWordRegRam_(Consts::OCR3AL);
+
+		bool matchesA = false;
+		if(addAmt >= 0x10000) {
+			matchesA = true;
+		}else{
+			if(timer3 < timer3Next) {
+				if(timer3 < target && target <= timer3Next)
+					matchesA = true;
+			}else{
+				if(timer3 < target || target < timer3Next)
+					matchesA = true;
+			}
+		}
+
+		if(matchesA) {
+			data[Consts::TIFR3] |= (1 << Consts::TIFR3_OCF3A);
+			printf("T3F @ %llu\n", mcu->cpu.totalCycls);
 		}
 		setWordRegRam_(Consts::TCNT3L, timer3Next);
 		markTimer3Update();
@@ -154,6 +170,21 @@ void A32u4::DataSpace::checkForIntr() {
 			//mcu->cpu.queueInterrupt(23); // 0x2E timer0 overflow interrupt vector
 			data[Consts::TIFR0] &= ~(1 << Consts::TIFR0_TOV0);
 			mcu->cpu.directExecuteInterrupt(23);
+		}
+	}
+
+#if 0 // not needed atm
+	if (data[Consts::TIFR3] & (1 << Consts::TIFR3_TOV3)) {
+		if (data[Consts::TIMSK3] & (1 << Consts::TIMSK3_TOIE3)) {
+			data[Consts::TIFR3] &= ~(1 << Consts::TIFR3_TOV3);
+			mcu->cpu.directExecuteInterrupt();
+		}
+	}
+#endif
+	if (data[Consts::TIFR3] & (1 << Consts::TIFR3_OCF3A)) {
+		if (data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A)) {
+			data[Consts::TIFR3] &= ~(1 << Consts::TIFR3_OCF3A);
+			mcu->cpu.directExecuteInterrupt(32);
 		}
 	}
 }
@@ -183,15 +214,23 @@ void A32u4::DataSpace::markTimer3Update() {
 }
 uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
 	uint64_t amt = -1;
-	{ // timer0
+	if(data[Consts::TIMSK0] & (1 << Consts::TIMSK0_TOIE0)){ // timer0 Overflow
 		uint8_t timer0 = data[DataSpace::Consts::TCNT0];
 		uint64_t nextOverflow = lastSet.Timer0Update + (256-timer0)*getTimer0PrescDiv();
-		amt = std::min(amt, nextOverflow - mcu->cpu.totalCycls);
+		uint64_t interruptIn = nextOverflow - mcu->cpu.totalCycls;
+		if(interruptIn < amt)
+			amt = interruptIn;
 	}
-	if(0){ // timer3
+
+	if(data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A)){ // timer3 A match
 		uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
-		uint64_t nextOverflow = lastSet.Timer3Update + (0x10000-timer3)*getTimer3PrescDiv();
-		amt = std::min(amt, nextOverflow - mcu->cpu.totalCycls);
+		uint16_t target = getWordRegRam_(Consts::OCR3AL);
+		uint64_t nextMatch = lastSet.Timer3Update + (uint16_t)(target-timer3)*getTimer3PrescDiv();
+		uint64_t interruptIn = nextMatch - mcu->cpu.totalCycls;
+		if(interruptIn < amt) {
+			amt = interruptIn;
+			printf("T3 in %llu\n", interruptIn);
+		}
 	}
 	return amt;
 }

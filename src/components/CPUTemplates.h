@@ -74,7 +74,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 			if (sleepCycsLeft == 0) {
 				sleepCycsLeft = mcu->dataspace.cycsToNextTimerInt();
 				if(sleepCycsLeft == 0) {
-					printf("");
+					printf("AAAA");
 				}
 				//printf("entering sleep for: %llu, with t:%d at %llu\n", sleepCycsLeft, mcu->dataspace.getByteRefAtAddr(DataSpace::Consts::TCNT0), mcu->cpu.totalCycls);
 			}
@@ -84,8 +84,6 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 				totalCycls += sleepCycsLeft;
 
 				mcu->dataspace.updateTimers();
-				if(mcu->dataspace.data[DataSpace::Consts::TCNT0] != 0 || !(mcu->dataspace.data[DataSpace::Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)))
-					printf("AAAAAAA");
 
 #if MCU_INCLUDE_EXTRAS
 				if(debug){
