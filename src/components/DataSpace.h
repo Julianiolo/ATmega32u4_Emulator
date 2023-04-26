@@ -58,6 +58,8 @@ namespace A32u4 {
 		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
 		static constexpr uint64_t ADC_wait = 0;
 
+		bool Timer3ATriggered = false;
+
 		DataSpace(ATmega32u4* mcu);
 		~DataSpace();
 
@@ -110,6 +112,8 @@ namespace A32u4 {
 		void setWordRegRam_(uint16_t id, uint16_t val);
 
 		uint16_t getADCVal();
+
+		void pinChange(uint8_t num, reg_t oldVal, reg_t val);
 
 
 		// Timer stuff

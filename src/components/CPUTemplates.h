@@ -50,7 +50,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 			else{
 				uint64_t cycsToNextInt = mcu->dataspace.cycsToNextTimerInt();
 				
-				uint64_t currTargetCycs = totalCycls + cycsToNextInt;
+				uint64_t currTargetCycs = cycsToNextInt==(size_t)-1 ? -1 : totalCycls + cycsToNextInt;
 				
 				if (currTargetCycs > targetCycls) {
 					currTargetCycs = targetCycls;

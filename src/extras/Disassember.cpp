@@ -124,7 +124,7 @@ std::string A32u4::Disassembler::disassembleBinFile(const Flash& data, const Add
 			}
 			
 
-			if (line.addr - lastAddr > 512) // make big gaps in program stand out
+			if (line.addr - lastAddr > (InstHandler::is2WordInst(data.getInst(line.addr))?4:2)) // make big gaps in program stand out
 				content += "\n     ...\n\n";
 
 			if (info.funcSymbs) {
@@ -212,7 +212,14 @@ std::string A32u4::Disassembler::disassemble(uint16_t word, uint16_t word2, uint
 		instBytes += StringUtils::format("%02x %02x ", word2 & 0xFF, (word2 & 0xFF00) >> 8);
 	else
 		instBytes += "      ";
-	return StringUtils::format("    %4x:\t%s\t%s", PC*2, instBytes.c_str(), disasm.c_str());
+
+	std::string ret = StringUtils::format("    %4x:\t%s\t%s", PC*2, instBytes.c_str(), disasm.c_str());
+	if(PC < 43*2) {
+		uint8_t intNum = PC/2;
+		const auto& info = ATmega32u4::interruptInfo[intNum];
+		ret += StringUtils::format("  ; INT%" PRIu8 ": %s \"%s\"", intNum, info.source, info.definition);
+	}
+	return ret;
 }
 std::string A32u4::Disassembler::disassembleRaw(uint16_t word, uint16_t word2) {
 	uint8_t Inst_ind = InstHandler::getInstInd3(word);
@@ -418,6 +425,7 @@ void A32u4::Disassembler::disasmRecurse(pc_t start, const Flash& data, DisasmDat
 			case IND_SBRS:
 			case IND_SBIC:
 			case IND_SBIS:
+			case IND_CPSE:
 			{
 				disasmRecurse(PC+2, data, disasmData);
 				break;

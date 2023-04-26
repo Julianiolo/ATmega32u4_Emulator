@@ -22,7 +22,7 @@ static constexpr addrmcu_t RAMPZ = 0x5b;
 static constexpr addrmcu_t MCUSR = 0x54;
 static constexpr uint8_t MCUSR_USBRF = 5, MCUSR_JTRF = 4, MCUSR_WDRF = 3, MCUSR_BORF = 2, MCUSR_EXTRF = 1, MCUSR_PORF = 0;
 
-static constexpr addrmcu_t PORTB = 0x25, PORTC = 0x28, PORTD = 0x2B, PORTE = 0x2E;
+static constexpr addrmcu_t PORTB = 0x25, PORTC = 0x28, PORTD = 0x2B, PORTE = 0x2E, PORTF = 0x31;
 static constexpr addrmcu_t PINB = 0x23, PINC = 0x26, PIND = 0x29, PINE = 0x2C, PINF = 0x2F;
 
 static constexpr addrmcu_t EEARH = 0x42, EEARL = 0x41, EEDR = 0x40, EECR = 0x3F;

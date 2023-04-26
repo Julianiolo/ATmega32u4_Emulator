@@ -123,40 +123,46 @@ void A32u4::DataSpace::doTicks(uint8_t num) {
 }
 void A32u4::DataSpace::updateTimers(){
 	if (!isBitSetNB(data[Consts::PRR0], Consts::PRR0_PRTIM0)) {
-		const uint8_t timer0 = data[Consts::TCNT0];
 		const uint32_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer0Update) / getTimer0PrescDiv();
-		const uint8_t timer0Next = timer0 + addAmt;
-		if(timer0Next < timer0 || addAmt >= 256) { // overflow
-			data[Consts::TIFR0] |= (1 << Consts::TIFR0_TOV0); // set TOV0 in TIFR0
-		}
-		data[Consts::TCNT0] = timer0Next;
-		markTimer0Update();
-	}
-	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM3)) {
-		const uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
-		const uint32_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer3Update) / getTimer3PrescDiv();
-		const uint16_t timer3Next = timer3 + addAmt;
-		const uint16_t target = getWordRegRam_(Consts::OCR3AL);
-
-		bool matchesA = false;
-		if(addAmt >= 0x10000) {
-			matchesA = true;
-		}else{
-			if(timer3 < timer3Next) {
-				if(timer3 < target && target <= timer3Next)
-					matchesA = true;
-			}else{
-				if(timer3 < target || target < timer3Next)
-					matchesA = true;
+		if(addAmt > 0) {
+			const uint8_t timer0 = data[Consts::TCNT0];
+			const uint8_t timer0Next = timer0 + addAmt;
+			if(timer0Next < timer0 || addAmt >= 256) { // overflow
+				data[Consts::TIFR0] |= (1 << Consts::TIFR0_TOV0); // set TOV0 in TIFR0
 			}
+			data[Consts::TCNT0] = timer0Next;
+			markTimer0Update();
 		}
+	}
+	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM3) && (data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A))) {
+		const uint32_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer3Update) / getTimer3PrescDiv();
+		if(addAmt > 0) {
+			const uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
+			const uint16_t timer3Next = timer3 + addAmt;
+			const uint16_t target = getWordRegRam_(Consts::OCR3AL);
 
-		if(matchesA) {
-			data[Consts::TIFR3] |= (1 << Consts::TIFR3_OCF3A);
-			printf("T3F @ %llu\n", mcu->cpu.totalCycls);
+			bool matchesA = false;
+			if(addAmt >= 0x10000) {
+				matchesA = true;
+			}else{
+				if(timer3 <= timer3Next) {
+					if(timer3 <= target && target <= timer3Next)
+						matchesA = true;
+				}else{
+					if(timer3 <= target || target <= timer3Next)
+						matchesA = true;
+				}
+			}
+
+			if(matchesA) {
+				data[Consts::TIFR3] |= (1 << Consts::TIFR3_OCF3A);
+				Timer3ATriggered = true;
+			} else{
+				Timer3ATriggered = false;
+			}
+			setWordRegRam_(Consts::TCNT3L, timer3Next);
+			markTimer3Update();
 		}
-		setWordRegRam_(Consts::TCNT3L, timer3Next);
-		markTimer3Update();
 	}
 	checkForIntr();
 }
@@ -218,19 +224,15 @@ uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
 		uint8_t timer0 = data[DataSpace::Consts::TCNT0];
 		uint64_t nextOverflow = lastSet.Timer0Update + (256-timer0)*getTimer0PrescDiv();
 		uint64_t interruptIn = nextOverflow - mcu->cpu.totalCycls;
-		if(interruptIn < amt)
-			amt = interruptIn;
+		amt = std::min(amt, interruptIn);
 	}
 
-	if(data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A)){ // timer3 A match
+	if(data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A) && !Timer3ATriggered){ // timer3 A match
 		uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
 		uint16_t target = getWordRegRam_(Consts::OCR3AL);
 		uint64_t nextMatch = lastSet.Timer3Update + (uint16_t)(target-timer3)*getTimer3PrescDiv();
 		uint64_t interruptIn = nextMatch - mcu->cpu.totalCycls;
-		if(interruptIn < amt) {
-			amt = interruptIn;
-			printf("T3 in %llu\n", interruptIn);
-		}
+		amt = std::min(amt, interruptIn);
 	}
 	return amt;
 }
@@ -492,6 +494,12 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 				}
 			}
 			break;
+
+		case Consts::PORTB: pinChange(ATmega32u4::PinChange_PORTB, oldVal, val); break;
+		case Consts::PORTC: pinChange(ATmega32u4::PinChange_PORTC, oldVal, val); break;
+		case Consts::PORTD: pinChange(ATmega32u4::PinChange_PORTD, oldVal, val); break;
+		case Consts::PORTE: pinChange(ATmega32u4::PinChange_PORTE, oldVal, val); break;
+		case Consts::PORTF: pinChange(ATmega32u4::PinChange_PORTF, oldVal, val); break;
 	}
 }
 
@@ -689,6 +697,12 @@ addrmcu_t A32u4::DataSpace::getSP() const {
 	return getWordRegRam(Consts::SPL);
 }
 
+void A32u4::DataSpace::pinChange(uint8_t num, reg_t oldVal, reg_t val) {
+	if(mcu->pinChangeCallB) {
+		mcu->pinChangeCallB(num, oldVal, val);
+	}
+}
+
 #define FAST_FLAGSET 1
 #if 1
 void A32u4::DataSpace::setFlags_NZ(uint8_t res) {
@@ -738,7 +752,7 @@ void A32u4::DataSpace::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
 
-	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+	sreg[DataSpace::Consts::SREG_S] = N != V;
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 
@@ -779,7 +793,7 @@ void A32u4::DataSpace::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
 
-	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+	sreg[DataSpace::Consts::SREG_S] = N != V;
 
 	if (!Incl_Z) {
 		sreg[DataSpace::Consts::SREG_Z] = res == 0;
@@ -825,7 +839,7 @@ void A32u4::DataSpace::setFlags_SVNZ(uint8_t res) {
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
 
-	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+	sreg[DataSpace::Consts::SREG_S] = N != V;
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 #else
@@ -860,7 +874,7 @@ void A32u4::DataSpace::setFlags_SVNZC(uint8_t res) {
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
 
-	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+	sreg[DataSpace::Consts::SREG_S] = N != V;
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 
@@ -905,7 +919,7 @@ void A32u4::DataSpace::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t re
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = R15;
 
-	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+	sreg[DataSpace::Consts::SREG_S] = N != V;
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 
@@ -957,7 +971,7 @@ void A32u4::DataSpace::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t re
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = R15;
 
-	sreg[DataSpace::Consts::SREG_S] = N ^ V;
+	sreg[DataSpace::Consts::SREG_S] = N != V;
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 

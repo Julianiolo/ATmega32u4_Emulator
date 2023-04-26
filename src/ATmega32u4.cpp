@@ -151,6 +151,11 @@ bool A32u4::ATmega32u4::loadFile(const char* path) {
 	return true;
 }
 
+void A32u4::ATmega32u4::setPinChangeCallB(const std::function<void(uint8_t pinReg, reg_t oldVal, reg_t val)>& callB){
+	pinChangeCallB = callB;
+}
+
+
 void A32u4::ATmega32u4::getState(std::ostream& output){
 	StreamUtils::write(output, running);
 
