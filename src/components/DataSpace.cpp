@@ -37,7 +37,7 @@ size_t A32u4::DataSpace::LastSet::sizeBytes() const {
 	return sum;
 }
 uint32_t A32u4::DataSpace::LastSet::hash() const noexcept{
-	size_t h = 0;
+	uint32_t h = 0;
 	DU_HASHC(h,EECR_EEMPE);
 	DU_HASHC(h,PLLCSR_PLLE);
 	DU_HASHC(h,ADCSRA_ADSC);
