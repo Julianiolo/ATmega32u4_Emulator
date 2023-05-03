@@ -24,6 +24,8 @@ static constexpr uint8_t MCUSR_USBRF = 5, MCUSR_JTRF = 4, MCUSR_WDRF = 3, MCUSR_
 
 static constexpr addrmcu_t PORTB = 0x25, PORTC = 0x28, PORTD = 0x2B, PORTE = 0x2E, PORTF = 0x31;
 static constexpr addrmcu_t PINB = 0x23, PINC = 0x26, PIND = 0x29, PINE = 0x2C, PINF = 0x2F;
+static constexpr addrmcu_t DDRC = 0x27;
+static constexpr uint8_t DDRC_DDC7 = 7, DDRC_DDC6 = 6;
 
 static constexpr addrmcu_t EEARH = 0x42, EEARL = 0x41, EEDR = 0x40, EECR = 0x3F;
 static constexpr uint8_t EECR_EEPM1 = 5, EECR_EEPM0 = 4, EECR_EERIE = 3, EECR_EEMPE = 2, EECR_EEPE = 1, EECR_EERE = 0;
@@ -37,7 +39,7 @@ static constexpr uint8_t SPSR_SPIF = 7;
 static constexpr addrmcu_t PRR0 = 0x64; //Power Reduction Register
 static constexpr uint8_t PRR0_PRTIM0 = 5;
 static constexpr addrmcu_t PRR1 = 0x65;
-static constexpr uint8_t PRR1_PRTIM3 = 3;
+static constexpr uint8_t PRR1_PRTIM3 = 3, PRR1_PRTIM4 = 4;
 static constexpr addrmcu_t TCCR0A = 0x44, TCCR0B = 0x45, TCNT0 = 0x46, TIFR0 = 0x35, TIMSK0 = 0x6E;
 static constexpr uint8_t TIFR0_TOV0 = 0;
 static constexpr uint8_t TIMSK0_TOIE0 = 0;
@@ -46,6 +48,10 @@ static constexpr addrmcu_t TCCR3B = 0x91, TCNT3L = 0x94, TCNT3H = 0x95, TIFR3 = 
 static constexpr uint8_t TIFR3_OCF3A = 1, TIFR3_TOV3 = 0;
 static constexpr uint8_t TIMSK3_OCIE3A = 1, TIMSK3_TOIE3 = 0;
 static constexpr addrmcu_t OCR3AL = 0x98, OCR3AH = 0x99;
+
+static constexpr addrmcu_t TCNT4 = 0xBE, TC4H = 0xBF, TCCR4A = 0xC0, TCCR4B = 0xC1, TCCR4C = 0xC2, TIFR4 = 0x39, TIMSK4 = 0x72;
+static constexpr uint8_t TIMSK4_OCIE4A = 6, TIMSK4_TOIE4 = 2, TIFR4_TOV4 = 2;
+static constexpr addrmcu_t OCR4A = 0xCF;
 
 static constexpr addrmcu_t SMCR = 0x53;
 

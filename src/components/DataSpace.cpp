@@ -18,12 +18,13 @@ void A32u4::DataSpace::LastSet::resetAll() {
 	ADCSRA_ADSC = 0;
 	Timer0Update = 0;
 	Timer3Update = 0;
+	Timer4Update = 0;
 }
 
 bool A32u4::DataSpace::LastSet::operator==(const LastSet& other) const{
 #define _CMP_(x) (x==other.x)
 	return _CMP_(EECR_EEMPE) && _CMP_(PLLCSR_PLLE) && _CMP_(ADCSRA_ADSC) && 
-	_CMP_(Timer0Update) && _CMP_(Timer3Update);
+	_CMP_(Timer0Update) && _CMP_(Timer3Update) && _CMP_(Timer4Update);
 #undef _CMP_
 }
 
@@ -34,6 +35,7 @@ size_t A32u4::DataSpace::LastSet::sizeBytes() const {
 	sum += sizeof(ADCSRA_ADSC);
 	sum += sizeof(Timer0Update);
 	sum += sizeof(Timer3Update);
+	sum += sizeof(Timer4Update);
 	return sum;
 }
 uint32_t A32u4::DataSpace::LastSet::hash() const noexcept{
@@ -43,6 +45,7 @@ uint32_t A32u4::DataSpace::LastSet::hash() const noexcept{
 	DU_HASHC(h,ADCSRA_ADSC);
 	DU_HASHC(h,Timer0Update);
 	DU_HASHC(h,Timer3Update);
+	DU_HASHC(h,Timer4Update);
 	return h;
 }
 
@@ -164,6 +167,50 @@ void A32u4::DataSpace::updateTimers(){
 			markTimer3Update();
 		}
 	}
+	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM4) && getTimer4Presc()) {
+		const uint32_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer4Update) / getTimer4PrescDiv();
+		if(addAmt > 0) {
+			const uint16_t timer4 = getWordRegRam_(Consts::TCNT4) & 0b1111111111;
+			const uint16_t timer4Next = (timer4 + addAmt) & 0b1111111111;
+			if(data[Consts::TIMSK4] & (1<<Consts::TIMSK4_TOIE4)) {
+				if(timer4Next < timer4 || addAmt >= (1<<10)) { // overflow
+					data[Consts::TIFR4] |= (1 << Consts::TIFR4_TOV4); // set TOV0 in TIFR0
+				}
+			}
+			if(data[Consts::DDRC]) {
+				const uint16_t target = data[Consts::OCR4A];
+				bool matchesA = false;
+				if(addAmt >= 0x10000) {
+					matchesA = true;
+				}else{
+					if(timer4 <= timer4Next) {
+						if(timer4 <= target && target <= timer4Next)
+							matchesA = true;
+					}else{
+						if(timer4 <= target || target <= timer4Next)
+							matchesA = true;
+					}
+				}
+
+				uint8_t portc = data[Consts::PORTC];
+				if(matchesA) {
+					if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC7))
+						portc |= (1<<7);
+					if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC6))
+						portc &= ~(1<<6);
+				}else{
+					if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC7))
+						portc &= ~(1<<7);
+					if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC6))
+						portc |= (1<<6);
+				}
+				setByteAt(Consts::PORTC, portc);
+				Timer4ATriggered = matchesA;
+			}
+			setWordRegRam_(Consts::TCNT4, timer4Next);
+			markTimer4Update();
+		}
+	}
 	checkForIntr();
 }
 
@@ -193,6 +240,13 @@ void A32u4::DataSpace::checkForIntr() {
 			mcu->cpu.directExecuteInterrupt(32);
 		}
 	}
+
+	if (data[Consts::TIFR4] & (1 << Consts::TIFR4_TOV4)) {
+		if (data[Consts::TIMSK4] & (1 << Consts::TIMSK4_TOIE4)) {
+			data[Consts::TIFR4] &= ~(1 << Consts::TIFR4_TOV4);
+			mcu->cpu.directExecuteInterrupt(41);
+		}
+	}
 }
 uint8_t A32u4::DataSpace::getTimer0Presc() const {
 	return mcu->dataspace.data[DataSpace::Consts::TCCR0B] & 0b111;
@@ -200,11 +254,17 @@ uint8_t A32u4::DataSpace::getTimer0Presc() const {
 uint8_t A32u4::DataSpace::getTimer3Presc() const {
 	return mcu->dataspace.data[DataSpace::Consts::TCCR3B] & 0b111;
 }
+uint8_t A32u4::DataSpace::getTimer4Presc() const {
+	return mcu->dataspace.data[DataSpace::Consts::TCCR4B] & 0b1111;
+}
 uint16_t A32u4::DataSpace::getTimer0PrescDiv() const {
 	return DataSpace::timerPresc[getTimer0Presc()];
 }
 uint16_t A32u4::DataSpace::getTimer3PrescDiv() const {
 	return DataSpace::timerPresc[getTimer3Presc()];
+}
+uint16_t A32u4::DataSpace::getTimer4PrescDiv() const {
+	return 1 << (getTimer4Presc()-1);
 }
 void A32u4::DataSpace::markTimer0Update() { 
 	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
@@ -213,10 +273,16 @@ void A32u4::DataSpace::markTimer0Update() {
 	lastSet.Timer0Update += diff;
 }
 void A32u4::DataSpace::markTimer3Update() { 
-	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
+	// functions is supposed to set lastTimer3Update to the exact technically correct value, even if we are already past that
 	uint64_t diff = mcu->cpu.totalCycls - lastSet.Timer3Update;
 	diff = (diff / getTimer3PrescDiv()) * getTimer3PrescDiv();
 	lastSet.Timer3Update += diff;
+}
+void A32u4::DataSpace::markTimer4Update() { 
+	// functions is supposed to set lastTimer4Update to the exact technically correct value, even if we are already past that
+	uint64_t diff = mcu->cpu.totalCycls - lastSet.Timer4Update;
+	diff = (diff / getTimer4PrescDiv()) * getTimer4PrescDiv();
+	lastSet.Timer4Update += diff;
 }
 uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
 	uint64_t amt = -1;
@@ -233,6 +299,24 @@ uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
 		uint64_t nextMatch = lastSet.Timer3Update + (uint16_t)(target-timer3)*getTimer3PrescDiv();
 		uint64_t interruptIn = nextMatch - mcu->cpu.totalCycls;
 		amt = std::min(amt, interruptIn);
+	}
+
+	if(data[Consts::TIMSK4] & (1 << Consts::TIMSK4_TOIE4)){ // timer4 Overflow
+		if(getTimer4Presc() > 0) {
+			uint16_t timer4 = getWordRegRam_(Consts::TCNT4) & 0b1111111111;
+			if(data[Consts::TIMSK4] & (1<<Consts::TIMSK4_OCIE4A)){
+				uint64_t nextMatch = lastSet.Timer4Update + (uint16_t)((1<<10)-timer4)*getTimer4PrescDiv();
+				uint64_t interruptIn = nextMatch - mcu->cpu.totalCycls;
+				amt = std::min(amt, interruptIn);
+			}
+
+			if(data[Consts::DDRC] && !Timer4ATriggered) {
+				const uint16_t target = data[Consts::OCR4A];
+				uint64_t nextMatch = lastSet.Timer4Update + (uint16_t)(target-timer4)*getTimer4PrescDiv();
+				uint64_t interruptIn = nextMatch - mcu->cpu.totalCycls;
+				amt = std::min(amt, interruptIn);
+			}
+		}
 	}
 	return amt;
 }

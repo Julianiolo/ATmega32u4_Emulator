@@ -48,6 +48,7 @@ namespace A32u4 {
 			uint64_t ADCSRA_ADSC = 0;
 			uint64_t Timer0Update = 0;
 			uint64_t Timer3Update = 0;
+			uint64_t Timer4Update = 0;
 
 			void resetAll();
 			bool operator==(const LastSet& other) const;
@@ -59,6 +60,7 @@ namespace A32u4 {
 		static constexpr uint64_t ADC_wait = 0;
 
 		bool Timer3ATriggered = false;
+		bool Timer4ATriggered = false;
 
 		DataSpace(ATmega32u4* mcu);
 		~DataSpace();
@@ -123,10 +125,13 @@ namespace A32u4 {
 		void checkForIntr();
 		uint8_t getTimer0Presc() const;
 		uint8_t getTimer3Presc() const;
+		uint8_t getTimer4Presc() const;
 		uint16_t getTimer0PrescDiv() const;
 		uint16_t getTimer3PrescDiv() const;
+		uint16_t getTimer4PrescDiv() const;
 		void markTimer0Update();
 		void markTimer3Update();
+		void markTimer4Update();
 		uint64_t cycsToNextTimerInt();
 
 
