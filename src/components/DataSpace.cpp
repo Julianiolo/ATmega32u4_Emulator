@@ -11,6 +11,22 @@
 
 #define LU_MODULE "DataSpace"
 
+void A32u4::DataSpace::LastSet::getState(std::ostream& output){
+	StreamUtils::write(output, EECR_EEMPE);
+	StreamUtils::write(output, PLLCSR_PLLE);
+	StreamUtils::write(output, ADCSRA_ADSC);
+	StreamUtils::write(output, Timer0Update);
+	StreamUtils::write(output, Timer3Update);
+	StreamUtils::write(output, Timer4Update);
+}
+void A32u4::DataSpace::LastSet::setState(std::istream& input){
+	StreamUtils::read(input, &EECR_EEMPE);
+	StreamUtils::read(input, &PLLCSR_PLLE);
+	StreamUtils::read(input, &ADCSRA_ADSC);
+	StreamUtils::read(input, &Timer0Update);
+	StreamUtils::read(input, &Timer3Update);
+	StreamUtils::read(input, &Timer4Update);
+}
 
 void A32u4::DataSpace::LastSet::resetAll() {
 	EECR_EEMPE = 0;
@@ -809,7 +825,7 @@ void A32u4::DataSpace::setFlags_NZ(uint8_t res) {
 }
 void A32u4::DataSpace::setFlags_NZ(uint16_t res) {
 #if FAST_FLAGSET
-	sreg[DataSpace::Consts::SREG_N] = res & 0b1000000000000000;
+	sreg[DataSpace::Consts::SREG_N] = (res & 0b1000000000000000) != 0;
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 #else
 	bool N = (res & 0b1000000000000000) != 0;
@@ -1098,10 +1114,7 @@ void A32u4::DataSpace::getState(std::ostream& output){
 	getRamState(output);
 	getEepromState(output);
 
-	StreamUtils::write(output, lastSet.EECR_EEMPE);
-	StreamUtils::write(output, lastSet.PLLCSR_PLLE);
-	StreamUtils::write(output, lastSet.ADCSRA_ADSC);
-	StreamUtils::write(output, lastSet.Timer0Update);
+	lastSet.getState(output);
 #if MCU_WRITE_HASH
 	StreamUtils::write(output, hash());
 #endif
@@ -1110,10 +1123,7 @@ void A32u4::DataSpace::setState(std::istream& input){
 	setRamState(input);
 	setEepromState(input);
 
-	StreamUtils::read(input, &lastSet.EECR_EEMPE);
-	StreamUtils::read(input, &lastSet.PLLCSR_PLLE);
-	StreamUtils::read(input, &lastSet.ADCSRA_ADSC);
-	StreamUtils::read(input, &lastSet.Timer0Update);
+	lastSet.setState(input);
 	A32U4_CHECK_HASH("DataSpace");
 }
 

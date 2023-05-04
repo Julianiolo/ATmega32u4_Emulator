@@ -50,6 +50,9 @@ namespace A32u4 {
 			uint64_t Timer3Update = 0;
 			uint64_t Timer4Update = 0;
 
+			void getState(std::ostream& output);
+			void setState(std::istream& input);
+
 			void resetAll();
 			bool operator==(const LastSet& other) const;
 			size_t sizeBytes() const;
