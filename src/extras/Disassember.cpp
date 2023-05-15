@@ -86,7 +86,7 @@ std::string A32u4::Disassembler::disassembleBinFile(const Flash& data, const Add
 
 			// draw data blocks
 			if (info.dataSymbs) {
-				while(dataSymbInd < info.dataSymbs->size() && line.addr * 2 > std::get<1>((*info.dataSymbs)[dataSymbInd])) {
+				while(dataSymbInd < info.dataSymbs->size() && (uint32_t)(line.addr*2) > std::get<1>((*info.dataSymbs)[dataSymbInd])) {
 					const std::string& dataSymbName = std::get<0>((*info.dataSymbs)[dataSymbInd]);
 					uint32_t dataSymbValue = std::get<1>((*info.dataSymbs)[dataSymbInd]);
 					uint32_t dataSymbSize = std::get<2>((*info.dataSymbs)[dataSymbInd]);
@@ -128,7 +128,7 @@ std::string A32u4::Disassembler::disassembleBinFile(const Flash& data, const Add
 				content += "\n     ...\n\n";
 
 			if (info.funcSymbs) {
-				while (funcSymbInd < info.funcSymbs->size() && (*info.funcSymbs)[funcSymbInd].first < line.addr * 2) {
+				while (funcSymbInd < info.funcSymbs->size() && (*info.funcSymbs)[funcSymbInd].first < (size_t)(line.addr*2)) {
 					funcSymbInd++;
 				}
 
@@ -144,7 +144,7 @@ std::string A32u4::Disassembler::disassembleBinFile(const Flash& data, const Add
 		skip:
 
 			if (info.srcLines) {
-				while (currSrcLinesInd < info.srcLines->size() && info.srcLines->at(currSrcLinesInd).first < line.addr*2) {
+				while ((currSrcLinesInd < info.srcLines->size()) && (info.srcLines->at(currSrcLinesInd).first < (size_t)(line.addr*2))) {
 					currSrcLinesInd++;
 				}
 

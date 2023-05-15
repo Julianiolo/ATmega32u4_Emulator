@@ -142,10 +142,10 @@ void A32u4::DataSpace::doTicks(uint8_t num) {
 }
 void A32u4::DataSpace::updateTimers(){
 	if (!isBitSetNB(data[Consts::PRR0], Consts::PRR0_PRTIM0)) {
-		const uint32_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer0Update) / getTimer0PrescDiv();
+		const uint64_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer0Update) / getTimer0PrescDiv();
 		if(addAmt > 0) {
 			const uint8_t timer0 = data[Consts::TCNT0];
-			const uint8_t timer0Next = timer0 + addAmt;
+			const uint8_t timer0Next = timer0 + (uint8_t)addAmt;
 			if(timer0Next < timer0 || addAmt >= 256) { // overflow
 				data[Consts::TIFR0] |= (1 << Consts::TIFR0_TOV0); // set TOV0 in TIFR0
 			}
@@ -154,10 +154,10 @@ void A32u4::DataSpace::updateTimers(){
 		}
 	}
 	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM3) && (data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A))) {
-		const uint32_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer3Update) / getTimer3PrescDiv();
+		const uint64_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer3Update) / getTimer3PrescDiv();
 		if(addAmt > 0) {
 			const uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
-			const uint16_t timer3Next = timer3 + addAmt;
+			const uint16_t timer3Next = timer3 + (uint16_t)addAmt;
 			const uint16_t target = getWordRegRam_(Consts::OCR3AL);
 
 			bool matchesA = false;
@@ -184,10 +184,10 @@ void A32u4::DataSpace::updateTimers(){
 		}
 	}
 	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM4) && getTimer4Presc()) {
-		const uint32_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer4Update) / getTimer4PrescDiv();
+		const uint64_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer4Update) / getTimer4PrescDiv();
 		if(addAmt > 0) {
 			const uint16_t timer4 = getWordRegRam_(Consts::TCNT4) & 0b1111111111;
-			const uint16_t timer4Next = (timer4 + addAmt) & 0b1111111111;
+			const uint16_t timer4Next = (timer4 + (uint16_t)addAmt) & 0b1111111111;
 			if(data[Consts::TIMSK4] & (1<<Consts::TIMSK4_TOIE4)) {
 				if(timer4Next < timer4 || addAmt >= (1<<10)) { // overflow
 					data[Consts::TIFR4] |= (1 << Consts::TIFR4_TOV4); // set TOV0 in TIFR0
@@ -807,7 +807,7 @@ void A32u4::DataSpace::pinChange(uint8_t num, reg_t oldVal, reg_t val) {
 #if 1
 void A32u4::DataSpace::setFlags_NZ(uint8_t res) {
 #if FAST_FLAGSET
-	sreg[DataSpace::Consts::SREG_N] = res & 0b10000000;
+	sreg[DataSpace::Consts::SREG_N] = res >= 0b10000000;//res & 0b10000000;
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 #else
 	bool N = (res & 0b10000000) != 0;
@@ -825,7 +825,7 @@ void A32u4::DataSpace::setFlags_NZ(uint8_t res) {
 }
 void A32u4::DataSpace::setFlags_NZ(uint16_t res) {
 #if FAST_FLAGSET
-	sreg[DataSpace::Consts::SREG_N] = (res & 0b1000000000000000) != 0;
+	sreg[DataSpace::Consts::SREG_N] = res >= 0b1000000000000000;//(res & 0b1000000000000000) != 0;
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 #else
 	bool N = (res & 0b1000000000000000) != 0;
@@ -850,14 +850,14 @@ void A32u4::DataSpace::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint
 	sreg[DataSpace::Consts::SREG_V] = V = sum8 != sum16;
 
 	bool N;
-	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+	sreg[DataSpace::Consts::SREG_N] = N = res >= 0b10000000;
 
 	sreg[DataSpace::Consts::SREG_S] = N != V;
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 
 	uint16_t usum16 = a + b + c;
-	sreg[DataSpace::Consts::SREG_C] = isBitSet(usum16, 8);
+	sreg[DataSpace::Consts::SREG_C] = usum16 > 0xFF;//isBitSet(usum16, 8);
 
 	uint8_t usum4 = (a & 0b1111) + (b & 0b1111) + c;
 	sreg[DataSpace::Consts::SREG_H] = isBitSetNB(usum4, 4);
@@ -891,15 +891,11 @@ void A32u4::DataSpace::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint
 	sreg[DataSpace::Consts::SREG_V] = V = (int8_t)res != res16;
 
 	bool N;
-	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+	sreg[DataSpace::Consts::SREG_N] = N = res >= 0b10000000;
 
 	sreg[DataSpace::Consts::SREG_S] = N != V;
 
-	if (!Incl_Z) {
-		sreg[DataSpace::Consts::SREG_Z] = res == 0;
-	} else {
-		sreg[DataSpace::Consts::SREG_Z] = (res == 0) && sreg[DataSpace::Consts::SREG_Z];
-	}
+	sreg[DataSpace::Consts::SREG_Z] = (res == 0) && (!Incl_Z || sreg[DataSpace::Consts::SREG_Z]);
 
 	sreg[DataSpace::Consts::SREG_C] = a < (uint16_t)b + c;
 	sreg[DataSpace::Consts::SREG_H] = (b & 0b1111) + c > (a & 0b1111);
@@ -937,9 +933,9 @@ void A32u4::DataSpace::setFlags_SVNZ(uint8_t res) {
 	sreg[DataSpace::Consts::SREG_V] = V = 0;
 
 	bool N;
-	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+	sreg[DataSpace::Consts::SREG_N] = N = res >= 0b10000000;
 
-	sreg[DataSpace::Consts::SREG_S] = N != V;
+	sreg[DataSpace::Consts::SREG_S] = N;//N != V;
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 #else
@@ -972,9 +968,9 @@ void A32u4::DataSpace::setFlags_SVNZC(uint8_t res) {
 	sreg[DataSpace::Consts::SREG_V] = V = 0;
 
 	bool N;
-	sreg[DataSpace::Consts::SREG_N] = N = (res & 0b10000000) != 0;
+	sreg[DataSpace::Consts::SREG_N] = N = res >= 0b10000000;
 
-	sreg[DataSpace::Consts::SREG_S] = N != V;
+	sreg[DataSpace::Consts::SREG_S] = N;//N != V;
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 
@@ -1010,12 +1006,11 @@ void A32u4::DataSpace::setFlags_SVNZC(uint8_t res) {
 
 void A32u4::DataSpace::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
 #if FAST_FLAGSET
-	uint16_t sum16 = a + b;
 	uint32_t sum32 = a + b;
 	bool V;
-	sreg[DataSpace::Consts::SREG_V] = V = sum16 != sum32;
+	sreg[DataSpace::Consts::SREG_V] = V = res != sum32;
 
-	bool R15 = isBitSet(res, 15);
+	bool R15 = res >= (1<<15);//isBitSet(res, 15);
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = R15;
 
@@ -1067,7 +1062,7 @@ void A32u4::DataSpace::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t re
 	bool V;
 	sreg[DataSpace::Consts::SREG_V] = V = sub16 != sub32;
 
-	bool R15 = isBitSet(res, 15);
+	bool R15 = res >= (1<<15);//isBitSet(res, 15);
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = R15;
 

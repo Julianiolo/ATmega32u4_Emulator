@@ -137,6 +137,12 @@ bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
 	if(res.size() > 0)
 		std::memcpy(data, &res[0], res.size());
 
+	hasProgram = true;
+
+#if FLASH_USE_INSTIND_CACHE
+	populateInstIndCache();
+#endif
+
 	return true;
 }
 bool A32u4::Flash::loadFromHexFile(const char* path) {

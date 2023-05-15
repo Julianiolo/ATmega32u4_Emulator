@@ -237,6 +237,11 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::callInstSwitch(uint8_t ind
 		case 110:
 			return INST_ORI(mcu, word);
 	}
+#if MCU_INCLUDE_EXTRAS
+	mcu->debugger.halt();
+#else
+	abort();
+#endif
 
 	return inst_effect_t(0,0);
 }
