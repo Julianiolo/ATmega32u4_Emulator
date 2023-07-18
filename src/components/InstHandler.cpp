@@ -549,7 +549,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_EOR(ATmega32u4* mcu, 
 
 	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
 
-	FLAG_MODULE.setFlags_SVNZ(Rd);
+	FLAG_MODULE.setFlags_SVNZ(Rd_res);
 	return inst_effect_t(1,1);
 }
 
