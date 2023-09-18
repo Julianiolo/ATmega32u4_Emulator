@@ -24,8 +24,8 @@
 
 #if MCU_RANGE_CHECK
 #if MCU_RANGE_CHECK_ERROR
-#define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { LU_LOGF_(LogUtils::LogLevel_Error, msg, __VA_ARGS__); action;}
-#define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { LU_LOGF_(LogUtils::LogLevel_Error, msg, val, val); action;}
+#define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { LU_LOGF_(LogUtils::LogLevel_Error, msg, __VA_ARGS__); mcu->cpu.executeError(); action;}
+#define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { LU_LOGF_(LogUtils::LogLevel_Error, msg, val, val); mcu->cpu.executeError(); action;}
 #else
 #define A32U4_ASSERT_INRANGE(val,from,to,action,msg,...) if((val) < (from) || (val) >= (to)) { action;}
 #define A32U4_ASSERT_INRANGE2(val,from,to,action,msg) if((val) < (from) || (val) >= (to)) { action;}

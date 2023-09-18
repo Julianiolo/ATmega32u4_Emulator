@@ -7,10 +7,9 @@
 #include "../config.h"
 #include "../A32u4Types.h"
 
-
-#define FLASH_USE_INSTIND_CACHE 1
-
 namespace A32u4 {
+	class ATmega32u4;
+
 	class Flash {
 	public:
 		static constexpr sizemcu_t sizeMax = 32768;
@@ -20,14 +19,16 @@ namespace A32u4 {
 		friend class ATmega32u4;
 		friend class CPU;
 
+		ATmega32u4* mcu;
+
 #if !MCU_USE_HEAP
 		uint8_t data[sizeMax];
-#if FLASH_USE_INSTIND_CACHE
+#if MCU_USE_INSTCACHE
 		uint8_t instCache[sizeMax/2];
 #endif
 #else
 		uint8_t* data;
-#if FLASH_USE_INSTIND_CACHE
+#if MCU_USE_INSTCACHE
 		uint8_t* instCache;
 #endif
 #endif
@@ -35,15 +36,17 @@ namespace A32u4 {
 		sizemcu_t size_ = sizeMax;
 		bool hasProgram = false;
 
-		Flash();
+		Flash(ATmega32u4* mcu);
 		~Flash();
 
 		Flash(const Flash& src);
 		Flash& operator=(const Flash& src);
 
+#if MCU_USE_INSTCACHE
 		uint8_t getInstIndCache(pc_t pc) const;
 		void populateInstIndCache();
 		void populateInstIndCacheEntry(pc_t pc);
+#endif
 	public:
 		uint8_t getByte(addrmcu_t addr) const;
 		uint16_t getWord(addrmcu_t addr) const;

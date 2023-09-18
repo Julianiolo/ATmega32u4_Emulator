@@ -29,10 +29,15 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mc
 	}
 #endif
 
+#if MCU_USE_INST_EXEC_ALG != 2
 	uint8_t ind = mcu->flash.getInstInd(mcu->cpu.PC);
+#endif
 
 #if MCU_INCLUDE_EXTRAS
 	if constexpr (debug) {
+#if MCU_USE_INST_EXEC_ALG == 2
+		uint8_t ind = mcu->flash.getInstInd(mcu->cpu.PC);
+#endif
 		mcu->analytics.addData(ind, mcu->cpu.PC);
 	}
 #endif
@@ -42,6 +47,8 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::handleInstT(ATmega32u4* mc
 	return instOnlyList[ind](mcu,word);
 #elif MCU_USE_INST_EXEC_ALG == 1
 	return callInstSwitch(ind, mcu, word);
+#elif MCU_USE_INST_EXEC_ALG == 2
+	return callInstSwitch2(mcu, word);
 #else
 	#error There is no INST_EXEC Algorithm selected
 #endif

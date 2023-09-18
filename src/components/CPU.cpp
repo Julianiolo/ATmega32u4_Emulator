@@ -36,6 +36,12 @@ void A32u4::CPU::reset() {
 	breakOutOfOptim = false;
 }
 
+void A32u4::CPU::executeError() {
+#if MCU_INCLUDE_EXTRAS
+	mcu->debugger.halt();
+#endif
+}
+
 void A32u4::CPU::queueInterrupt(uint16_t addr) {
 	interruptFlags |= ((uint64_t)1 << addr);
 }

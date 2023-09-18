@@ -95,6 +95,7 @@ void A32u4::Debugger::registerStackDec(addrmcu_t addr){
 }
 
 bool A32u4::Debugger::checkBreakpoints() {
+	A32U4_ASSERT_INRANGE2(mcu->cpu.PC, 0, breakpoints.size(), return true, "Debugger PC to Big: " MCU_ADDR_FORMAT);
 	if (breakpoints[mcu->cpu.PC] || halted) {
 		return doHaltActions();
 	}

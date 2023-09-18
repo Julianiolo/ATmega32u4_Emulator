@@ -670,18 +670,22 @@ void A32u4::DataSpace::setSPDR() {
 	if(SPI_Byte_Callback)
 		SPI_Byte_Callback(data[Consts::SPDR]);
 
-	for (uint8_t i = 0; i < 8; i++) {
-		//Set SCK High
-		//Set MOSI to REF_SPDR&0b1
-		data[Consts::SPDR] >>= 1;
-		if (SCK_Callback != NULL) {
+	if (SCK_Callback != NULL) {
+		for (uint8_t i = 0; i < 8; i++) {
+			//Set SCK High
+			//Set MOSI to REF_SPDR&0b1
+			data[Consts::SPDR] >>= 1;
 			SCK_Callback();
+			//Set SCK LOW
 		}
-		//Set SCK LOW
+	}
+	else {
+		data[Consts::SPDR] = 0;
 	}
 	data[Consts::SPSR] |= (1 << Consts::SPSR_SPIF);
 
 	//request Interrupt if SPIE set
+	// TODO?
 }
 void A32u4::DataSpace::setTCCR0B(uint8_t val) {
 	mcu->cpu.breakOutOfOptim = true;
@@ -844,10 +848,14 @@ void A32u4::DataSpace::setFlags_NZ(uint16_t res) {
 
 void A32u4::DataSpace::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint8_t res) {
 #if FAST_FLAGSET
+	bool V;
+#if 0
 	int8_t sum8 = (int8_t)a + (int8_t)b + c;
 	int16_t sum16 = (int8_t)a + (int8_t)b + c;
-	bool V;
 	sreg[DataSpace::Consts::SREG_V] = V = sum8 != sum16;
+#else
+	sreg[DataSpace::Consts::SREG_V] = V = ((a & b & ~res) | (~a & ~b & res)) >> 7;
+#endif
 
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = res >= 0b10000000;
@@ -886,8 +894,8 @@ void A32u4::DataSpace::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint
 }
 void A32u4::DataSpace::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t c, uint8_t res, bool Incl_Z) {
 #if FAST_FLAGSET
-	int16_t res16 = (int8_t)a - (int8_t)b - c;
 	bool V;
+	int16_t res16 = (int8_t)a - (int8_t)b - c;
 	sreg[DataSpace::Consts::SREG_V] = V = (int8_t)res != res16;
 
 	bool N;
@@ -1057,10 +1065,14 @@ void A32u4::DataSpace::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t re
 }
 void A32u4::DataSpace::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
 #if FAST_FLAGSET
+	bool V;
+#if 0
 	int16_t sub16 = (int16_t)a - (int16_t)b;
 	int32_t sub32 = (int16_t)a - (int16_t)b;
-	bool V;
 	sreg[DataSpace::Consts::SREG_V] = V = sub16 != sub32;
+#else
+	sreg[DataSpace::Consts::SREG_V] = V = (a & ~res) >> 15;
+#endif
 
 	bool R15 = res >= (1<<15);//isBitSet(res, 15);
 	bool N;

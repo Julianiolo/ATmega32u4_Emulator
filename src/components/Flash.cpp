@@ -13,9 +13,9 @@
 
 #define LU_MODULE "Flash"
 
-A32u4::Flash::Flash():
+A32u4::Flash::Flash(ATmega32u4* mcu): mcu(mcu)
 #if MCU_USE_HEAP
-	data(new uint8_t[sizeMax])
+	,data(new uint8_t[sizeMax])
 #if MCU_USE_INSTCACHE
 	, instCache(new uint8_t[sizeMax / 2])
 #endif
@@ -69,12 +69,14 @@ uint16_t A32u4::Flash::getInst(pc_t pc) const {
 	return getWord(pc * 2);
 }
 
+#if MCU_USE_INSTCACHE
 uint8_t A32u4::Flash::getInstIndCache(pc_t pc) const {
 	A32U4_ASSERT_INRANGE2(pc, 0, sizeMax, return 0xEE, "Flash getInstIndCache Address to Big: " MCU_ADDR_FORMAT);
 	return instCache[pc];
 }
+#endif
 uint8_t A32u4::Flash::getInstInd(pc_t pc) const{
-#if FLASH_USE_INSTIND_CACHE
+#if MCU_USE_INSTCACHE
 	return getInstIndCache(pc);
 #else
 	return InstHandler::getInstInd(getInst(pc));
@@ -88,13 +90,18 @@ const uint8_t* A32u4::Flash::getData() {
 void A32u4::Flash::setByte(addrmcu_t addr, uint8_t val){
 	A32U4_ASSERT_INRANGE2(addr, 0, sizeMax, return, "Flash setByte Address too Big: " MCU_ADDR_FORMAT);
 	data[addr] = val;
+#if MCU_USE_INSTCACHE
 	populateInstIndCacheEntry(addr/2);
+#endif
 }
 void A32u4::Flash::setInst(pc_t pc, uint16_t val){
 	A32U4_ASSERT_INRANGE2(pc, 0, sizeMax/2, return, "Flash setWord pc too Big: " MCU_ADDR_FORMAT);
 	data[pc*2] = val&0xFF;
 	data[pc*2+1] = (val>>8)&0xFF;
+
+#if MCU_USE_INSTCACHE
 	populateInstIndCacheEntry(pc);
+#endif
 }
 
 sizemcu_t A32u4::Flash::size() const {
@@ -159,6 +166,7 @@ bool A32u4::Flash::loadFromHexFile(const char* path) {
 
 	return true;
 }
+#if MCU_USE_INSTCACHE
 void A32u4::Flash::populateInstIndCache(){
 	for (uint16_t i = 0; i < sizeWords(); i++) {
 		populateInstIndCacheEntry(i);
@@ -168,6 +176,7 @@ void A32u4::Flash::populateInstIndCacheEntry(pc_t pc) {
 	uint16_t inst = getInst(pc);
 	instCache[pc] = InstHandler::getInstInd(inst);
 }
+#endif
 
 bool A32u4::Flash::isProgramLoaded() const {
 	return hasProgram;

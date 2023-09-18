@@ -246,6 +246,250 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::callInstSwitch(uint8_t ind
 	return inst_effect_t(0,0);
 }
 
+A32u4::InstHandler::inst_effect_t A32u4::InstHandler::callInstSwitch2(ATmega32u4* mcu, uint16_t word) {
+	switch (word & 0xf000) {
+		case 0b0000 << 12:
+			switch (word & 0b0000110000000000) {
+				case 0b00 << 10: // xxxx 00xx xxxx xxxx
+					switch (word & 0b0000001100000000) {
+						case 0b00 << 8:
+							return INST_NOP(mcu, word);
+						case 0b01 << 8:
+							return INST_MOVW(mcu, word);
+						case 0b10 << 8:
+							return INST_MULS(mcu, word);
+						case 0b11 << 8:
+							switch (word & 0b10001000) {
+								case 0b00000000:
+									return INST_MULSU(mcu, word);
+								case 0b00001000:
+									return INST_FMUL(mcu, word);
+								case 0b10000000:
+									return INST_FMULS(mcu, word);
+								case 0b10001000:
+									return INST_FMULSU(mcu, word);
+							}
+					}
+
+				case 0b01 << 10: // xxxx 01xx xxxx xxxx
+					return INST_CPC(mcu, word);
+				case 0b10 << 10:
+					return INST_SBC(mcu, word);
+				case 0b11 << 10:
+					return INST_ADD(mcu, word);
+			}
+		case 0b0001 << 12:
+			switch (word & 0b0000110000000000) {
+				case 0b00 << 10:
+					return INST_CPSE(mcu, word);
+				case 0b01 << 10:
+					return INST_CP(mcu, word);
+				case 0b10 << 10:
+					return INST_SUB(mcu, word);
+				case 0b11 << 10:
+					return INST_ADC(mcu, word);
+			}
+		case 0b0010 << 12:
+			switch (word & 0b0000110000000000) {
+				case 0b00 << 10:
+					return INST_AND(mcu, word);
+				case 0b01 << 10:
+					return INST_EOR(mcu, word);
+				case 0b10 << 10:
+					return INST_OR(mcu, word);
+				case 0b11 << 10:
+					return INST_MOV(mcu, word);
+			}
+		case 0b0011 << 12:
+			return INST_CPI(mcu, word);
+		case 0b0100 << 12:
+			return INST_SBCI(mcu, word);
+		case 0b0101 << 12:
+			return INST_SUBI(mcu, word);
+		case 0b0110 << 12:
+			return INST_ORI(mcu, word);
+		case 0b0111 << 12:
+			return INST_ANDI(mcu, word);
+		case 0b1000 << 12:
+		case 0b1010 << 12:  // bc there is 1 bit of parameter q included
+			switch (word & 0b0000001000000000) {
+				case 0b0 << 9:
+					return INST_LDD_anyYZ(mcu, word);
+				case 0b1 << 9:
+					return INST_STD_anyYZ(mcu, word);
+			}
+		case 0b1001 << 12:
+			switch (word & 0x0f00) {
+				case 0b0000 << 8:
+				case 0b0001 << 8:
+					switch (word & 0x000f) {
+						case 0b0000:
+							return INST_LDS(mcu, word);
+						case 0b0001:
+							return INST_LD_ZpostInc(mcu, word);
+						case 0b0010:
+							return INST_LD_ZpreDec(mcu, word);
+						case 0b1001:
+							return INST_LD_YpostInc(mcu, word);
+						case 0b1010:
+							return INST_LD_YpreDec(mcu, word);
+						case 0b1100:
+							return INST_LD_X(mcu, word);
+						case 0b1101:
+							return INST_LD_XpostInc(mcu, word);
+						case 0b1110:
+							return INST_LD_XpreDec(mcu, word);
+						case 0b0100:
+							return INST_LPM_d(mcu, word);
+						case 0b0101:
+							return INST_LPM_dpostInc(mcu, word);
+						case 0b0110:
+							return INST_ELPM_d(mcu, word);
+						case 0b0111:
+							return INST_ELPM_dpostInc(mcu, word);
+						case 0b1111:
+							return INST_POP(mcu, word);
+					}
+				case 0b0010 << 8:
+				case 0b0011 << 8:
+					switch (word & 0x000f) {
+						case 0b0000:
+							return INST_STS(mcu, word);
+						case 0b0001:
+							return INST_ST_ZpostInc(mcu, word);
+						case 0b0010:
+							return INST_ST_ZpreDec(mcu, word);
+						case 0b1001:
+							return INST_ST_YpostInc(mcu, word);
+						case 0b1010:
+							return INST_ST_YpreDec(mcu, word);
+						case 0b1100:
+							return INST_ST_X(mcu, word);
+						case 0b1101:
+							return INST_ST_XpostInc(mcu, word);
+						case 0b1110:
+							return INST_ST_XpreDec(mcu, word);
+						case 0b1111:
+							return INST_PUSH(mcu, word);
+					}
+				case 0b0100 << 8:
+				case 0b0101 << 8:
+					switch (word & 0x000f) {
+						case 0b0000:
+							return INST_COM(mcu, word);
+						case 0b0001:
+							return INST_NEG(mcu, word);
+						case 0b0010:
+							return INST_SWAP(mcu, word);
+						case 0b0011:
+							return INST_INC(mcu, word);
+						case 0b0101:
+							return INST_ASR(mcu, word);
+						case 0b0110:
+							return INST_LSR(mcu, word);
+						case 0b0111:
+							return INST_ROR(mcu, word);
+						case 0b1000:
+							switch (word & 0b0000000100000000) {
+								case 0b0 << 8:
+									switch (word & 0b0000000010000000) {
+										case 0b0 << 7:
+											return INST_BSET(mcu, word);
+										case 0b1 << 7:
+											return INST_BCLR(mcu, word);
+									}
+								case 0b1 << 8:
+									switch (word & 0x00f0) {
+										case 0b0000 << 4:
+											return INST_RET(mcu, word);
+										case 0b0001 << 4:
+											return INST_RETI(mcu, word);
+										case 0b1000 << 4:
+											return INST_SLEEP(mcu, word);
+										case 0b1001 << 4:
+											return INST_BREAK(mcu, word);
+										case 0b1010 << 4:
+											return INST_WDR(mcu, word);
+										case 0b1100 << 4:
+											return INST_LPM_0(mcu, word);
+										case 0b1101 << 4:
+											return INST_ELPM_0(mcu, word);
+										case 0b1110 << 4:
+											return INST_SPM(mcu, word);
+										default:
+											abort();
+									}
+							}
+						case 0b1001:
+							switch (word & 0b0000000100010000) {
+								case 0b00000 << 4:
+									return INST_IJMP(mcu, word);
+								case 0b00001 << 4:
+									return INST_EIJMP(mcu, word);
+								case 0b10000 << 4:
+									return INST_ICALL(mcu, word);
+								case 0b10001 << 4:
+									return INST_EICALL(mcu, word);
+							}
+						case 0b1010:
+							return INST_DEC(mcu, word);
+						case 0b1100:
+						case 0b1101: // 1 bit of k parameter
+							return INST_JMP(mcu, word);
+						case 0b1110:
+						case 0b1111: // 1 bit of k parameter
+							return INST_CALL(mcu, word);
+
+					}
+				case 0b0110 << 8:
+					return INST_ADIW(mcu, word);
+				case 0b0111 << 8:
+					return INST_SBIW(mcu, word);
+				case 0b1000 << 8:
+					return INST_CBI(mcu, word);
+				case 0b1001 << 8:
+					return INST_SBIC(mcu, word);
+				case 0b1010 << 8:
+					return INST_SBI(mcu, word);
+				case 0b1011 << 8:
+					return INST_SBIS(mcu, word);
+				default:  // case 0b11xx << 8
+					return INST_MUL(mcu, word);
+			}
+		case 0b1011 << 12:
+			switch (word & 0b0000100000000000) {
+				case 0b0 << 11:
+					return INST_IN(mcu, word);
+				case 0b1 << 11:
+					return INST_OUT(mcu, word);
+			}
+		case 0b1100 << 12:
+			return INST_RJMP(mcu, word);
+		case 0b1101 << 12:
+			return INST_RCALL(mcu, word);
+		case 0b1110 << 12:
+			return INST_LDI(mcu, word);
+		case 0b1111 << 12:
+			switch (word & 0b0000111000000000) {
+				case 0b000 << 9:
+				case 0b001 << 9:
+					return INST_BRBS(mcu, word);
+				case 0b010 << 9:
+				case 0b011 << 9:
+					return INST_BRBC(mcu, word);
+				case 0b100 << 9:
+					return INST_BLD(mcu, word);
+				case 0b101 << 9:
+					return INST_BST(mcu, word);
+				case 0b110 << 9:
+					return INST_SBRC(mcu, word);
+				case 0b111 << 9:
+					return INST_SBRS(mcu, word);
+				default: abort();
+			}
+		default: abort();
+	}
+}
 
 uint8_t A32u4::InstHandler::getInstInd(uint16_t word) noexcept {
 	return getInstInd3(word);
@@ -265,13 +509,16 @@ uint8_t A32u4::InstHandler::getInstInd3(uint16_t word) noexcept {
 	return 0xff;
 }
 
-int16_t convTo16BitInt(uint16_t word, uint8_t bitLen) noexcept { // convert a signed int of arbitrary bitLength to a int16_t
+// I had it be faster when not a template??
+template<uint8_t bitLen>
+int16_t convTo16BitInt(uint16_t word) noexcept { // convert a signed int of arbitrary bitLength to a int16_t
 	return isBitSet(word, bitLen - 1) ? (((int16_t)-1 ^ ((1 << bitLen) - 1)) | word) : word;
 }
+
 //Parameters
 uint8_t A32u4::InstHandler::getRd2_c_arr(uint16_t word) noexcept {//Rd 2Bit continous use as arr index
-	constexpr uint8_t arr[] = { 24,26,28,30 };
-	return arr[((word & 0x0030) >> 4)];
+	// 24, 26, 28, 30
+	return 24 + ((word & 0x0030) >> 4)*2;
 }
 uint8_t A32u4::InstHandler::getRd3_c_a16(uint16_t word) noexcept {//Rd 3Bit continous add 16
 	return ((word & 0x0070) >> 4) + 16;
@@ -310,10 +557,10 @@ uint8_t A32u4::InstHandler::getK8_d44(uint16_t word) noexcept {//K val 8Bit dist
 	return ((word & 0x0F00) >> 4) | (word & 0x000F);
 }
 uint8_t A32u4::InstHandler::getk7_c_sin(uint16_t word) noexcept {//k val 12Bit continuous signed
-	return (int8_t)convTo16BitInt((word & 0b1111111000) >> 3, 7);
+	return (int8_t)convTo16BitInt<7>((word & 0b1111111000) >> 3);
 }
 int16_t A32u4::InstHandler::getk12_c_sin(uint16_t word) noexcept {//k val 12Bit continuous signed
-	return convTo16BitInt(word & 0xFFF, 12);
+	return convTo16BitInt<12>(word & 0xFFF);
 }
 uint8_t A32u4::InstHandler::getb3_c(uint16_t word) noexcept {//b val 3Bit continuous
 	return word & 0b111;
@@ -336,12 +583,15 @@ uint32_t A32u4::InstHandler::getLongAddr(uint16_t word1, uint16_t word2) noexcep
 }
 
 bool A32u4::InstHandler::is2WordInst(uint16_t word) noexcept {
-	//const uint16_t all = instList[IND_LDS].mask & instList[IND_STS].mask & instList[IND_JMP].mask & instList[IND_CALL].mask;
+	// sts  1001 001d dddd 0000 kkkk kkkk kkkk kkkk
+	// lds  1001 000d dddd 0000 kkkk kkkk kkkk kkkk
+	// call 1001 010k kkkk 111k kkkk kkkk kkkk kkkk
+	// jmp  1001 010k kkkk 110k kkkk kkkk kkkk kkkk
 
-	//if ((word & all) != all) {
-	//	return false;
-	//}
-
+	DU_IF_LIKELY((word & 0b1111100000000000) != 0b1001000000000000) {
+		return false;
+	}
+	
 	if ((word & instList[IND_LDS].mask) == instList[IND_LDS].res) {
 		return true;
 	}
@@ -475,12 +725,12 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SBIW(ATmega32u4* mcu,
 	const uint8_t d = getRd2_c_arr(word);
 	const uint8_t K = getK6_d24(word);
 
-	const uint16_t R16 = mcu->dataspace.getWordReg(d);
+	const uint16_t R16 = mcu->dataspace.getWordRegRam_(d);
 	//uint16_t R16_copy = R16;
 	//R16 -= K;
 	const uint16_t R16_res = R16 - K;
 	//mcu->dataspace.setWordReg(d, R16);
-	mcu->dataspace.setWordReg(d, R16_res);
+	mcu->dataspace.setWordRegRam_(d, R16_res);
 
 	//FLAG_MODULE.setFlags_SVNZC_SUB_16(R16_copy, K, R16);
 	FLAG_MODULE.setFlags_SVNZC_SUB_16(R16, K, R16_res);
@@ -1351,6 +1601,18 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LDD_Z(ATmega32u4* mcu
 
 	return inst_effect_t(2,1);
 }
+A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LDD_anyYZ(ATmega32u4* mcu, uint16_t word) noexcept {
+	const uint8_t Rd_id = getRd5_c(word);
+	const uint8_t q = getq6_d123(word);
+	const bool isYNotZ = word & 0b1000;
+	const uint16_t Addr = (isYNotZ ? mcu->dataspace.getY() : mcu->dataspace.getZ()) + q;
+
+	const uint8_t Rd_res = mcu->dataspace.getByteAt(Addr);
+
+	mcu->dataspace.setGPReg_(Rd_id, Rd_res);
+
+	return inst_effect_t(2,1);
+}
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LDS(ATmega32u4* mcu, uint16_t word) noexcept {
 	const uint16_t word2 = mcu->flash.getInst(mcu->cpu.PC + 1);
 	const uint8_t Rd_id = getRd5_c(word);
@@ -1469,6 +1731,17 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_STD_Z(ATmega32u4* mcu
 	const uint8_t Rr = mcu->dataspace.getGPReg_(Rr_id);
 	const uint8_t q = getq6_d123(word);
 	const uint16_t Addr = mcu->dataspace.getZ() + q;
+
+	mcu->dataspace.setByteAt(Addr, Rr);
+
+	return inst_effect_t(2,1);
+}
+A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_STD_anyYZ(ATmega32u4* mcu, uint16_t word) noexcept {
+	const uint8_t Rr_id = getRd5_c(word);
+	const uint8_t Rr = mcu->dataspace.getGPReg_(Rr_id);
+	const uint8_t q = getq6_d123(word);
+	const bool isYNotZ = word & 0b1000;
+	const uint16_t Addr = (isYNotZ ? mcu->dataspace.getY() : mcu->dataspace.getZ()) + q;
 
 	mcu->dataspace.setByteAt(Addr, Rr);
 

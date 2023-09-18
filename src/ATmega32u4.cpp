@@ -18,7 +18,7 @@
 
 
 
-A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this)
+A32u4::ATmega32u4::ATmega32u4(): cpu(this), dataspace(this), flash(this)
 #if MCU_INCLUDE_EXTRAS
 ,debugger(this)
 #endif
@@ -55,6 +55,7 @@ A32u4::ATmega32u4& A32u4::ATmega32u4::operator=(const ATmega32u4& src){
 void A32u4::ATmega32u4::setMcu() {
 	cpu.mcu = this;
 	dataspace.mcu = this;
+	flash.mcu = this;
 #if MCU_INCLUDE_EXTRAS
 	debugger.mcu = this;
 #endif
