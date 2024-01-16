@@ -2,7 +2,8 @@
 #define __A32U4_DEBUGGER_H__
 
 #include <string>
-#include <set>
+#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 #include <array>
 #include <iostream>
@@ -44,7 +45,7 @@ namespace A32u4 {
 		bool doStep = false;
 		uint64_t skipCycs = -1;
 
-		std::set<pc_t> breakpointList;
+		std::unordered_set<pc_t> breakpointList;
 #define DEBUGGER_STD 1
 #if !DEBUGGER_STD
 #if !MCU_USE_HEAP
@@ -70,6 +71,11 @@ namespace A32u4 {
 
 		// last recived SP (relative to ISRAM_start)
 		addrmcu_t lastSPRecived = DataSpace::Consts::SP_initaddr - DataSpace::Consts::ISRAM_start;
+
+		struct BreakpointOldData {
+			uint16_t word;
+		};
+		std::unordered_map<pc_t,BreakpointOldData> bpOldData;
 
 		Debugger(ATmega32u4* mcu);
 		~Debugger();
@@ -113,7 +119,7 @@ namespace A32u4 {
 		void setBreakpoint(pc_t pc);
 		void clearBreakpoint(pc_t pc);
 		void clearAllBreakpoints();
-		const std::set<uint16_t>& getBreakpointList() const;
+		const std::unordered_set<pc_t>& getBreakpointList() const;
 
 		const Breakpoint* getBreakpoints() const;
 		const CallData* getCallStack() const;

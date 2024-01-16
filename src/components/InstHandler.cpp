@@ -349,6 +349,8 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::callInstSwitch2(ATmega32u4
 							return INST_ELPM_dpostInc(mcu, word);
 						case 0b1111:
 							return INST_POP(mcu, word);
+						default:
+							return inst_effect_t(0,1);  // TODO
 					}
 				case 0b0010 << 8:
 				case 0b0011 << 8:
@@ -509,9 +511,16 @@ uint8_t A32u4::InstHandler::getInstInd3(uint16_t word) noexcept {
 	return 0xff;
 }
 
+#define convTo16BitInt(_bitlen_, _word_) _convTo16BitInt(_bitlen_, _word_)
+//#define convTo16BitInt(_bitlen_, _word_) _convTo16BitIntT<_bitlen_>(_word_)
+
+int16_t _convTo16BitInt(uint8_t bitLen, uint16_t word) noexcept { // convert a signed int of arbitrary bitLength to a int16_t
+	return isBitSet(word, bitLen - 1) ? (((int16_t)-1 ^ ((1 << bitLen) - 1)) | word) : word;
+}
+
 // I had it be faster when not a template??
 template<uint8_t bitLen>
-int16_t convTo16BitInt(uint16_t word) noexcept { // convert a signed int of arbitrary bitLength to a int16_t
+int16_t _convTo16BitIntT(uint16_t word) noexcept { // convert a signed int of arbitrary bitLength to a int16_t
 	return isBitSet(word, bitLen - 1) ? (((int16_t)-1 ^ ((1 << bitLen) - 1)) | word) : word;
 }
 
@@ -557,10 +566,10 @@ uint8_t A32u4::InstHandler::getK8_d44(uint16_t word) noexcept {//K val 8Bit dist
 	return ((word & 0x0F00) >> 4) | (word & 0x000F);
 }
 uint8_t A32u4::InstHandler::getk7_c_sin(uint16_t word) noexcept {//k val 12Bit continuous signed
-	return (int8_t)convTo16BitInt<7>((word & 0b1111111000) >> 3);
+	return (int8_t)convTo16BitInt(7, (word & 0b1111111000) >> 3);
 }
 int16_t A32u4::InstHandler::getk12_c_sin(uint16_t word) noexcept {//k val 12Bit continuous signed
-	return convTo16BitInt<12>(word & 0xFFF);
+	return convTo16BitInt(12, word & 0xFFF);
 }
 uint8_t A32u4::InstHandler::getb3_c(uint16_t word) noexcept {//b val 3Bit continuous
 	return word & 0b111;

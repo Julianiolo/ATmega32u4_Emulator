@@ -252,17 +252,25 @@ void A32u4::Debugger::continue_() {
 void A32u4::Debugger::setBreakpoint(pc_t pc) {
 	breakpoints[pc] = 1;
 	breakpointList.insert(pc);
+#if 0
+	BreakpointOldData bpOD;
+	bpOD.word = mcu->flash.getInst(pc);
+
+	mcu->flash.setInst(pc, InstHandler::instList[IND_BREAK].res);
+#endif
 }
 void A32u4::Debugger::clearBreakpoint(pc_t pc) {
 	breakpoints[pc] = 0;
-	if (breakpointList.find(pc) != breakpointList.end())
+	if (breakpointList.find(pc) != breakpointList.end()) {
+
 		breakpointList.erase(pc);
+	}
 }
 void A32u4::Debugger::clearAllBreakpoints() {
 	std::fill(breakpoints.begin(), breakpoints.end(), 0);
 	breakpointList.clear();
 }
-const std::set<uint16_t>& A32u4::Debugger::getBreakpointList() const {
+const std::unordered_set<pc_t>& A32u4::Debugger::getBreakpointList() const {
 	return breakpointList;
 }
 

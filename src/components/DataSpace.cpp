@@ -854,6 +854,8 @@ void A32u4::DataSpace::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint
 	int16_t sum16 = (int8_t)a + (int8_t)b + c;
 	sreg[DataSpace::Consts::SREG_V] = V = sum8 != sum16;
 #else
+	// this is stolen from simavr, for testing
+	// seems to be faster?
 	sreg[DataSpace::Consts::SREG_V] = V = ((a & b & ~res) | (~a & ~b & res)) >> 7;
 #endif
 
@@ -864,11 +866,25 @@ void A32u4::DataSpace::setFlags_HSVNZC_ADD(uint8_t a, uint8_t b, uint8_t c, uint
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 
+#if 1
+
 	uint16_t usum16 = a + b + c;
-	sreg[DataSpace::Consts::SREG_C] = usum16 > 0xFF;//isBitSet(usum16, 8);
+	sreg[DataSpace::Consts::SREG_C] = 
+		usum16 >> 8;     // fast
+		//usum16 > 0xFF; // not as fast
+		//isBitSet(usum16, 8);  // sloow
 
 	uint8_t usum4 = (a & 0b1111) + (b & 0b1111) + c;
 	sreg[DataSpace::Consts::SREG_H] = isBitSetNB(usum4, 4);
+#else
+	// this is stolen from simavr for testing
+	// seems to be slower??
+	uint8_t thing = (a & b) | (a & ~res) | (b & ~res);
+	sreg[DataSpace::Consts::SREG_C] = thing & (1<<7);//isBitSet(usum16, 8);
+
+	sreg[DataSpace::Consts::SREG_H] = thing & (1<<3);
+#endif
+
 #else
 	uint8_t val = 0;
 	int8_t sum8 = (int8_t)a + (int8_t)b + c;
@@ -955,7 +971,7 @@ void A32u4::DataSpace::setFlags_SVNZ(uint8_t res) {
 	uint8_t val = 0;
 	if (V) {
 		val |= 1 << DataSpace::Consts::SREG_V;
-}
+	}
 	if (N) {
 		val |= 1 << DataSpace::Consts::SREG_N;
 	}
@@ -1018,7 +1034,10 @@ void A32u4::DataSpace::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t re
 	bool V;
 	sreg[DataSpace::Consts::SREG_V] = V = res != sum32;
 
-	bool R15 = res >= (1<<15);//isBitSet(res, 15);
+	const bool R15 = 
+		res >> 15;
+		//res >= (1<<15);
+		//isBitSet(res, 15);
 	bool N;
 	sreg[DataSpace::Consts::SREG_N] = N = R15;
 
@@ -1026,9 +1045,11 @@ void A32u4::DataSpace::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t re
 
 	sreg[DataSpace::Consts::SREG_Z] = res == 0;
 
-	bool ah7 = isBitSet(a, 7 + 8);
+	//bool ah7 = isBitSet(a, 7 + 8);
 
-	sreg[DataSpace::Consts::SREG_C] = !R15 && ah7;
+	sreg[DataSpace::Consts::SREG_C] = 
+		(~res & a) >> 15;
+		//!R15 && ah7;
 #else
 	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
 	bool R15 = isBitSet(res, 15);
