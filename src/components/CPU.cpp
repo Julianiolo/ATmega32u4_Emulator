@@ -33,7 +33,6 @@ void A32u4::CPU::reset() {
 
 	totalCycls = 0;
 	targetCycls = 0;
-	breakOutOfOptim = false;
 }
 
 void A32u4::CPU::executeError() {
@@ -80,6 +79,10 @@ void A32u4::CPU::directExecuteInterrupt(uint8_t num) {
 #endif
 
 	mcu->cpu.PC = targetPC;
+}
+
+void A32u4::CPU::breakOutOfOptimisation() {
+	totalCycls |= (uint64_t)1 << 63;
 }
 
 /*
@@ -427,7 +430,7 @@ addrmcu_t A32u4::CPU::getPCAddr() const {
 	return getPC() * 2;
 }
 uint64_t A32u4::CPU::getTotalCycles() const {
-	return totalCycls;
+	return totalCycls & ~((uint64_t)1<<63);
 }
 bool A32u4::CPU::isSleeping() const {
 	return CPU_sleep;
@@ -440,8 +443,6 @@ void A32u4::CPU::getState(std::ostream& output){
 
 	StreamUtils::write(output, interruptFlags);
 	StreamUtils::write(output, insideInterrupt);
-
-	StreamUtils::write(output, breakOutOfOptim);
 
 	StreamUtils::write(output, CPU_sleep);
 	StreamUtils::write(output, sleepCycsLeft);
@@ -458,8 +459,6 @@ void A32u4::CPU::setState(std::istream& input){
 	StreamUtils::read(input, &interruptFlags);
 	StreamUtils::read(input, &insideInterrupt);
 
-	StreamUtils::read(input, &breakOutOfOptim);
-
 	StreamUtils::read(input, &CPU_sleep);
 	StreamUtils::read(input, &sleepCycsLeft);
 
@@ -470,7 +469,6 @@ bool A32u4::CPU::operator==(const CPU& other) const{
 #define _CMP_(x) (x==other.x)
 	return _CMP_(PC) && _CMP_(totalCycls) && _CMP_(targetCycls) &&
 		_CMP_(interruptFlags) && _CMP_(insideInterrupt) &&
-		_CMP_(breakOutOfOptim) &&
 		_CMP_(CPU_sleep) && _CMP_(sleepCycsLeft);
 #undef _CMP_
 }
@@ -485,8 +483,6 @@ size_t A32u4::CPU::sizeBytes() const {
 	sum += sizeof(interruptFlags);
 	sum += sizeof(insideInterrupt);
 
-	sum += sizeof(breakOutOfOptim);
-
 	sum += sizeof(CPU_sleep);
 	sum += sizeof(sleepCycsLeft);
 
@@ -495,196 +491,11 @@ size_t A32u4::CPU::sizeBytes() const {
 uint32_t A32u4::CPU::hash() const noexcept{
 	uint32_t h = 0;
 	DU_HASHC(h,PC);
-	DU_HASHC(h,PC);
 	DU_HASHC(h,totalCycls);
 	DU_HASHC(h,targetCycls);
 	DU_HASHC(h,interruptFlags);
 	DU_HASHC(h,insideInterrupt);
-	DU_HASHC(h,breakOutOfOptim);
 	DU_HASHC(h,CPU_sleep);
 	DU_HASHC(h,sleepCycsLeft);
 	return h;
 }
-
-
-/*
-void A32u4::CPU::setFlags_HVNZC_ADD(uint8_t a, uint8_t b, uint8_t res) {
-#if FAST_FLAGSET
-	bool a7 = isBitSet(a, 7);
-	bool b7 = isBitSet(b, 7);
-	bool r7 = isBitSet(res, 7);
-
-	bool a3 = isBitSet(a, 3);
-	bool b3 = isBitSet(b, 3);
-	bool r3 = isBitSet(res, 3);
-
-	bool V = (a7 && b7 && !r7) || (!a7 && !b7 && r7); //maybe try non branching stuff
-	bool N = (res & 0b10000000) != 0;
-	bool Z = res == 0;
-	bool C = (a7 && b7) || (b7 && !r7) || (a7 && !r7);
-	bool H = (a3 && b3) || (b3 && !r3) || (a3 && !r3);
-
-	uint8_t val = 0;
-	if (V) {
-		val |= 1 << mcu->dataspace.SREG_V;
-	}
-	if (N) {
-		val |= 1 << mcu->dataspace.SREG_N;
-	}
-	if (Z) {
-		val |= 1 << mcu->dataspace.SREG_Z;
-	}
-	if (C) {
-		val |= 1 << mcu->dataspace.SREG_C;
-	}
-	if (H) {
-		val |= 1 << mcu->dataspace.SREG_H;
-	}
-
-	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(mcu->dataspace.SREG);
-	reg = reg & 0b11010000 | val;
-#else
-	setFlags_NZ(res);
-	bool a7 = isBitSet(a, 7);
-	bool b7 = isBitSet(b, 7);
-	bool r7 = isBitSet(res, 7);
-
-	bool a3 = isBitSet(a, 3);
-	bool b3 = isBitSet(b, 3);
-	bool r3 = isBitSet(res, 3);
-
-	bool V = (a7 && b7 && !r7) || (!a7 && !b7 && r7);
-	bool N = (res & 0b10000000) != 0;
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_V, V);
-	//mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_S, V ^ N); //could be that this should not be set
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_C, (a7 && b7) || (b7 && !r7) || (a7 && !r7));
-
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_H, (a3 && b3) || (b3 && !r3) || (a3 && !r3));
-#endif
-}
-
-void A32u4::CPU::setFlags_HSVNZC_SUB(uint8_t a, uint8_t b, uint8_t res, bool Incl_Z) {
-#if FAST_FLAGSET
-	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(mcu->dataspace.SREG);
-	bool a7 = isBitSet(a, 7);
-	bool b7 = isBitSet(b, 7);
-	bool r7 = isBitSet(res, 7);
-
-	bool a3 = isBitSet(a, 3);
-	bool b3 = isBitSet(b, 3);
-	bool r3 = isBitSet(res, 3);
-
-	bool V = (a7 && !b7 && !r7) || (!a7 && b7 && r7);
-	bool N = (res & 0b10000000) != 0;
-	bool Z;
-	if (!Incl_Z) {
-		Z = res == 0;
-	} else {
-		Z = (res == 0) && (reg &  (1 << mcu->dataspace.SREG_Z));
-	}
-	bool C = (!a7 && b7) || (b7 && r7) || (r7 && !a7);//(a7 && b7) || (b7 && !r7) || (a7 && !r7);
-	bool H = (!a3 && b3) || (b3 && r3) || (r3 && !a3);//(a3 && b3) || (b3 && !r3) || (a3 && !r3);
-
-	uint8_t val = 0;
-	if (V) {
-		val |= 1 << mcu->dataspace.SREG_V;
-	}
-	if (N) {
-		val |= 1 << mcu->dataspace.SREG_N;
-	}
-	if (Z) {
-		val |= 1 << mcu->dataspace.SREG_Z;
-	}
-	if (C) {
-		val |= 1 << mcu->dataspace.SREG_C;
-	}
-	if (H) {
-		val |= 1 << mcu->dataspace.SREG_H;
-	}
-
-	reg = (reg & 0b11010000) | val;
-
-#else
-
-	setFlags_NZ(res);
-	bool a7 = isBitSet(a, 7);
-	bool b7 = isBitSet(b, 7);
-	bool r7 = isBitSet(res, 7);
-
-	bool a3 = isBitSet(a, 3);
-	bool b3 = isBitSet(b, 3);
-	bool r3 = isBitSet(res, 3);
-
-	bool V = (a7 && !b7 && !r7) || (!a7 && b7 && r7);
-	bool N = (res & 0b10000000) != 0;
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_V, V);
-	//mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_S, V ^ N); //could be that this should not be set
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_C, (!a7 && b7) || (b7 && r7) || (r7 && !a7));
-
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_H, (!a3 && b3) || (b3 && r3) || (r3 && !a3));
-
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_N, N);
-	if (Incl_Z) {
-		mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_Z, (res == 0) && mcu->dataspace.getRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_Z));
-	}
-	else {
-		mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_Z, res == 0);
-	}
-#endif
-}
-
-
-void A32u4::CPU::setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res) {
-#if FAST_FLAGSET
-	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
-	bool R15 = isBitSet(res, 15);
-
-	bool V = ah7 && R15;
-	bool N = R15;
-	bool Z = res == 0;
-	bool S = V ^ N;
-	bool C = R15 && !ah7;
-
-	uint8_t val = 0;
-
-#if 1
-	val |= V << mcu->dataspace.SREG_V;
-	val |= N << mcu->dataspace.SREG_N;
-	val |= Z << mcu->dataspace.SREG_Z;
-	val |= S << mcu->dataspace.SREG_S;
-	val |= C << mcu->dataspace.SREG_C;
-
-#else
-	if (V) {
-		val |= 1 << mcu->dataspace.SREG_V;
-	}
-	if (N) {
-		val |= 1 << mcu->dataspace.SREG_N;
-	}
-	if (Z) {
-		val |= 1 << mcu->dataspace.SREG_Z;
-	}
-	if (S) {
-		val |= 1 << mcu->dataspace.SREG_S;
-	}
-	if (C) {
-		val |= 1 << mcu->dataspace.SREG_C;
-	}
-#endif
-
-	uint8_t& reg = mcu->dataspace.getByteRefAtAddr(mcu->dataspace.SREG);
-	reg = reg & 0b11100000 | val;
-#else
-	setFlags_NZ(res);
-
-	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
-	bool R15 = isBitSet(res, 15);
-
-	bool V = ah7 && R15;
-	bool N = R15;
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_V, V);
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_S, V ^ N);
-	mcu->dataspace.setRegBit(mcu->dataspace.SREG, mcu->dataspace.SREG_C, R15 && !ah7);
-#endif
-}
-*/

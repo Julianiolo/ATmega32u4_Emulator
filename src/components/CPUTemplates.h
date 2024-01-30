@@ -13,18 +13,24 @@ void A32u4::CPU::execute(uint64_t amt) {
 	execute4T<debug>(amt);
 }
 
+#define CHECK_BUG 0
+
 template<bool debug>
 void A32u4::CPU::execute4T(uint64_t amt) {
 	targetCycls += amt;
+
+#if CHECK_BUG
 	size_t cnt = 0;
+#endif
 	while (totalCycls < targetCycls) {
-		breakOutOfOptim = false;
+#if CHECK_BUG
 		cnt++;
 		if(cnt >= amt*2) {
 			LU_LOGF(LogUtils::LogLevel_Error,"WTF %" PRIu64 " %" PRIu64 " %" PRIu64 " %d %" PRIu64, totalCycls,targetCycls,amt,(int)CPU_sleep,mcu->dataspace.cycsToNextTimerInt());
 			mcu->debugger.halt();
 			return;
 		}
+#endif
 
 #if MCU_INCLUDE_EXTRAS
 		if (mcu->debugger.isHalted() && !mcu->debugger.doStep) {
@@ -46,21 +52,23 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 					mcu->dataspace.doTicks(res.addToCycs);
 					mcu->dataspace.checkForIntr();
 				}
+				totalCycls &= ~((uint64_t)1 << 63); // clear highest bit, that could be set by breakOutOfOptim
 			}
 			else{
-				uint64_t cycsToNextInt = mcu->dataspace.cycsToNextTimerInt();
+				const uint64_t cycsToNextInt = mcu->dataspace.cycsToNextTimerInt();
 				
-				uint64_t currTargetCycs = cycsToNextInt==(size_t)-1 ? -1 : totalCycls + cycsToNextInt;
+				uint64_t currTargetCycls = cycsToNextInt==(size_t)-1 ? -1 : totalCycls + cycsToNextInt;
 				
-				if (currTargetCycs > targetCycls) {
-					currTargetCycs = targetCycls;
+				if (currTargetCycls > targetCycls) {
+					currTargetCycls = targetCycls;
 				}
 
-				while(totalCycls < currTargetCycs && !breakOutOfOptim) {
+				while(totalCycls < currTargetCycls) {
 					InstHandler::inst_effect_t res = InstHandler::handleCurrentInstT<debug>(mcu);
 					totalCycls += res.addToCycs;
 					PC += res.addToPC;
 				}
+				totalCycls &= ~((uint64_t)1 << 63); // clear highest bit, that could be set by breakOutOfOptim
 
 				mcu->dataspace.updateTimers();
 			}
@@ -92,6 +100,7 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 #endif
 				//printf("done: slept for: %llu at %llu\n", sleepCycsLeft, mcu->cpu.totalCycls);
 				sleepCycsLeft = 0;
+				totalCycls &= ~((uint64_t)1 << 63); // clear highest bit, that could be set by breakOutOfOptim
 			}
 			else {
 				uint64_t skipCycs = targetCycls - totalCycls;
@@ -111,4 +120,5 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 		}
 		//executeInterrupts();
 	}
+	DU_ASSERT(totalCycls == getTotalCycles());
 }

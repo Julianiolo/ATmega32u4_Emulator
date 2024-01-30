@@ -18,18 +18,16 @@ namespace A32u4 {
 		friend class ATmega32u4;
 		friend class InstHandler;
 		friend class DataSpace;
-		friend class Flash;
 		friend class Debugger;
 	private:
 		ATmega32u4* mcu;
 
 		pc_t PC;
-		uint64_t totalCycls, targetCycls;
+		uint64_t totalCycls;
+		uint64_t targetCycls;
 
 		uint64_t interruptFlags;
 		bool insideInterrupt;
-
-		bool breakOutOfOptim = false;
 
 		bool CPU_sleep = false;
 		uint64_t sleepCycsLeft = 0;
@@ -59,6 +57,8 @@ namespace A32u4 {
 		void setFlags_SVNZC_SUB_16(uint16_t a, uint16_t b, uint16_t res);
 
 		void reset();
+
+		void breakOutOfOptimisation();
 	public:
 		pc_t& getPCRef();
 		pc_t getPC() const;

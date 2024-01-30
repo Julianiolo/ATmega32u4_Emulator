@@ -14,10 +14,7 @@ namespace A32u4 {
 	public:
 		static constexpr sizemcu_t sizeMax = 32768;
 	private:
-		friend class Disassembler;
-		friend class InstHandler;
-		friend class ATmega32u4;
-		friend class CPU;
+		friend class ATmega32u4;  // for con/de-structor
 
 		ATmega32u4* mcu;
 

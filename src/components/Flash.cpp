@@ -127,8 +127,9 @@ bool A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 
 	clear();
 
-	std::memcpy(data, data_, std::min(dataLen,(size_t)sizeMax));
 	size_ = (sizemcu_t)std::min(dataLen,(size_t)sizeMax);
+	if(size_ > 0)
+		std::memcpy(data, data_, size_);
 	hasProgram = true;
 
 #if FLASH_USE_INSTIND_CACHE
@@ -138,33 +139,19 @@ bool A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 }
 
 bool A32u4::Flash::loadFromHexString(const char* str, const char* str_end) {
-	clear();
-
 	auto res = StringUtils::parseHexFileStr(str, str_end);
-	if(res.size() > 0)
-		std::memcpy(data, &res[0], res.size());
-
-	hasProgram = true;
-
-#if FLASH_USE_INSTIND_CACHE
-	populateInstIndCache();
-#endif
-
-	return true;
+	return loadFromMemory(&res[0], res.size());
 }
 bool A32u4::Flash::loadFromHexFile(const char* path) {
 	{
 		const char* ext = StringUtils::getFileExtension(path);
 		if (std::strcmp(ext, "hex") != 0) {
-			LU_LOGF_(LogUtils::LogLevel_Error, "Wrong Extension for loading Flash contents: %s", ext);
-			return false;
+			LU_LOGF_(LogUtils::LogLevel_Warning, "Unknown extension for loading flash contents via hex file: \"%s\"", ext);
 		}
 	}
 
 	std::string content = StringUtils::loadFileIntoString(path);
-	loadFromHexString(content.c_str(), content.c_str() + content.size());
-
-	return true;
+	return loadFromHexString(content.c_str(), content.c_str() + content.size());
 }
 #if MCU_USE_INSTCACHE
 void A32u4::Flash::populateInstIndCache(){

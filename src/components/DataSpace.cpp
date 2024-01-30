@@ -142,7 +142,7 @@ void A32u4::DataSpace::doTicks(uint8_t num) {
 }
 void A32u4::DataSpace::updateTimers(){
 	if (!isBitSetNB(data[Consts::PRR0], Consts::PRR0_PRTIM0)) {
-		const uint64_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer0Update) / getTimer0PrescDiv();
+		const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer0Update) / getTimer0PrescDiv();
 		if(addAmt > 0) {
 			const uint8_t timer0 = data[Consts::TCNT0];
 			const uint8_t timer0Next = timer0 + (uint8_t)addAmt;
@@ -154,7 +154,7 @@ void A32u4::DataSpace::updateTimers(){
 		}
 	}
 	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM3) && (data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A))) {
-		const uint64_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer3Update) / getTimer3PrescDiv();
+		const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer3Update) / getTimer3PrescDiv();
 		if(addAmt > 0) {
 			const uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
 			const uint16_t timer3Next = timer3 + (uint16_t)addAmt;
@@ -184,7 +184,7 @@ void A32u4::DataSpace::updateTimers(){
 		}
 	}
 	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM4) && getTimer4Presc()) {
-		const uint64_t addAmt = (mcu->cpu.totalCycls - lastSet.Timer4Update) / getTimer4PrescDiv();
+		const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer4Update) / getTimer4PrescDiv();
 		if(addAmt > 0) {
 			const uint16_t timer4 = getWordRegRam_(Consts::TCNT4) & 0b1111111111;
 			const uint16_t timer4Next = (timer4 + (uint16_t)addAmt) & 0b1111111111;
@@ -284,19 +284,19 @@ uint16_t A32u4::DataSpace::getTimer4PrescDiv() const {
 }
 void A32u4::DataSpace::markTimer0Update() { 
 	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
-	uint64_t diff = mcu->cpu.totalCycls - lastSet.Timer0Update;
+	uint64_t diff = mcu->cpu.getTotalCycles() - lastSet.Timer0Update;
 	diff = (diff / getTimer0PrescDiv()) * getTimer0PrescDiv();
 	lastSet.Timer0Update += diff;
 }
 void A32u4::DataSpace::markTimer3Update() { 
 	// functions is supposed to set lastTimer3Update to the exact technically correct value, even if we are already past that
-	uint64_t diff = mcu->cpu.totalCycls - lastSet.Timer3Update;
+	uint64_t diff = mcu->cpu.getTotalCycles() - lastSet.Timer3Update;
 	diff = (diff / getTimer3PrescDiv()) * getTimer3PrescDiv();
 	lastSet.Timer3Update += diff;
 }
 void A32u4::DataSpace::markTimer4Update() { 
 	// functions is supposed to set lastTimer4Update to the exact technically correct value, even if we are already past that
-	uint64_t diff = mcu->cpu.totalCycls - lastSet.Timer4Update;
+	uint64_t diff = mcu->cpu.getTotalCycles() - lastSet.Timer4Update;
 	diff = (diff / getTimer4PrescDiv()) * getTimer4PrescDiv();
 	lastSet.Timer4Update += diff;
 }
@@ -305,7 +305,7 @@ uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
 	if(data[Consts::TIMSK0] & (1 << Consts::TIMSK0_TOIE0)){ // timer0 Overflow
 		uint8_t timer0 = data[DataSpace::Consts::TCNT0];
 		uint64_t nextOverflow = lastSet.Timer0Update + (256-timer0)*getTimer0PrescDiv();
-		uint64_t interruptIn = nextOverflow - mcu->cpu.totalCycls;
+		uint64_t interruptIn = nextOverflow - mcu->cpu.getTotalCycles();
 		amt = std::min(amt, interruptIn);
 	}
 
@@ -313,7 +313,7 @@ uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
 		uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
 		uint16_t target = getWordRegRam_(Consts::OCR3AL);
 		uint64_t nextMatch = lastSet.Timer3Update + (uint16_t)(target-timer3)*getTimer3PrescDiv();
-		uint64_t interruptIn = nextMatch - mcu->cpu.totalCycls;
+		uint64_t interruptIn = nextMatch - mcu->cpu.getTotalCycles();
 		amt = std::min(amt, interruptIn);
 	}
 
@@ -322,14 +322,14 @@ uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
 			uint16_t timer4 = getWordRegRam_(Consts::TCNT4) & 0b1111111111;
 			if(data[Consts::TIMSK4] & (1<<Consts::TIMSK4_OCIE4A)){
 				uint64_t nextMatch = lastSet.Timer4Update + (uint16_t)((1<<10)-timer4)*getTimer4PrescDiv();
-				uint64_t interruptIn = nextMatch - mcu->cpu.totalCycls;
+				uint64_t interruptIn = nextMatch - mcu->cpu.getTotalCycles();
 				amt = std::min(amt, interruptIn);
 			}
 
 			if(data[Consts::DDRC] && !Timer4ATriggered) {
 				const uint16_t target = data[Consts::OCR4A];
 				uint64_t nextMatch = lastSet.Timer4Update + (uint16_t)(target-timer4)*getTimer4PrescDiv();
-				uint64_t interruptIn = nextMatch - mcu->cpu.totalCycls;
+				uint64_t interruptIn = nextMatch - mcu->cpu.getTotalCycles();
 				amt = std::min(amt, interruptIn);
 			}
 		}
@@ -473,7 +473,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 	switch (Addr) {
 		case 0xFFFF: //case for updating everything
 		case Consts::EECR: {
-			if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.totalCycls - lastSet.EECR_EEMPE > 4) { // check if EE;PE is set but shouldnt
+			if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.getTotalCycles() - lastSet.EECR_EEMPE > 4) { // check if EE;PE is set but shouldnt
 				data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
 			}
 			if (onlyOne) break;
@@ -481,7 +481,9 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 		}
 
 		case Consts::PLLCSR: {
-			if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && !(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && mcu->cpu.totalCycls - lastSet.PLLCSR_PLLE > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enought time since PLLE set
+			if ((data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLLE)) && 
+				!(data[Consts::PLLCSR] & (1 << Consts::PLLCSR_PLOCK)) && 
+				mcu->cpu.getTotalCycles() - lastSet.PLLCSR_PLLE > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enough time since PLLE set
 				data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
 			}
 			if (onlyOne) break;
@@ -489,7 +491,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 		}
 
 		case Consts::TCNT0: {
-			data[Consts::TCNT0] += (uint8_t)((mcu->cpu.totalCycls - lastSet.Timer0Update) / DataSpace::timerPresc[getTimer0Presc()]);
+			data[Consts::TCNT0] += (uint8_t)((mcu->cpu.getTotalCycles() - lastSet.Timer0Update) / DataSpace::timerPresc[getTimer0Presc()]);
 			markTimer0Update();
 			if (onlyOne) break;
 			else DU_FALLTHROUGH;
@@ -511,7 +513,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 		}
 		
 		case Consts::ADCSRA: {
-			if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) { // clear bit if conversion is done
+			if (mcu->cpu.getTotalCycles() >= lastSet.ADCSRA_ADSC + 0) { // clear bit if conversion is done
 				data[Consts::ADCSRA] &= ~(1<<Consts::ADCSRA_ADSC);
 			}
 			if (onlyOne) break;
@@ -520,7 +522,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 		
 		case Consts::ADCH: {
 			//TODO: maybe unlock changing of ADC value
-			if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) {
+			if (mcu->cpu.getTotalCycles() >= lastSet.ADCSRA_ADSC + 0) {
 				if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
 					data[Consts::ADCH] = getADCVal()>>8;
 				}
@@ -533,7 +535,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 		}
 		case Consts::ADCL: {
 			//TODO: maybe lock changing of ADC value
-			if (mcu->cpu.totalCycls >= lastSet.ADCSRA_ADSC + 0) {
+			if (mcu->cpu.getTotalCycles() >= lastSet.ADCSRA_ADSC + 0) {
 				if (!(data[Consts::ADCSRA] & (1 << Consts::ADMUX_ADLAR))) { // normal order => right adjusted
 					data[Consts::ADCL] = (uint8_t)getADCVal();
 				}
@@ -572,14 +574,14 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 		case Consts::SREG:
 			updateSREGCache();
 			if((val & (1<<Consts::SREG_I)) && (data[Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)))
-				mcu->cpu.breakOutOfOptim = true; // we need to break out of Optimisation to check if an interrupt can now occur (Global Interrupt Enable)
+				mcu->cpu.breakOutOfOptimisation(); // we need to break out of Optimisation to check if an interrupt can now occur (Global Interrupt Enable)
 			break;
 
 		case Consts::TCNT0:
 			markTimer0Update();
 			if (val < oldVal) {
 				mcu->dataspace.data[A32u4::DataSpace::Consts::TIFR0] |= (1 << DataSpace::Consts::TIFR0_TOV0); // set TOV0 in TIFR0
-				mcu->cpu.breakOutOfOptim = true;
+				mcu->cpu.breakOutOfOptimisation();
 			}
 			//mcu->debugger.halt();
 			break;
@@ -590,7 +592,7 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 			}
 			if (!(oldVal & (1 << Consts::ADCSRA_ADSC)) && (val & (1 << Consts::ADCSRA_ADSC))) { // ADCSRA_ADSC has been set to 1 => start conversion
 				if (val & (1 << Consts::ADCSRA_ADEN)) { // check if adc is enabled
-					lastSet.ADCSRA_ADSC = mcu->cpu.totalCycls;
+					lastSet.ADCSRA_ADSC = mcu->cpu.getTotalCycles();
 				}
 			}
 			break;
@@ -657,7 +659,7 @@ void A32u4::DataSpace::setEECR(uint8_t val, uint8_t oldVal){
 void A32u4::DataSpace::setPLLCSR(uint8_t val, uint8_t oldVal) {
 	if (val & (1 << Consts::PLLCSR_PLLE)) {
 		if (!(oldVal & (1 << Consts::PLLCSR_PLLE))) { //if PLLE is 0 but should be 1
-			lastSet.PLLCSR_PLLE = mcu->cpu.totalCycls;
+			lastSet.PLLCSR_PLLE = mcu->cpu.getTotalCycles();
 		}
 	}
 	else {
@@ -688,9 +690,9 @@ void A32u4::DataSpace::setSPDR() {
 	// TODO?
 }
 void A32u4::DataSpace::setTCCR0B(uint8_t val) {
-	mcu->cpu.breakOutOfOptim = true;
+	mcu->cpu.breakOutOfOptimisation();
 	//printf("SWITCH to div:%d\n", timers.getTimer0PrescDiv());
-	lastSet.Timer0Update = mcu->cpu.totalCycls; // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
+	lastSet.Timer0Update = mcu->cpu.getTotalCycles(); // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
 	//printf("fmark at %llu\n", mcu->cpu.totalCycls);
 }
 
@@ -769,8 +771,8 @@ uint8_t* A32u4::DataSpace::getEEPROM() {
 // get a pointer to the updated Dataspce Data arr (only gets updated on first call if cpu.totalcycles doesnt change)
 const uint8_t* A32u4::DataSpace::getData() {
 	static uint64_t lastCycs = 0;
-	if (lastCycs != mcu->cpu.totalCycls) {
-		lastCycs = mcu->cpu.totalCycls;
+	if (lastCycs != mcu->cpu.getTotalCycles()) {
+		lastCycs = mcu->cpu.getTotalCycles();
 		update_Get(0xFFFF, false);
 	}
 	return data;

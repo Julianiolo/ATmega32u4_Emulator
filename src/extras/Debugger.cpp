@@ -102,8 +102,9 @@ bool A32u4::Debugger::checkBreakpoints() {
 	return false;
 }
 bool A32u4::Debugger::doHaltActions() {
-	if (debugOutputMode == OutputMode_Log)
+	if (debugOutputMode == OutputMode_Log) {
 		doHaltActionsLog();
+	}
 	else {
 		bool ret = true;
 		if(doStep)
@@ -117,7 +118,7 @@ bool A32u4::Debugger::doHaltActions() {
 			
 		else
 			halted = true;
-		mcu->cpu.breakOutOfOptim = true;
+		mcu->cpu.breakOutOfOptimisation();
 
 		return ret;
 	}
@@ -239,7 +240,7 @@ void A32u4::Debugger::halt() {
 	if (debugOutputMode == OutputMode_Passthrough) {
 		doStep = false;
 	}
-	mcu->cpu.breakOutOfOptim = true;
+	mcu->cpu.breakOutOfOptimisation();
 }
 void A32u4::Debugger::step() {
 	doStep = true;

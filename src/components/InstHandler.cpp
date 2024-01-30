@@ -1380,7 +1380,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SEI(ATmega32u4* mcu, 
 	DU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_I] = 1;
-	mcu->cpu.breakOutOfOptim = true; // break out of optimisation to check for execution of interrupts (Global Interrupt Enable)
+	mcu->cpu.breakOutOfOptimisation(); // break out of optimisation to check for execution of interrupts (Global Interrupt Enable)
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLI(ATmega32u4* mcu, uint16_t word) noexcept {
@@ -1887,7 +1887,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SLEEP(ATmega32u4* mcu
 		switch ((SMCR_val >> 1) & 0b111) {
 		case 0: //idle
 			mcu->cpu.CPU_sleep = true;
-			mcu->cpu.breakOutOfOptim = true;
+			mcu->cpu.breakOutOfOptimisation();
 			break;
 		default:
 			break;
