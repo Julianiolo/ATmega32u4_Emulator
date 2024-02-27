@@ -121,7 +121,7 @@ void A32u4::Flash::clear() {
 
 bool A32u4::Flash::loadFromMemory(const uint8_t* data_, size_t dataLen) {
 	if (dataLen >= sizeMax) {
-		LU_LOGF_(LogUtils::LogLevel_Warning,"%" DU_PRIuSIZE " bytes is more than fits into the Flash, max is %" MCU_PRIuSIZEMCU " bytes", dataLen, sizeMax);
+		LU_LOGF_(LogUtils::LogLevel_Warning,"%" CU_PRIuSIZE " bytes is more than fits into the Flash, max is %" MCU_PRIuSIZEMCU " bytes", dataLen, sizeMax);
 		// return; // should we return here?
 	}
 
@@ -175,7 +175,7 @@ void A32u4::Flash::getRomState(std::ostream& output) {
 }
 void A32u4::Flash::setRomState(std::istream& input){
 	StreamUtils::read(input, &size_);
-	DU_ASSERTEX(size_ <= sizeMax, StringUtils::format("Flash size read from state is too big: %" DU_PRIuSIZE, (size_t)size_));
+	DU_ASSERTEX(size_ <= sizeMax, StringUtils::format("Flash size read from state is too big: %" CU_PRIuSIZE, (size_t)size_));
 	input.read((char*)data, sizeMax);
 
 #if FLASH_USE_INSTIND_CACHE

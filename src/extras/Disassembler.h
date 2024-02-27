@@ -9,8 +9,8 @@
 #include <stdint.h>
 #include <functional>
 
-#include "bitVector.h"
-#include "bitArray.h"
+#include "comps/bitVector.h"
+#include "comps/bitArray.h"
 
 #include "../A32u4Types.h"
 

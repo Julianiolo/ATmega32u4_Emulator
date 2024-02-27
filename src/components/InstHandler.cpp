@@ -597,7 +597,7 @@ bool A32u4::InstHandler::is2WordInst(uint16_t word) noexcept {
 	// call 1001 010k kkkk 111k kkkk kkkk kkkk kkkk
 	// jmp  1001 010k kkkk 110k kkkk kkkk kkkk kkkk
 
-	DU_IF_LIKELY((word & 0b1111100000000000) != 0b1001000000000000) {
+	CU_IF_LIKELY((word & 0b1111100000000000) != 0b1001000000000000) {
 		return false;
 	}
 	
@@ -997,18 +997,18 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_FMULSU(ATmega32u4* mc
 }
 
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RJMP(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(mcu);
+	CU_UNUSED(mcu);
 	const int16_t k = getk12_c_sin(word);
 	return inst_effect_t(2,k+1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_IJMP(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->cpu.PC = mcu->dataspace.getZ();
 	return inst_effect_t(2,0);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_EIJMP(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->cpu.PC = mcu->dataspace.getZ(); //PC should have bits 21:16 set to reg EIND but PC is only 16bit and EIND doesnt seem to exist, soooo
 	return inst_effect_t(2,0);
@@ -1033,7 +1033,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RCALL(ATmega32u4* mcu
 	return inst_effect_t(4,k+1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ICALL(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.pushAddrToStack(mcu->cpu.PC + 1);
 
@@ -1048,7 +1048,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ICALL(ATmega32u4* mcu
 	return inst_effect_t(4,0);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_EICALL(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.pushAddrToStack(mcu->cpu.PC + 1);
 
@@ -1077,7 +1077,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CALL(ATmega32u4* mcu,
 	return inst_effect_t(5,0);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RET(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	const uint16_t addr = mcu->dataspace.popAddrFromStack();
 	mcu->cpu.PC = addr;
@@ -1088,7 +1088,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RET(ATmega32u4* mcu, 
 	return inst_effect_t(5,0);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RETI(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	const uint16_t addr = mcu->dataspace.popAddrFromStack();
 	mcu->cpu.PC = addr;
@@ -1341,105 +1341,105 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_BLD(ATmega32u4* mcu, 
 }
 
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SEC(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_C] = 1;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLC(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_C] = 0;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SEN(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = 1;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLN(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = 0;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SEZ(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = 1;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLZ(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = 0;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SEI(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_I] = 1;
 	mcu->cpu.breakOutOfOptimisation(); // break out of optimisation to check for execution of interrupts (Global Interrupt Enable)
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLI(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_I] = 0;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SES(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_S] = 1;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLS(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 	
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_S] = 0;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SEV(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = 1;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLV(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = 0;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SET(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_T] = 1;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLT(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_T] = 0;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SEH(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_H] = 1;
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CLH(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_H] = 0;
 	return inst_effect_t(1,1);
 }
 
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SE_(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	const uint8_t s = gets3_c(word);
 
@@ -1447,7 +1447,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SE_(ATmega32u4* mcu, 
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CL_(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 
 	const uint8_t s = gets3_c(word);
 
@@ -1767,7 +1767,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_STS(ATmega32u4* mcu, 
 	return inst_effect_t(2,2);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LPM_0(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 	const uint16_t Addr = mcu->dataspace.getZ();
 
 	const uint8_t R0 = mcu->flash.getByte(Addr);
@@ -1799,7 +1799,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_LPM_dpostInc(ATmega32
 	return inst_effect_t(3,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ELPM_0(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 	const uint32_t Addr = mcu->dataspace.getExtendedZ();
 
 	const uint8_t R0 = mcu->flash.getByte(Addr);
@@ -1832,8 +1832,8 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_ELPM_dpostInc(ATmega3
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SPM(ATmega32u4* mcu, uint16_t word) noexcept {
 	//TODO
-	DU_UNUSED(mcu);
-	DU_UNUSED(word);
+	CU_UNUSED(mcu);
+	CU_UNUSED(word);
 
 	return inst_effect_t(0,1);
 }
@@ -1874,12 +1874,12 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_POP(ATmega32u4* mcu, 
 	return inst_effect_t(2,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_NOP(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(mcu);
-	DU_UNUSED(word);
+	CU_UNUSED(mcu);
+	CU_UNUSED(word);
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SLEEP(ATmega32u4* mcu, uint16_t word) noexcept {
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 	
 	//TODO
 	uint8_t SMCR_val = mcu->dataspace.getByteAt(DataSpace::Consts::SMCR);
@@ -1899,14 +1899,14 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_SLEEP(ATmega32u4* mcu
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_WDR(ATmega32u4* mcu, uint16_t word) noexcept {
 	//TODO
-	DU_UNUSED(mcu);
-	DU_UNUSED(word);
+	CU_UNUSED(mcu);
+	CU_UNUSED(word);
 
 	return inst_effect_t(1,1);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_BREAK(ATmega32u4* mcu, uint16_t word) noexcept {
 	//TODO
-	DU_UNUSED(word);
+	CU_UNUSED(word);
 #if MCU_INCLUDE_EXTRAS
 	mcu->debugger.halt();
 #endif

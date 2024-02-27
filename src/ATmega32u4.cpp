@@ -114,7 +114,7 @@ void A32u4::ATmega32u4::setLogCallB(LogUtils::LogCallB newLogCallB, void* userDa
 	logCallBUserData = userData;
 }
 void A32u4::ATmega32u4::defaultLogHandler(uint8_t logLevel, const char* msg, const char* fileName , int lineNum, const char* module, void* userData){
-	DU_UNUSED(userData);
+	CU_UNUSED(userData);
 	printf("[%s]%s: %s", 
 		LogUtils::logLevelStrs[logLevel],
 		module != nullptr ? (std::string("[")+module+"]").c_str() : "",

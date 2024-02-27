@@ -157,7 +157,7 @@ std::string A32u4::Disassembler::disassembleBinFile(const Flash& data, const Add
 
 			switch(line.inst_ind){
 				case IND_RET:
-					DU_FALLTHROUGH;
+					CU_FALLTHROUGH;
 				case IND_RETI:
 					content += "\n";
 					break;

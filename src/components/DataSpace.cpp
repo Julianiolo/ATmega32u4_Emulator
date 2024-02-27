@@ -477,7 +477,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
 			}
 			if (onlyOne) break;
-			else DU_FALLTHROUGH;
+			else CU_FALLTHROUGH;
 		}
 
 		case Consts::PLLCSR: {
@@ -487,14 +487,14 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
 			}
 			if (onlyOne) break;
-			else DU_FALLTHROUGH;
+			else CU_FALLTHROUGH;
 		}
 
 		case Consts::TCNT0: {
 			data[Consts::TCNT0] += (uint8_t)((mcu->cpu.getTotalCycles() - lastSet.Timer0Update) / DataSpace::timerPresc[getTimer0Presc()]);
 			markTimer0Update();
 			if (onlyOne) break;
-			else DU_FALLTHROUGH;
+			else CU_FALLTHROUGH;
 		}
 
 		case Consts::SREG: {
@@ -509,7 +509,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			val |= (sreg[Consts::SREG_I] != 0) << Consts::SREG_I;
 			data[Consts::SREG] = val;
 			if (onlyOne) break;
-			else DU_FALLTHROUGH;
+			else CU_FALLTHROUGH;
 		}
 		
 		case Consts::ADCSRA: {
@@ -517,7 +517,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				data[Consts::ADCSRA] &= ~(1<<Consts::ADCSRA_ADSC);
 			}
 			if (onlyOne) break;
-			else DU_FALLTHROUGH;
+			else CU_FALLTHROUGH;
 		}
 		
 		case Consts::ADCH: {
@@ -531,7 +531,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				}
 			}
 			if (onlyOne) break;
-			else DU_FALLTHROUGH;
+			else CU_FALLTHROUGH;
 		}
 		case Consts::ADCL: {
 			//TODO: maybe lock changing of ADC value
@@ -544,7 +544,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				}
 			}
 			if (onlyOne) break;
-			//else DU_FALLTHROUGH;
+			//else CU_FALLTHROUGH;
 		}
 	}
 }
