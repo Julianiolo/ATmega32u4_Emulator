@@ -19,6 +19,8 @@ template<bool debug>
 void A32u4::CPU::execute4T(uint64_t amt) {
 	targetCycls += amt;
 
+	totalCycls &= ~((uint64_t)1 << 63); // clear highest bit, that could be set by breakOutOfOptim
+
 #if CHECK_BUG
 	size_t cnt = 0;
 #endif
@@ -119,6 +121,8 @@ void A32u4::CPU::execute4T(uint64_t amt) {
 #endif
 		}
 		//executeInterrupts();
+		totalCycls &= ~((uint64_t)1 << 63); // clear highest bit, that could be set by breakOutOfOptim
 	}
+	
 	DU_ASSERT(totalCycls == getTotalCycles());
 }
