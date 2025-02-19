@@ -1074,7 +1074,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CALL(ATmega32u4* mcu,
 
 	mcu->cpu.PC = k;
 
-	return inst_effect_t(5,0);
+	return inst_effect_t(4,0);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RET(ATmega32u4* mcu, uint16_t word) noexcept {
 	CU_UNUSED(word);
@@ -1085,7 +1085,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RET(ATmega32u4* mcu, 
 	//     \/ is now handled automatically inside mcu->dataspace.popAddrFromStack();
 	//mcu->debugger.popPCFromCallStack(); 
 
-	return inst_effect_t(5,0);
+	return inst_effect_t(4,0);
 }
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RETI(ATmega32u4* mcu, uint16_t word) noexcept {
 	CU_UNUSED(word);
@@ -1099,7 +1099,7 @@ A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_RETI(ATmega32u4* mcu,
 
 	mcu->cpu.insideInterrupt = false;
 
-	return inst_effect_t(5,0);
+	return inst_effect_t(4,0);
 }
 
 A32u4::InstHandler::inst_effect_t A32u4::InstHandler::INST_CPSE(ATmega32u4* mcu, uint16_t word) noexcept {
