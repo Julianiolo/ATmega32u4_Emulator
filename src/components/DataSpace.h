@@ -59,7 +59,7 @@ namespace A32u4 {
 			uint32_t hash() const noexcept;
 		} lastSet;
 
-		static constexpr uint32_t PLLCSR_PLOCK_wait = (CPU::ClockFreq / 1000) * 1; //1ms
+		static constexpr uint32_t PLLCSR_PLOCK_wait = 0; // was 1ms ((CPU::ClockFreq / 1000) * 1), we set it to 0 to match simavr for now 
 		static constexpr uint64_t ADC_wait = 0;
 
 		bool Timer3ATriggered = false;
