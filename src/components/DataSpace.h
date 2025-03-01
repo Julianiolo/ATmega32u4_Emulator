@@ -96,8 +96,11 @@ namespace A32u4 {
 		void pushAddrToStack(addrmcu_t Addr);
 		addrmcu_t popAddrFromStack();
 
+		void update_Get_all();
+		void update_Get(uint16_t Addr);
 
-		void update_Get(uint16_t Addr, bool onlyOne);
+		template<bool onlyOne>
+		void update_Get_impl(uint16_t addr);
 
 		void update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal);
 		void setEECR(uint8_t val, uint8_t oldVal);

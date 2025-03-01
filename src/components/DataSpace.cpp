@@ -369,7 +369,7 @@ uint8_t A32u4::DataSpace::getByteAt(uint16_t addr) {
 	A32U4_ASSERT_INRANGE2(addr, 0, Consts::data_size, return 0, "Data get Index out of bounds: " MCU_ADDR_FORMAT);
 
 	if (addr >= Consts::GPRs_size && addr <= Consts::io_start + Consts::io_size + Consts::ext_io_size) { //only io needs updates
-		update_Get(addr, true);
+		update_Get(addr);
 	}
 
 #if MCU_RW_RECORD
@@ -469,14 +469,15 @@ void A32u4::DataSpace::setSP(uint16_t val) {
 #endif
 }
 
-void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
-	switch (Addr) {
+template<bool onlyOne>
+void A32u4::DataSpace::update_Get_impl(uint16_t addr) {
+	switch (addr) {
 		case 0xFFFF: //case for updating everything
 		case Consts::EECR: {
 			if ((data[Consts::EECR] & (1 << Consts::EECR_EEMPE)) && mcu->cpu.getTotalCycles() - lastSet.EECR_EEMPE > 4) { // check if EE;PE is set but shouldnt
 				data[Consts::EECR] &= ~(1 << Consts::EECR_EEMPE); //clear EEMPE
 			}
-			if (onlyOne) break;
+			CU_IF_LIKELY(onlyOne) break;
 			else CU_FALLTHROUGH;
 		}
 
@@ -486,14 +487,14 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 				mcu->cpu.getTotalCycles() - lastSet.PLLCSR_PLLE > PLLCSR_PLOCK_wait) { //if PLLE is 1 and PLOCK is 0 and enough time since PLLE set
 				data[Consts::PLLCSR] |= (1 << Consts::PLLCSR_PLOCK); //set PLOCK
 			}
-			if (onlyOne) break;
+			CU_IF_LIKELY(onlyOne) break;
 			else CU_FALLTHROUGH;
 		}
 
 		case Consts::TCNT0: {
 			data[Consts::TCNT0] += (uint8_t)((mcu->cpu.getTotalCycles() - lastSet.Timer0Update) / DataSpace::timerPresc[getTimer0Presc()]);
 			markTimer0Update();
-			if (onlyOne) break;
+			CU_IF_LIKELY(onlyOne) break;
 			else CU_FALLTHROUGH;
 		}
 
@@ -508,7 +509,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			val |= (sreg[Consts::SREG_T] != 0) << Consts::SREG_T;
 			val |= (sreg[Consts::SREG_I] != 0) << Consts::SREG_I;
 			data[Consts::SREG] = val;
-			if (onlyOne) break;
+			CU_IF_LIKELY(onlyOne) break;
 			else CU_FALLTHROUGH;
 		}
 		
@@ -516,7 +517,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 			if (mcu->cpu.getTotalCycles() >= lastSet.ADCSRA_ADSC + 0) { // clear bit if conversion is done
 				data[Consts::ADCSRA] &= ~(1<<Consts::ADCSRA_ADSC);
 			}
-			if (onlyOne) break;
+			CU_IF_LIKELY(onlyOne) break;
 			else CU_FALLTHROUGH;
 		}
 		
@@ -530,7 +531,7 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 					data[Consts::ADCH] = getADCVal()>>2;
 				}
 			}
-			if (onlyOne) break;
+			CU_IF_LIKELY(onlyOne) break;
 			else CU_FALLTHROUGH;
 		}
 		case Consts::ADCL: {
@@ -543,10 +544,17 @@ void A32u4::DataSpace::update_Get(uint16_t Addr, bool onlyOne) {
 					data[Consts::ADCL] = getADCVal() << 6;
 				}
 			}
-			if (onlyOne) break;
+			CU_IF_LIKELY(onlyOne) break;
 			//else CU_FALLTHROUGH;
 		}
 	}
+}
+
+void A32u4::DataSpace::update_Get(uint16_t Addr) {
+	update_Get_impl<true>(Addr);
+}
+void A32u4::DataSpace::update_Get_all() {
+	update_Get_impl<false>(0xFFFF);
 }
 
 void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
@@ -773,7 +781,7 @@ const uint8_t* A32u4::DataSpace::getData() {
 	static uint64_t lastCycs = 0;
 	if (lastCycs != mcu->cpu.getTotalCycles()) {
 		lastCycs = mcu->cpu.getTotalCycles();
-		update_Get(0xFFFF, false);
+		update_Get_all();
 	}
 	return data;
 }
@@ -1139,7 +1147,7 @@ void A32u4::DataSpace::loadDataFromMemory(const uint8_t* data_, size_t len) {
 }
 
 void A32u4::DataSpace::getState(std::ostream& output){
-	update_Get(0xFFFF, false);
+	update_Get_all();
 
 	getRamState(output);
 	getEepromState(output);
