@@ -104,6 +104,7 @@ A32u4::DataSpace& A32u4::DataSpace::operator=(const DataSpace& src){
 }
 
 void A32u4::DataSpace::reset() {
+	std::memset(data, 0, Consts::data_size);
 	resetIO();
 	lastSet.resetAll();
 
