@@ -6,7 +6,6 @@ projects/VS2019/ATmega32u4_Emulator/.vs/*
 tests/*
 
 *.vcxproj.user
-*.txt
 *.o
 *.d
 *.exe
