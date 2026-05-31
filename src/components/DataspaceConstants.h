@@ -69,9 +69,9 @@ static constexpr addrmcu_t ADCH = 0x79;
 static constexpr addrmcu_t ADCL = 0x78;
 
 static constexpr addrmcu_t UCSR1A = 0xC8;
-static constexpr uint8_t UCSR1A_U2X1 = 1;
+static constexpr uint8_t UCSR1A_UDRE1 = 5, UCSR1A_U2X1 = 1;
 static constexpr addrmcu_t UCSR1B = 0xC9;
-static constexpr uint8_t UCSR1B_UCSZ12 = 2;
+static constexpr uint8_t UCSR1B_TXEN1 = 3, UCSR1B_UCSZ12 = 2;
 static constexpr addrmcu_t UCSR1C = 0xCA;
 static constexpr uint8_t UCSR1C_UCSZ11 = 2, UCSR1C_UCSZ10 = 1;
 static constexpr addrmcu_t UCSR1D = 0xCB;

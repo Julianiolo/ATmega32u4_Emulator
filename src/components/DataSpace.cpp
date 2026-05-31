@@ -125,8 +125,8 @@ void A32u4::DataSpace::resetIO() {
 	setSP(Consts::SP_initaddr);
 
 	data[Consts::TWSR] = 0xf8;  // set TWI status to "No relevant state information available" (see table 20-5, page 249)
-	data[Consts::UCSR1A] = 1 << Consts::UCSR1A_U2X1;
-	data[Consts::UCSR1B] = 1 << Consts::UCSR1B_UCSZ12;
+	data[Consts::UCSR1A] = 1 << Consts::UCSR1A_UDRE1;
+	data[Consts::UCSR1B] = 1 << Consts::UCSR1B_TXEN1;
 	data[Consts::UCSR1C] = (1 << Consts::UCSR1C_UCSZ11) | (1 << Consts::UCSR1C_UCSZ10);
 	data[Consts::USBCON] = 1 << Consts::USBCON_FRZCLK;
 	data[Consts::UDCON] = 1 << Consts::UDCON_DETACH;
