@@ -10,7 +10,7 @@
 #include <functional>
 
 #include "comps/bitVector.h"
-#include "comps/bitArray.h"
+#include "comps/BitArray.h"
 
 #include "../A32u4Types.h"
 
