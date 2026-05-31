@@ -67,3 +67,18 @@ static constexpr uint8_t ADMUX_REFS1 = 7, ADMUX_REFS0 = 6, ADMUX_ADLAR = 5, ADMU
 
 static constexpr addrmcu_t ADCH = 0x79;
 static constexpr addrmcu_t ADCL = 0x78;
+
+static constexpr addrmcu_t UCSR1A = 0xC8;
+static constexpr uint8_t UCSR1A_U2X1 = 1;
+static constexpr addrmcu_t UCSR1B = 0xC9;
+static constexpr uint8_t UCSR1B_UCSZ12 = 2;
+static constexpr addrmcu_t UCSR1C = 0xCA;
+static constexpr uint8_t UCSR1C_UCSZ11 = 2, UCSR1C_UCSZ10 = 1;
+static constexpr addrmcu_t UCSR1D = 0xCB;
+
+static constexpr addrmcu_t USBCON = 0xD8;
+static constexpr uint8_t USBCON_FRZCLK = 5;
+
+static constexpr addrmcu_t UDCON = 0xE0;
+static constexpr uint8_t UDCON_DETACH = 0;
+
