@@ -126,7 +126,7 @@ void A32u4::DataSpace::resetIO() {
 }
 
 void A32u4::DataSpace::doTicks(uint8_t num) {
-	if (isBitSetNB(data[Consts::PRR0], 5)) {
+	if (isBitSetNB(data[Consts::PRR0], Consts::PRR0_PRTIM0)) {
 		return;
 	}
 
@@ -501,8 +501,10 @@ void A32u4::DataSpace::update_Get_impl(uint16_t addr) {
 		}
 
 		case Consts::TCNT0: {
-			data[Consts::TCNT0] += (uint8_t)((mcu->cpu.getTotalCycles() - lastSet.Timer0Update) / DataSpace::timerPresc[getTimer0Presc()]);
-			markTimer0Update();
+			if(getTimer0PrescDiv() > 0) {
+				data[Consts::TCNT0] += (uint8_t)((mcu->cpu.getTotalCycles() - lastSet.Timer0Update) / getTimer0PrescDiv());
+				markTimer0Update();
+			}
 			CU_IF_LIKELY(onlyOne) break;
 			else CU_FALLTHROUGH;
 		}
