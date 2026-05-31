@@ -123,6 +123,7 @@ void A32u4::DataSpace::resetIO() {
 	}
 
 	setSP(Consts::SP_initaddr);
+	data[Consts::TWSR] = 0xf8;  // set TWI status to "No relevant state information available" (see table 20-5, page 249)
 }
 
 void A32u4::DataSpace::doTicks(uint8_t num) {

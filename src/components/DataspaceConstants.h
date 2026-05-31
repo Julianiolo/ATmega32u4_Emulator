@@ -53,6 +53,8 @@ static constexpr addrmcu_t TCNT4 = 0xBE, TC4H = 0xBF, TCCR4A = 0xC0, TCCR4B = 0x
 static constexpr uint8_t TIMSK4_OCIE4A = 6, TIMSK4_TOIE4 = 2, TIFR4_TOV4 = 2;
 static constexpr addrmcu_t OCR4A = 0xCF;
 
+static constexpr addrmcu_t TWSR = 0xB9;
+
 static constexpr addrmcu_t SMCR = 0x53;
 
 static constexpr addrmcu_t ADCSRA = 0x7A;
