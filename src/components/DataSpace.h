@@ -106,7 +106,8 @@ namespace A32u4 {
 		void setEECR(uint8_t val, uint8_t oldVal);
 		void setPLLCSR(uint8_t val, uint8_t oldVal);
 		void setSPDR();
-		void setTCCR0B(uint8_t val);
+		void setTCCR0B(uint8_t val, uint8_t oldVal);
+		void setTCCR4B(uint8_t val, uint8_t oldVal);
 
 		void updateSREGCache();
 

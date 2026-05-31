@@ -589,18 +589,18 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 			setSPDR();
 			break;
 
-		case Consts::TCCR0B:
-			setTCCR0B(val);
-			break;
-
-		case Consts::TIFR0:
-			checkForIntr();
-			break;
-
 		case Consts::SREG:
 			updateSREGCache();
 			if((val & (1<<Consts::SREG_I)) && (data[Consts::TIFR0] & (1 << DataSpace::Consts::TIFR0_TOV0)))
 				mcu->cpu.breakOutOfOptimisation(); // we need to break out of Optimisation to check if an interrupt can now occur (Global Interrupt Enable)
+			break;
+
+		case Consts::TCCR0B:
+			setTCCR0B(val, oldVal);
+			break;
+
+		case Consts::TIFR0:
+			checkForIntr();
 			break;
 
 		case Consts::TCNT0:
@@ -610,6 +610,10 @@ void A32u4::DataSpace::update_Set(uint16_t Addr, uint8_t val, uint8_t oldVal) {
 				mcu->cpu.breakOutOfOptimisation();
 			}
 			//mcu->debugger.halt();
+			break;
+
+		case Consts::TCCR4B:
+			setTCCR4B(val, oldVal);
 			break;
 
 		case Consts::ADCSRA:
@@ -715,11 +719,35 @@ void A32u4::DataSpace::setSPDR() {
 	//request Interrupt if SPIE set
 	// TODO?
 }
-void A32u4::DataSpace::setTCCR0B(uint8_t val) {
-	mcu->cpu.breakOutOfOptimisation();
-	//printf("SWITCH to div:%d\n", timers.getTimer0PrescDiv());
-	lastSet.Timer0Update = mcu->cpu.getTotalCycles(); // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
-	//printf("fmark at %llu\n", mcu->cpu.totalCycls);
+void A32u4::DataSpace::setTCCR0B(uint8_t val, uint8_t oldVal) {
+	// check if clock select changed
+	uint8_t oldCS = oldVal & 0b111;
+	uint8_t newCS = val & 0b111;
+	if(oldCS != newCS) {
+		if(oldCS != 0) {
+			data[Consts::TCCR0B] = oldVal;
+			updateTimers();
+			data[Consts::TCCR0B] = val;
+		}
+		lastSet.Timer0Update = mcu->cpu.getTotalCycles(); // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
+		mcu->cpu.breakOutOfOptimisation();
+		//printf("SWITCH to div:%d\n", timers.getTimer0PrescDiv());
+		//printf("fmark at %llu\n", mcu->cpu.totalCycls);
+	}
+}
+void A32u4::DataSpace::setTCCR4B(uint8_t val, uint8_t oldVal) {
+	// check if clock select changed
+	uint8_t oldCS = oldVal & 0b1111;
+	uint8_t newCS = val & 0b1111;
+	if(oldCS != newCS) {
+		if(oldCS != 0) { // if timer was not stopped before
+			data[Consts::TCCR4B] = oldVal;
+			updateTimers();
+			data[Consts::TCCR4B] = val;
+		}
+		lastSet.Timer4Update = mcu->cpu.getTotalCycles(); // dont use mark here since it shouldnt align with previous overflows (since this is the start and there are no previous overflows)
+		mcu->cpu.breakOutOfOptimisation();
+	}
 }
 
 void A32u4::DataSpace::pushByteToStack(uint8_t val) {
