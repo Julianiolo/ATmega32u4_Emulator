@@ -143,89 +143,97 @@ void A32u4::DataSpace::doTicks(uint8_t num) {
 }
 void A32u4::DataSpace::updateTimers(){
 	if (!isBitSetNB(data[Consts::PRR0], Consts::PRR0_PRTIM0)) {
-		const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer0Update) / getTimer0PrescDiv();
-		if(addAmt > 0) {
-			const uint8_t timer0 = data[Consts::TCNT0];
-			const uint8_t timer0Next = timer0 + (uint8_t)addAmt;
-			if(timer0Next < timer0 || addAmt >= 256) { // overflow
-				data[Consts::TIFR0] |= (1 << Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+		const uint8_t div = getTimer0PrescDiv();
+		if(div != 0) {
+			const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer0Update) / div;
+			if(addAmt > 0) {
+				const uint8_t timer0 = data[Consts::TCNT0];
+				const uint8_t timer0Next = timer0 + (uint8_t)addAmt;
+				if(timer0Next < timer0 || addAmt >= 256) { // overflow
+					data[Consts::TIFR0] |= (1 << Consts::TIFR0_TOV0); // set TOV0 in TIFR0
+				}
+				data[Consts::TCNT0] = timer0Next;
+				markTimer0Update();
 			}
-			data[Consts::TCNT0] = timer0Next;
-			markTimer0Update();
 		}
 	}
 	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM3) && (data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A))) {
-		const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer3Update) / getTimer3PrescDiv();
-		if(addAmt > 0) {
-			const uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
-			const uint16_t timer3Next = timer3 + (uint16_t)addAmt;
-			const uint16_t target = getWordRegRam_(Consts::OCR3AL);
-
-			bool matchesA = false;
-			if(addAmt >= 0x10000) {
-				matchesA = true;
-			}else{
-				if(timer3 <= timer3Next) {
-					if(timer3 <= target && target <= timer3Next)
-						matchesA = true;
-				}else{
-					if(timer3 <= target || target <= timer3Next)
-						matchesA = true;
-				}
-			}
-
-			if(matchesA) {
-				data[Consts::TIFR3] |= (1 << Consts::TIFR3_OCF3A);
-				Timer3ATriggered = true;
-			} else{
-				Timer3ATriggered = false;
-			}
-			setWordRegRam_(Consts::TCNT3L, timer3Next);
-			markTimer3Update();
-		}
-	}
-	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM4) && getTimer4Presc()) {
-		const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer4Update) / getTimer4PrescDiv();
-		if(addAmt > 0) {
-			const uint16_t timer4 = getWordRegRam_(Consts::TCNT4) & 0b1111111111;
-			const uint16_t timer4Next = (timer4 + (uint16_t)addAmt) & 0b1111111111;
-			if(data[Consts::TIMSK4] & (1<<Consts::TIMSK4_TOIE4)) {
-				if(timer4Next < timer4 || addAmt >= (1<<10)) { // overflow
-					data[Consts::TIFR4] |= (1 << Consts::TIFR4_TOV4); // set TOV0 in TIFR0
-				}
-			}
-			if(data[Consts::DDRC]) {
-				const uint16_t target = data[Consts::OCR4A];
+		const uint8_t div = getTimer3PrescDiv();
+		if(div != 0) {
+			const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer3Update) / div;
+			if(addAmt > 0) {
+				const uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
+				const uint16_t timer3Next = timer3 + (uint16_t)addAmt;
+				const uint16_t target = getWordRegRam_(Consts::OCR3AL);
+	
 				bool matchesA = false;
 				if(addAmt >= 0x10000) {
 					matchesA = true;
 				}else{
-					if(timer4 <= timer4Next) {
-						if(timer4 <= target && target <= timer4Next)
+					if(timer3 <= timer3Next) {
+						if(timer3 <= target && target <= timer3Next)
 							matchesA = true;
 					}else{
-						if(timer4 <= target || target <= timer4Next)
+						if(timer3 <= target || target <= timer3Next)
 							matchesA = true;
 					}
 				}
-
-				uint8_t portc = data[Consts::PORTC];
+	
 				if(matchesA) {
-					if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC7))
-						portc |= (1<<7);
-					if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC6))
-						portc &= ~(1<<6);
-				}else{
-					if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC7))
-						portc &= ~(1<<7);
-					if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC6))
-						portc |= (1<<6);
+					data[Consts::TIFR3] |= (1 << Consts::TIFR3_OCF3A);
+					Timer3ATriggered = true;
+				} else{
+					Timer3ATriggered = false;
 				}
-				setByteAt(Consts::PORTC, portc);
-				Timer4ATriggered = matchesA;
+				setWordRegRam_(Consts::TCNT3L, timer3Next);
+				markTimer3Update();
 			}
-			setWordRegRam_(Consts::TCNT4, timer4Next);
-			markTimer4Update();
+		}
+	}
+	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM4)) {
+		if(getTimer4Presc() > 0) {
+			const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer4Update) / getTimer4PrescDiv();
+			if(addAmt > 0) {
+				const uint16_t timer4 = getWordRegRam_(Consts::TCNT4) & 0b1111111111;
+				const uint16_t timer4Next = (timer4 + (uint16_t)addAmt) & 0b1111111111;
+				if(data[Consts::TIMSK4] & (1<<Consts::TIMSK4_TOIE4)) {
+					if(timer4Next < timer4 || addAmt >= (1<<10)) { // overflow
+						data[Consts::TIFR4] |= (1 << Consts::TIFR4_TOV4); // set TOV0 in TIFR0
+					}
+				}
+				if(data[Consts::DDRC]) {
+					const uint16_t target = data[Consts::OCR4A];
+					bool matchesA = false;
+					if(addAmt >= 0x10000) {
+						matchesA = true;
+					}else{
+						if(timer4 <= timer4Next) {
+							if(timer4 <= target && target <= timer4Next)
+								matchesA = true;
+						}else{
+							if(timer4 <= target || target <= timer4Next)
+								matchesA = true;
+						}
+					}
+	
+					uint8_t portc = data[Consts::PORTC];
+					if(matchesA) {
+						if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC7))
+							portc |= (1<<7);
+						if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC6))
+							portc &= ~(1<<6);
+					}else{
+						if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC7))
+							portc &= ~(1<<7);
+						if(data[Consts::DDRC] & (1<<Consts::DDRC_DDC6))
+							portc |= (1<<6);
+					}
+					setByteAt(Consts::PORTC, portc);
+					Timer4ATriggered = matchesA;
+				}
+				setWordRegRam_(Consts::TCNT4, timer4Next);
+				markTimer4Update();
+			}
 		}
 	}
 	checkForIntr();

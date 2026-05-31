@@ -125,7 +125,7 @@ namespace A32u4 {
 
 
 		// Timer stuff
-		static constexpr uint16_t timerPresc[] = {1,1,8,64,256,1024};
+		static constexpr uint16_t timerPresc[] = {0,1,8,64,256,1024};
 		void doTicks(uint8_t num);
 		void updateTimers();
 		void checkForIntr();
