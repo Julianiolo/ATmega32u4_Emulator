@@ -301,19 +301,25 @@ uint16_t A32u4::DataSpace::getTimer4PrescDiv() const {
 void A32u4::DataSpace::markTimer0Update() { 
 	// functions is supposed to set lastTimer0Update to the exact technically correct value, even if we are already past that
 	uint64_t diff = mcu->cpu.getTotalCycles() - lastSet.Timer0Update;
-	diff = (diff / getTimer0PrescDiv()) * getTimer0PrescDiv();
+	uint16_t div = getTimer0PrescDiv();
+	if(div != 0)
+		diff = (diff / div) * div;
 	lastSet.Timer0Update += diff;
 }
 void A32u4::DataSpace::markTimer3Update() { 
 	// functions is supposed to set lastTimer3Update to the exact technically correct value, even if we are already past that
 	uint64_t diff = mcu->cpu.getTotalCycles() - lastSet.Timer3Update;
-	diff = (diff / getTimer3PrescDiv()) * getTimer3PrescDiv();
+	uint16_t div = getTimer3PrescDiv();
+	if(div != 0)
+		diff = (diff / div) * div;
 	lastSet.Timer3Update += diff;
 }
 void A32u4::DataSpace::markTimer4Update() { 
 	// functions is supposed to set lastTimer4Update to the exact technically correct value, even if we are already past that
 	uint64_t diff = mcu->cpu.getTotalCycles() - lastSet.Timer4Update;
-	diff = (diff / getTimer4PrescDiv()) * getTimer4PrescDiv();
+	uint16_t div = getTimer4PrescDiv();
+	if(div != 0)
+		diff = (diff / div) * div;
 	lastSet.Timer4Update += diff;
 }
 uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
