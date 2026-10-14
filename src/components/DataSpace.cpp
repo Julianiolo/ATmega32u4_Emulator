@@ -150,7 +150,7 @@ void A32u4::DataSpace::doTicks(uint8_t num) {
 }
 void A32u4::DataSpace::updateTimers(){
 	if (!isBitSetNB(data[Consts::PRR0], Consts::PRR0_PRTIM0)) {
-		const uint8_t div = getTimer0PrescDiv();
+		const auto div = getTimer0PrescDiv();
 		if(div != 0) {
 			const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer0Update) / div;
 			if(addAmt > 0) {
@@ -165,7 +165,7 @@ void A32u4::DataSpace::updateTimers(){
 		}
 	}
 	if (!isBitSetNB(data[Consts::PRR1], Consts::PRR1_PRTIM3) && (data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A))) {
-		const uint8_t div = getTimer3PrescDiv();
+		const auto div = getTimer3PrescDiv();
 		if(div != 0) {
 			const uint64_t addAmt = (mcu->cpu.getTotalCycles() - lastSet.Timer3Update) / div;
 			if(addAmt > 0) {
@@ -324,14 +324,14 @@ void A32u4::DataSpace::markTimer4Update() {
 }
 uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
 	uint64_t amt = -1;
-	if(data[Consts::TIMSK0] & (1 << Consts::TIMSK0_TOIE0)){ // timer0 Overflow
+	if((data[Consts::TIMSK0] & (1 << Consts::TIMSK0_TOIE0)) && getTimer0PrescDiv() != 0){ // timer0 Overflow
 		uint8_t timer0 = data[DataSpace::Consts::TCNT0];
 		uint64_t nextOverflow = lastSet.Timer0Update + (256-timer0)*getTimer0PrescDiv();
 		uint64_t interruptIn = nextOverflow - mcu->cpu.getTotalCycles();
 		amt = std::min(amt, interruptIn);
 	}
 
-	if(data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A) && !Timer3ATriggered){ // timer3 A match
+	if((data[Consts::TIMSK3] & (1 << Consts::TIMSK3_OCIE3A)) && !Timer3ATriggered && getTimer3PrescDiv() != 0){ // timer3 A match
 		uint16_t timer3 = getWordRegRam_(Consts::TCNT3L);
 		uint16_t target = getWordRegRam_(Consts::OCR3AL);
 		uint64_t nextMatch = lastSet.Timer3Update + (uint16_t)(target-timer3)*getTimer3PrescDiv();
@@ -339,21 +339,19 @@ uint64_t A32u4::DataSpace::cycsToNextTimerInt() {
 		amt = std::min(amt, interruptIn);
 	}
 
-	if(data[Consts::TIMSK4] & (1 << Consts::TIMSK4_TOIE4)){ // timer4 Overflow
-		if(getTimer4Presc() > 0) {
-			uint16_t timer4 = getWordRegRam_(Consts::TCNT4) & 0b1111111111;
-			if(data[Consts::TIMSK4] & (1<<Consts::TIMSK4_OCIE4A)){
-				uint64_t nextMatch = lastSet.Timer4Update + (uint16_t)((1<<10)-timer4)*getTimer4PrescDiv();
-				uint64_t interruptIn = nextMatch - mcu->cpu.getTotalCycles();
-				amt = std::min(amt, interruptIn);
-			}
+	if(data[Consts::TIMSK4] & (1 << Consts::TIMSK4_TOIE4) && getTimer4PrescDiv() != 0){ // timer4 Overflow
+		uint16_t timer4 = getWordRegRam_(Consts::TCNT4) & 0b1111111111;
+		if(data[Consts::TIMSK4] & (1<<Consts::TIMSK4_OCIE4A)){
+			uint64_t nextMatch = lastSet.Timer4Update + (uint16_t)((1<<10)-timer4)*getTimer4PrescDiv();
+			uint64_t interruptIn = nextMatch - mcu->cpu.getTotalCycles();
+			amt = std::min(amt, interruptIn);
+		}
 
-			if(data[Consts::DDRC] && !Timer4ATriggered) {
-				const uint16_t target = data[Consts::OCR4A];
-				uint64_t nextMatch = lastSet.Timer4Update + (uint16_t)(target-timer4)*getTimer4PrescDiv();
-				uint64_t interruptIn = nextMatch - mcu->cpu.getTotalCycles();
-				amt = std::min(amt, interruptIn);
-			}
+		if(data[Consts::DDRC] && !Timer4ATriggered) {
+			const uint16_t target = data[Consts::OCR4A];
+			uint64_t nextMatch = lastSet.Timer4Update + (uint16_t)(target-timer4)*getTimer4PrescDiv();
+			uint64_t interruptIn = nextMatch - mcu->cpu.getTotalCycles();
+			amt = std::min(amt, interruptIn);
 		}
 	}
 	return amt;
