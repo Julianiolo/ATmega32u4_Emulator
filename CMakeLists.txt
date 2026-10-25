@@ -36,3 +36,11 @@ target_link_libraries(${PROJECT_NAME} PUBLIC CPP_Utils)
 if ((MSVC) AND (MSVC_VERSION GREATER_EQUAL 1914))
     target_compile_options(${PROJECT_NAME} PUBLIC "/Zc:__cplusplus")
 endif()
+
+add_executable(avr_inst_dump_test "tests/avr_inst_dump/main.cpp")
+target_link_libraries(avr_inst_dump_test PRIVATE ${PROJECT_NAME})
+enable_testing()
+add_test(
+    NAME avr_inst_dump_test
+    COMMAND $<TARGET_FILE:avr_inst_dump_test> ${CMAKE_SOURCE_DIR}/tests/data/received_data.bin
+)

@@ -327,12 +327,15 @@ void A32u4::CPU::setFlags_SVNZC(uint8_t res) {
 
 void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
 #if FAST_FLAGSET
+	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
+	bool R15 = isBitSet(res, 15);
 	uint16_t sum16 = a + b;
 	uint32_t sum32 = a + b;
-	bool V;
-	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V = sum16 != sum32;
+	//bool V = sum16 != sum32;
+	bool V = !ah7 && R15;
+	mcu->dataspace.sreg[DataSpace::Consts::SREG_V] = V;
 
-	bool R15 = isBitSet(res, 15);
+	
 	bool N;
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_N] = N = R15;
 
