@@ -343,8 +343,6 @@ void A32u4::CPU::setFlags_SVNZC_ADD_16(uint16_t a, uint16_t b, uint16_t res) {
 
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_Z] = res == 0;
 
-	bool ah7 = isBitSet(a, 7 + 8);
-
 	mcu->dataspace.sreg[DataSpace::Consts::SREG_C] = !R15 && ah7;
 #else
 	bool ah7 = isBitSet(a, 7 + 8); //bit 7 of high byte of a word
